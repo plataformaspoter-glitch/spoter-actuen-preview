@@ -274,15 +274,19 @@ async function loadDataset(forcedRubro = null, forcedFocus = null, handoffPolicy
   if (btn) btn.disabled = true;
   showToast("⏳ Spoter: Procesando lote de prueba y analizando intenciones...");
   
-  try {
-    const selectFocus = document.getElementById('selectFocus');
-    const selectHandoff = document.getElementById('selectHandoff');
-    const rVal = forcedRubro || (currentData && currentData.meta ? currentData.meta.detected_rubro_key : '');
-    const fVal = forcedFocus || (selectFocus && selectFocus.value === 'auto' ? '' : (selectFocus ? selectFocus.value : ''));
-    const savedHandoff = localStorage.getItem('spoter_handoff_policy');
-    const hVal = handoffPolicy || savedHandoff || (selectHandoff ? selectHandoff.value : 'hybrid');
-    localStorage.setItem('spoter_handoff_policy', hVal);
+  // Estos valores se declaran FUERA del try porque el catch —que contiene el
+  // fallback a sample_data.json— también los usa. Declarados con const dentro
+  // del try quedaban fuera de alcance y el fallback moría con un ReferenceError,
+  // que el catch externo se tragaba: sin motor, el botón no hacía nada.
+  const selectFocus = document.getElementById('selectFocus');
+  const selectHandoff = document.getElementById('selectHandoff');
+  const rVal = forcedRubro || (currentData && currentData.meta ? currentData.meta.detected_rubro_key : '');
+  const fVal = forcedFocus || (selectFocus && selectFocus.value === 'auto' ? '' : (selectFocus ? selectFocus.value : ''));
+  const savedHandoff = localStorage.getItem('spoter_handoff_policy');
+  const hVal = handoffPolicy || savedHandoff || (selectHandoff ? selectHandoff.value : 'hybrid');
+  localStorage.setItem('spoter_handoff_policy', hVal);
 
+  try {
     let url = `/api/analyze-default?handoff=${hVal}`;
     if (fVal) url += `&focus=${fVal}`;
     if (rVal) url += `&rubro=${rVal}`;

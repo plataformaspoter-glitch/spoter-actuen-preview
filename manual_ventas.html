@@ -1,0 +1,2112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manual de Ventas Estratégico v2.0 | Spoter LTV, Algoritmos IU/IC y Copiloto HITL</title>
+  
+  <!-- Tipografía Oficial Montserrat -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <script>
+    // Limpieza de Service Workers y cachés residuales de otros proyectos en localhost:8080
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        for (const reg of registrations) reg.unregister();
+      });
+    }
+    if ('caches' in window) {
+      caches.keys().then(names => {
+        for (const name of names) caches.delete(name);
+      });
+    }
+
+    // LTV Calculator Interactive Logic
+    let manualCurrency = 'USD';
+    const FX_RATE_MANUAL = 1250;
+
+    const inTicket = document.getElementById('manInputTicket');
+    const inFreq = document.getElementById('manInputFreq');
+    const inYears = document.getElementById('manInputYears');
+    const inLeads = document.getElementById('manInputLeads');
+    const inCac = document.getElementById('manInputCac');
+
+    const lblManTicket = document.getElementById('lblManTicket');
+    const lblManCac = document.getElementById('lblManCac');
+
+    const outLtvUnit = document.getElementById('manResLtvUnit');
+    const outCapitalDestroyed = document.getElementById('manResCapitalDestroyed');
+    const outCacLost = document.getElementById('manResCacLost');
+    const outRecovered = document.getElementById('manResRecovered');
+
+    const btnManUsd = document.getElementById('btnManualUsd');
+    const btnManArs = document.getElementById('btnManualArs');
+
+    function formatManualMoney(amount) {
+      if (manualCurrency === 'ARS') {
+        return '$' + Math.round(amount).toLocaleString('es-AR') + ' ARS';
+      }
+      return '$' + Math.round(amount).toLocaleString('en-US') + ' USD';
+    }
+
+    function calculateManualLtv() {
+      if (!inTicket || !inFreq || !inYears || !inLeads || !inCac) return;
+      const ticket = parseFloat(inTicket.value) || 0;
+      const freq = parseFloat(inFreq.value) || 0;
+      const years = parseFloat(inYears.value) || 0;
+      const leads = parseFloat(inLeads.value) || 0;
+      const cac = parseFloat(inCac.value) || 0;
+
+      const ltvUnit = ticket * freq * years;
+      const lostImmediate = leads * ticket * 0.65;
+      const lostLtvTotal = leads * ltvUnit * 0.65;
+      const lostCacTotal = leads * cac;
+      const totalDestroyed = lostLtvTotal + lostCacTotal;
+      const potentialRecovered = totalDestroyed * 0.75;
+
+      outLtvUnit.textContent = formatManualMoney(ltvUnit);
+      outCapitalDestroyed.textContent = formatManualMoney(totalDestroyed);
+      outCacLost.textContent = formatManualMoney(lostCacTotal);
+      outRecovered.textContent = formatManualMoney(potentialRecovered);
+    }
+
+    if (inTicket) {
+      [inTicket, inFreq, inYears, inLeads, inCac].forEach(inp => {
+        inp.addEventListener('input', calculateManualLtv);
+      });
+    }
+
+    if (btnManUsd && btnManArs) {
+      btnManUsd.onclick = () => {
+        if (manualCurrency === 'USD') return;
+        manualCurrency = 'USD';
+        btnManUsd.classList.add('active');
+        btnManArs.classList.remove('active');
+        lblManTicket.textContent = 'Ticket Promedio ($ USD):';
+        lblManCac.textContent = 'CAC Estimado Pauta ($ USD):';
+        inTicket.value = Math.round((parseFloat(inTicket.value) || 1062500) / FX_RATE_MANUAL);
+        inCac.value = Math.round((parseFloat(inCac.value) || 150000) / FX_RATE_MANUAL);
+        calculateManualLtv();
+      };
+
+      btnManArs.onclick = () => {
+        if (manualCurrency === 'ARS') return;
+        manualCurrency = 'ARS';
+        btnManArs.classList.add('active');
+        btnManUsd.classList.remove('active');
+        lblManTicket.textContent = 'Ticket Promedio ($ ARS):';
+        lblManCac.textContent = 'CAC Estimado Pauta ($ ARS):';
+        inTicket.value = Math.round((parseFloat(inTicket.value) || 850) * FX_RATE_MANUAL);
+        inCac.value = Math.round((parseFloat(inCac.value) || 120) * FX_RATE_MANUAL);
+        calculateManualLtv();
+      };
+    }
+
+  </script>
+
+  <style>
+    :root {
+      --spoter-pink: #e42d7f;
+      --spoter-pink-hover: #c9206b;
+      --spoter-pink-light: rgba(228, 45, 127, 0.08);
+      --spoter-pink-border: rgba(228, 45, 127, 0.25);
+      
+      --bg-main: #f8fafc;
+      --bg-card: #ffffff;
+      --bg-secondary: #f1f5f9;
+      --bg-sidebar: #ffffff;
+      
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.12);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.12);
+      --danger: #ef4444;
+      --danger-bg: rgba(239, 68, 68, 0.12);
+      
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
+      --shadow-md: 0 8px 24px rgba(0,0,0,0.06);
+      --shadow-pink: 0 6px 20px rgba(228, 45, 127, 0.28);
+      --transition: all 0.22s ease-in-out;
+      --font-main: 'Montserrat', -apple-system, sans-serif;
+    }
+
+    [data-theme="dark"] {
+      --bg-main: #0b0f19;
+      --bg-card: #131b2e;
+      --bg-secondary: #1a243b;
+      --bg-sidebar: #0f1626;
+      
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --border-color: #23304e;
+      
+      --spoter-pink-light: rgba(228, 45, 127, 0.15);
+      --spoter-pink-border: rgba(228, 45, 127, 0.35);
+      --shadow-sm: 0 2px 10px rgba(0,0,0,0.25);
+      --shadow-md: 0 10px 30px rgba(0,0,0,0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-main);
+      background-color: var(--bg-main);
+      color: var(--text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* Top Bar Navigation */
+    .top-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
+      backdrop-filter: blur(12px);
+      padding: 12px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .spoter-logo {
+      height: 38px;
+      object-fit: contain;
+    }
+
+    .brand-text h1 {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-text h1 span {
+      color: var(--spoter-pink);
+    }
+
+    .brand-text p {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-action-nav {
+      font-family: var(--font-main);
+      font-size: 12.5px;
+      font-weight: 700;
+      padding: 8px 18px;
+      border-radius: var(--radius-md);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: var(--transition);
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-analyzer {
+      background: var(--spoter-pink);
+      color: white;
+      box-shadow: var(--shadow-pink);
+    }
+
+    .btn-analyzer:hover {
+      background: var(--spoter-pink-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-theme-toggle {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .btn-theme-toggle:hover {
+      border-color: var(--spoter-pink);
+    }
+
+    /* Main Container with Sidebar Layout */
+    .layout-wrapper {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: calc(100vh - 65px);
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 992px) {
+      .layout-wrapper {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Sticky Sidebar */
+    .sidebar {
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      padding: 24px 18px;
+      position: sticky;
+      top: 65px;
+      height: calc(100vh - 65px);
+      overflow-y: auto;
+    }
+
+    @media (max-width: 992px) {
+      .sidebar {
+        display: none;
+      }
+    }
+
+    .sidebar-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      font-weight: 800;
+      margin-bottom: 14px;
+      padding-left: 10px;
+    }
+
+    .sidebar-menu {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .sidebar-link:hover {
+      color: var(--spoter-pink);
+      background: var(--spoter-pink-light);
+    }
+
+    .sidebar-link.active {
+      color: var(--spoter-pink);
+      background: var(--spoter-pink-light);
+      font-weight: 800;
+      border-left: 3px solid var(--spoter-pink);
+    }
+
+    /* Content Area */
+    .content-area {
+      padding: 40px 48px 80px;
+      overflow-y: auto;
+    }
+
+    @media (max-width: 768px) {
+      .content-area {
+        padding: 24px 18px 60px;
+      }
+    }
+
+    /* Hero Banner */
+    .manual-hero {
+      background: linear-gradient(135deg, rgba(228, 45, 127, 0.08) 0%, rgba(228, 45, 127, 0.02) 100%);
+      border: 1px solid var(--spoter-pink-border);
+      border-radius: var(--radius-lg);
+      padding: 36px 32px;
+      margin-bottom: 40px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-tag {
+      display: inline-block;
+      background: var(--spoter-pink);
+      color: white;
+      font-size: 10.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+    }
+
+    .manual-hero h2 {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+      line-height: 1.25;
+    }
+
+    .manual-hero h2 span {
+      color: var(--spoter-pink);
+    }
+
+    .manual-hero p {
+      font-size: 15px;
+      color: var(--text-secondary);
+      max-width: 740px;
+      line-height: 1.6;
+    }
+
+    /* Section Styling */
+    .playbook-section {
+      margin-bottom: 56px;
+      scroll-margin-top: 85px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    .section-num {
+      width: 36px;
+      height: 36px;
+      background: var(--spoter-pink);
+      color: white;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 16px;
+      box-shadow: var(--shadow-pink);
+      flex-shrink: 0;
+    }
+
+    .section-header h3 {
+      font-size: 21px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+    }
+
+    .section-lead {
+      font-size: 14.5px;
+      color: var(--text-secondary);
+      margin-bottom: 22px;
+      line-height: 1.65;
+    }
+
+    /* Cards & Grids */
+    .card-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .card-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 840px) {
+      .card-grid-2, .card-grid-3 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .pro-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 22px;
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition);
+      position: relative;
+    }
+
+    .pro-card:hover {
+      border-color: var(--spoter-pink);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .card-badge {
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      display: inline-block;
+      margin-bottom: 10px;
+    }
+
+    .badge-danger { background: var(--danger-bg); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
+    .badge-warning { background: var(--warning-bg); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-success { background: var(--success-bg); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-pink { background: var(--spoter-pink-light); color: var(--spoter-pink); border: 1px solid var(--spoter-pink-border); }
+
+    .pro-card h4 {
+      font-size: 15.5px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .pro-card p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+    }
+
+    /* Comparison Table (Vocabulary) */
+    .table-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      overflow-x: auto;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    th {
+      background: var(--bg-secondary);
+      padding: 14px 18px;
+      font-weight: 800;
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--border-color);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    td {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    td strong {
+      color: var(--text-primary);
+    }
+
+    .text-bad {
+      color: var(--danger);
+      font-weight: 700;
+    }
+
+    .text-good {
+      color: var(--spoter-pink);
+      font-weight: 700;
+    }
+
+    /* ACTÚEN+ Pillars Explorer */
+    .pillars-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .pillar-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition);
+    }
+
+    .pillar-box:hover {
+      border-color: var(--spoter-pink);
+      box-shadow: var(--shadow-md);
+    }
+
+    .pillar-header-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .pillar-char {
+      width: 36px;
+      height: 36px;
+      background: var(--spoter-pink);
+      color: white;
+      font-weight: 800;
+      font-size: 17px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .pillar-name-text {
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .pillar-problem-block {
+      background: var(--bg-secondary);
+      border-left: 3px solid var(--danger);
+      padding: 10px 14px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+    }
+
+    .pillar-solution-block {
+      background: var(--spoter-pink-light);
+      border-left: 3px solid var(--spoter-pink);
+      padding: 10px 14px;
+      border-radius: 4px;
+      font-size: 12.5px;
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    /* SPIN Selling Interactive Component */
+    .spin-tabs-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 28px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .spin-nav {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .spin-btn {
+      flex: 1;
+      min-width: 140px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-main);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .spin-btn:hover {
+      border-color: var(--spoter-pink);
+      color: var(--spoter-pink);
+    }
+
+    .spin-btn.active {
+      background: var(--spoter-pink);
+      color: white;
+      border-color: var(--spoter-pink);
+      box-shadow: var(--shadow-pink);
+    }
+
+    .spin-content-panel {
+      display: none;
+      animation: fadeIn 0.25s ease-out;
+    }
+
+    .spin-content-panel.active {
+      display: block;
+    }
+
+    .spin-question-card {
+      background: var(--bg-secondary);
+      border-left: 4px solid var(--spoter-pink);
+      padding: 16px 20px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .spin-q-text {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .btn-copy-mini {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: var(--transition);
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .btn-copy-mini:hover {
+      border-color: var(--spoter-pink);
+      color: var(--spoter-pink);
+    }
+
+    /* Objections Accordion */
+    .objection-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      margin-bottom: 14px;
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      transition: var(--transition);
+    }
+
+    .objection-header {
+      padding: 18px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      background: var(--bg-card);
+      user-select: none;
+    }
+
+    .objection-header:hover {
+      background: var(--bg-secondary);
+    }
+
+    .objection-title {
+      font-size: 14.5px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .objection-arrow {
+      font-size: 12px;
+      color: var(--text-muted);
+      transition: transform 0.2s ease;
+    }
+
+    .objection-card.open .objection-arrow {
+      transform: rotate(180deg);
+      color: var(--spoter-pink);
+    }
+
+    .objection-body {
+      display: none;
+      padding: 0 22px 20px;
+      font-size: 13.5px;
+      line-height: 1.6;
+      color: var(--text-secondary);
+      border-top: 1px solid var(--border-color);
+      background: var(--bg-secondary);
+      padding-top: 18px;
+    }
+
+    .objection-card.open .objection-body {
+      display: block;
+    }
+
+    .script-box {
+      background: var(--bg-card);
+      border-left: 4px solid var(--spoter-pink);
+      border-radius: var(--radius-sm);
+      padding: 16px 18px;
+      margin-top: 10px;
+      color: var(--text-primary);
+      position: relative;
+    }
+
+    .script-box-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 10px;
+    }
+
+    /* Demo Workflow Steps */
+    .workflow-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .workflow-step {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 20px 24px;
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: 20px;
+      align-items: center;
+      box-shadow: var(--shadow-sm);
+    }
+
+    @media (max-width: 600px) {
+      .workflow-step {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .step-badge-large {
+      width: 64px;
+      height: 64px;
+      background: var(--spoter-pink-light);
+      border: 2px solid var(--spoter-pink);
+      color: var(--spoter-pink);
+      border-radius: var(--radius-md);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 13px;
+      text-transform: uppercase;
+      text-align: center;
+      line-height: 1.1;
+    }
+
+    .step-badge-large span {
+      font-size: 20px;
+    }
+
+    .step-info h4 {
+      font-size: 15.5px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .step-info p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* Toast Notification */
+    .toast-msg {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--text-primary);
+      color: var(--bg-card);
+      padding: 12px 22px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      z-index: 1000;
+      display: none;
+      animation: slideInUp 0.25s ease-out;
+    }
+
+    .toast-msg.show {
+      display: block;
+    }
+
+    @keyframes slideInUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* LTV Interactive Mini-Calc & Triage Cards */
+    .ltv-calc-card {
+      background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-secondary) 100%);
+      border: 1px solid var(--spoter-pink-border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin: 20px 0 28px 0;
+      box-shadow: var(--shadow-sm);
+    }
+    .ltv-grid-inputs {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .ltv-input-group label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+      display: block;
+    }
+    .ltv-input-group input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-family: var(--font-main);
+      font-size: 15px;
+      font-weight: 700;
+      outline: none;
+      transition: var(--transition);
+    }
+    .ltv-input-group input:focus {
+      border-color: var(--spoter-pink);
+      box-shadow: 0 0 0 3px var(--spoter-pink-light);
+    }
+    .ltv-result-banner {
+      background: var(--spoter-pink-light);
+      border: 1px solid var(--spoter-pink);
+      border-radius: var(--radius-md);
+      padding: 18px 24px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .ltv-metric-item {
+      text-align: center;
+    }
+    .ltv-metric-item .val {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--spoter-pink);
+    }
+    .ltv-metric-item .lbl {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+    .triage-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+      margin: 20px 0;
+    }
+    .triage-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 22px;
+      box-shadow: var(--shadow-sm);
+    }
+    .triage-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .triage-badge-ic {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .triage-badge-iu {
+      background: rgba(228, 45, 127, 0.15);
+      color: var(--spoter-pink);
+      border: 1px solid var(--spoter-pink-border);
+    }
+    .triage-list {
+      list-style: none;
+      margin-top: 12px;
+    }
+    .triage-list li {
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      padding: 6px 0;
+      border-bottom: 1px dashed var(--border-color);
+      display: flex;
+      justify-content: space-between;
+    }
+    .triage-list li strong {
+      color: var(--text-primary);
+    }
+
+
+    /* Currency Toggle in Manual */
+    .currency-btn-group {
+      display: inline-flex;
+      background: var(--bg-card);
+      border-radius: 20px;
+      padding: 3px;
+      border: 1px solid var(--border-color);
+    }
+    .btn-curr {
+      background: transparent;
+      border: none;
+      outline: none;
+      padding: 5px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-curr:hover {
+      color: var(--text-primary);
+    }
+    .btn-curr.active {
+      background: var(--spoter-pink);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(228, 45, 127, 0.4);
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <header class="top-nav">
+    <a href="#" class="brand-group">
+      <img src="https://spoter.com.ar/wp-content/uploads/2022/11/Logo-Spoter.png" alt="Spoter" class="spoter-logo">
+      <div class="brand-text">
+        <h1>Spoter <span>| Manual de Ventas</span></h1>
+        <p>Playbook Comercial de Conversión & Retención en WhatsApp</p>
+      </div>
+    </a>
+    <div class="nav-actions">
+      <a href="index.html" class="btn-action-nav btn-analyzer" title="Abrir el Analizador de Chats ACTÚEN+">
+        🚀 Abrir Analizador ACTÚEN+
+      </a>
+      <button class="btn-theme-toggle" id="btnThemeToggle" title="Cambiar tema">🌙</button>
+    </div>
+  </header>
+
+  <!-- Main Layout -->
+  <div class="layout-wrapper">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-title">Índice del Playbook</div>
+      <ul class="sidebar-menu">
+        <li><a href="#sec-filosofia" class="sidebar-link active">🧭 1. Autoridad Silenciosa</a></li>
+        <li><a href="#sec-dolores" class="sidebar-link">💥 2. Dolores de WhatsApp</a></li>
+        <li><a href="#sec-ltv" class="sidebar-link">💰 3. La Matemática del LTV</a></li>
+        <li><a href="#sec-grandslam" class="sidebar-link">🎯 4. Oferta Grand Slam</a></li>
+        <li><a href="#sec-pilares" class="sidebar-link">🔬 5. Argumentario ACTÚEN+</a></li>
+        <li><a href="#sec-triage" class="sidebar-link">🧠 6. Triage Quirúrgico (IU/IC)</a></li>
+        <li><a href="#sec-spin" class="sidebar-link">🎙️ 7. Guion Preguntas SPIN</a></li>
+        <li><a href="#sec-demo" class="sidebar-link">💻 8. Demo con el Analizador</a></li>
+        <li><a href="#sec-objeciones" class="sidebar-link">🛡️ 9. Manejo de Objeciones</a></li>
+        <li><a href="#sec-scripts" class="sidebar-link">🚀 10. Scripts de Contacto</a></li>
+        <li><a href="#sec-checklist" class="sidebar-link">🏁 11. Checklist de Cierre</a></li>
+      </ul>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="content-area">
+
+      <!-- Hero Header -->
+      <section class="manual-hero">
+        <span class="hero-tag">Playbook Estratégico Oficial</span>
+        <h2>Cómo Vender <span>Sucursales Virtuales ACTÚEN+</span> con Certeza Matemática</h2>
+        <p>
+          Este manual provee la metodología, argumentos, guiones SPIN y respuestas a objeciones para posicionar el servicio de auditoría e ingeniería conversacional de Spoter, demostrando el ROI exacto a directores y dueños de empresas.
+        </p>
+      </section>
+
+      <!-- 1. Filosofía y Posicionamiento -->
+      <section class="playbook-section" id="sec-filosofia">
+        <div class="section-header">
+          <div class="section-num">1</div>
+          <h3>Filosofía y Posicionamiento de Marca: "Autoridad Silenciosa"</h3>
+        </div>
+        <p class="section-lead">
+          En Spoter no rogamos atención ni prometemos trucos mágicos. Asesoramos desde el rigor analítico y la evidencia matemática. Nuestra postura es la del <strong>médico cirujano</strong>: mostramos la radiografía de las conversaciones, explicamos la hemorragia de dinero y recetamos el tratamiento exacto.
+        </p>
+
+        <div class="card-grid-2">
+          <div class="pro-card">
+            <span class="card-badge badge-pink">Postura del Asesor Spoter</span>
+            <h4>Directo, Técnico y Empático</h4>
+            <p>
+              Nunca empujamos un software. Diagnosticamos fallas en la interacción y cuantificamos el impacto en facturación. La venta se concreta porque los números del cliente hablan por sí mismos.
+            </p>
+          </div>
+          <div class="pro-card">
+            <span class="card-badge badge-success">Simbiosis de Éxito</span>
+            <h4>Ecosistema Híbrido Inteligente</h4>
+            <p>
+              No reemplazamos al personal humano: lo potenciamos. El bot filtra y absorbe lo repetitivo 24/7; el asesor comercial recibe al cliente con el 80% de la venta avanzada para cerrarla con calidez.
+            </p>
+          </div>
+        </div>
+
+        <h4 style="font-size: 15px; margin-bottom: 12px; font-weight: 700;">Diccionario de Términos: Cómo Hablar de Spoter</h4>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>❌ Término Prohibido (Commodity)</th>
+                <th>✅ Término Spoter (Alto Valor)</th>
+                <th>Por Qué Marcamos Esta Diferencia</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="text-bad">"Te armamos un bot"</td>
+                <td class="text-good">Sucursal Virtual Conversacional</td>
+                <td>Un bot es un árbol rígido que los clientes detestan; una Sucursal Virtual vende y resuelve.</td>
+              </tr>
+              <tr>
+                <td class="text-bad">"Mensajitos automáticos"</td>
+                <td class="text-good">Ingeniería Conversacional / ACTÚEN+</td>
+                <td>Refleja una metodología analítica de negocios, no simples respuestas precargadas.</td>
+              </tr>
+              <tr>
+                <td class="text-bad">"Te pasamos un presupuesto"</td>
+                <td class="text-good">Plan de Optimización de Ingresos y Costos</td>
+                <td>Enmarca el servicio como una inversión con ROI cuantificado, no como un gasto.</td>
+              </tr>
+              <tr>
+                <td class="text-bad">"Auditoría de chats"</td>
+                <td class="text-good">Diagnóstico de Fugas y Capacidad Operativa</td>
+                <td>Pone el foco en el dinero y las ventas que se están perdiendo hoy mismo.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 2. Dolores Ocultos -->
+      <section class="playbook-section" id="sec-dolores">
+        <div class="section-header">
+          <div class="section-num">2</div>
+          <h3>La Verdad Incómoda: La Hemorragia Silenciosa de WhatsApp</h3>
+        </div>
+        <p class="section-lead">
+          El 90% de las empresas invierte fortunas en publicidad (Meta Ads, Google Ads) para llevar prospectos a WhatsApp, pero sufren 4 quiebres operativos que anulan su conversión:
+        </p>
+
+        <div class="card-grid-2">
+          <div class="pro-card">
+            <span class="card-badge badge-danger">Dolor #1 • Fuga de Clientes</span>
+            <h4>La "Zona Fría" (> 15 minutos de espera)</h4>
+            <p>
+              El 78% de los prospectos le compra al primer competidor que le responde de forma clara. Si un asesor demora 20 a 45 minutos, el dinero de los anuncios fue arrojado a la basura.
+            </p>
+          </div>
+          <div class="pro-card">
+            <span class="card-badge badge-warning">Dolor #2 • Fricción Cognitiva</span>
+            <h4>Fragmentación Desordenada (Ráfagas)</h4>
+            <p>
+              El asesor envía 4 a 6 mensajes separados ("Hola", "¿Cómo estás?", "¿De qué zona sos?", etc.). Hace vibrar el teléfono del cliente múltiples veces y triplica el tiempo de atención.
+            </p>
+            <div style="margin-top:10px;padding:8px 12px;background:rgba(236,72,153,0.08);border-left:3px solid var(--spoter-pink);border-radius:4px;font-size:12px;color:var(--text-secondary);">
+              💡 <strong>Atajo Spoter <code>[---saltomensaje---]</code>:</strong> Si una respuesta comercial requiere dos burbujas (ej: cotización + Tipping Point de cierre), el operador envía 1 sola plantilla y Spoter despacha automáticamente las dos burbujas consecutivas en WhatsApp.
+            </div>
+          </div>
+          <div class="pro-card">
+            <span class="card-badge badge-warning">Dolor #3 • Desgaste Operativo</span>
+            <h4>Ping-Pong Especulativo (8 a 16 mensajes)</h4>
+            <p>
+              Se necesitan 10 idas y vueltas para cotizar un producto y averiguar el flete, alargando la decisión durante días en lugar de resolver en 2 turnos con Bloque Único.
+            </p>
+          </div>
+          <div class="pro-card">
+            <span class="card-badge badge-danger">Dolor #4 • Riesgo Sistémico</span>
+            <h4>El Cuello de Botella Humano</h4>
+            <p>
+              Un solo operador estrella concentra el 80% al 90% de toda la carga de la empresa. Trabaja saturado, comete errores y si se enferma o renuncia, la empresa frena sus ventas.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. La Matemática del LTV -->
+      <section class="playbook-section" id="sec-ltv">
+        <div class="section-header">
+          <div class="section-num">3</div>
+          <h3>La Matemática del LTV: El Verdadero Costo de la No-Atención</h3>
+        </div>
+        <p class="section-lead">
+          El error contable más común de los empresarios es pensar: <em>"Bueno, el cliente no esperó y no compró hoy; perdimos una venta de $50 USD"</em>. <strong>Ese cálculo es falso.</strong> En cualquier empresa seria, el valor de un cliente no es su primera transacción: es su <strong>Lifetime Value (LTV)</strong> acumulado a lo largo del tiempo.
+        </p>
+
+        <!-- Calculadora Interactiva de LTV -->
+        <div class="ltv-calc-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+            <div>
+              <h4 style="font-size: 16px; font-weight: 800; color: var(--text-primary); margin: 0;">🧮 Calculadora de Destrucción de Capital LTV</h4>
+              <span style="font-size: 12px; color: var(--text-muted);">Ajustá los números del prospecto en vivo durante la reunión</span>
+            </div>
+            <div class="currency-btn-group" id="manualCurrToggle">
+              <button type="button" class="btn-curr active" id="btnManualUsd">💵 USD</button>
+              <button type="button" class="btn-curr" id="btnManualArs">🇦🇷 ARS</button>
+            </div>
+          </div>
+
+          <div class="ltv-grid-inputs">
+            <div class="ltv-input-group">
+              <label for="manInputTicket" id="lblManTicket">Ticket Promedio ($ USD):</label>
+              <input type="number" id="manInputTicket" value="850" min="10" step="10">
+            </div>
+            <div class="ltv-input-group">
+              <label for="manInputFreq">Compras al Año (Frecuencia):</label>
+              <input type="number" id="manInputFreq" value="4.0" min="0.5" step="0.5">
+            </div>
+            <div class="ltv-input-group">
+              <label for="manInputYears">Años de Retención del Cliente:</label>
+              <input type="number" id="manInputYears" value="2.0" min="0.5" step="0.5">
+            </div>
+            <div class="ltv-input-group">
+              <label for="manInputLeads">Leads Desatendidos / mes (> 15m):</label>
+              <input type="number" id="manInputLeads" value="25" min="1" step="1">
+            </div>
+            <div class="ltv-input-group">
+              <label for="manInputCac" id="lblManCac">CAC Estimado Pauta ($ USD):</label>
+              <input type="number" id="manInputCac" value="120" min="1" step="5">
+            </div>
+          </div>
+
+          <div class="ltv-result-banner">
+            <div class="ltv-metric-item">
+              <div class="val highlight-pink" id="manResLtvUnit">$6,800 USD</div>
+              <div class="lbl">LTV Unitario del Cliente</div>
+            </div>
+            <div class="ltv-metric-item">
+              <div class="val" style="color:#ef4444;" id="manResCapitalDestroyed">$113,500 USD</div>
+              <div class="lbl">Capital LTV Destruido / mes</div>
+            </div>
+            <div class="ltv-metric-item">
+              <div class="val" id="manResCacLost">$3,000 USD</div>
+              <div class="lbl">CAC de Pauta Desperdiciado</div>
+            </div>
+            <div class="ltv-metric-item">
+              <div class="val" style="color:#10b981;" id="manResRecovered">$85,125 USD</div>
+              <div class="lbl">Capital Protegido con Spoter (75%)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de Referencia de LTV por Industria -->
+        <h4 style="font-size: 15px; margin: 24px 0 12px 0; font-weight: 700;">Tabla de Referencia del Impacto en LTV por Industria</h4>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Sector / Rubro</th>
+                <th>Ticket Inicial Promedio</th>
+                <th>Frecuencia Anual</th>
+                <th>Años Retención</th>
+                <th>LTV Unitario Estimado</th>
+                <th>Impacto por Cada 10 Leads Perdidos</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>🧱 Construcción y Corralones</strong></td>
+                <td>$850 USD</td>
+                <td>4.0 compras/año</td>
+                <td>2.0 años</td>
+                <td class="text-good"><strong>$6,800 USD</strong></td>
+                <td class="text-bad"><strong>$44,200 USD</strong> destruidos</td>
+              </tr>
+              <tr>
+                <td><strong>🚗 Concesionarias y Talleres</strong></td>
+                <td>$12,000 USD</td>
+                <td>Compra + Services</td>
+                <td>3.0 años</td>
+                <td class="text-good"><strong>$36,000 USD</strong></td>
+                <td class="text-bad"><strong>$234,000 USD</strong> destruidos</td>
+              </tr>
+              <tr>
+                <td><strong>🏢 Inmobiliarias y Desarrollos</strong></td>
+                <td>$3,500 USD</td>
+                <td>Compra / Alquiler</td>
+                <td>3.5 años</td>
+                <td class="text-good"><strong>$45,000 USD</strong></td>
+                <td class="text-bad"><strong>$292,500 USD</strong> destruidos</td>
+              </tr>
+              <tr>
+                <td><strong>🏥 Salud, Obras Sociales y Prepagas</strong></td>
+                <td>$70 USD / mes</td>
+                <td>12 meses</td>
+                <td>3.5 años</td>
+                <td class="text-good"><strong>$2,940 USD</strong></td>
+                <td class="text-bad"><strong>$19,110 USD</strong> destruidos</td>
+              </tr>
+              <tr>
+                <td><strong>💳 Seguros y Finanzas / Fintech</strong></td>
+                <td>$50 USD / mes</td>
+                <td>12 meses</td>
+                <td>4.0 años</td>
+                <td class="text-good"><strong>$2,400 USD</strong></td>
+                <td class="text-bad"><strong>$15,600 USD</strong> destruidos</td>
+              </tr>
+              <tr>
+                <td><strong>🛍️ Comercio y Retail / E-commerce</strong></td>
+                <td>$50 USD</td>
+                <td>4.5 compras/año</td>
+                <td>2.0 años</td>
+                <td class="text-good"><strong>$450 USD</strong></td>
+                <td class="text-bad"><strong>$2,925 USD</strong> destruidos</td>
+              </tr>
+              <tr>
+                <td><strong>💻 Software, SaaS y Servicios B2B</strong></td>
+                <td>$280 USD / mes</td>
+                <td>12 meses</td>
+                <td>3.0 años</td>
+                <td class="text-good"><strong>$10,080 USD</strong></td>
+                <td class="text-bad"><strong>$65,520 USD</strong> destruidos</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Argumento Clave de Venta -->
+        <div class="pro-card" style="border-left: 5px solid #ef4444; background: var(--bg-card); margin-top: 16px;">
+          <span class="card-badge badge-danger">Argumento de Venta Inapelable para el CFO / Dueño</span>
+          <p style="font-size: 14px; line-height: 1.5; margin: 10px 0 14px 0;">
+            <em>"Cuando tu vendedor tarda 40 minutos en contestar en WhatsApp, no estás dejando sobre la mesa un ticket suelto: estás regalándole a tu competidor un cliente que durante los próximos dos años le va a dejar miles de dólares, mientras vos pagaste la factura publicitaria de Meta para conseguirlo."</em>
+          </p>
+          <button class="btn-copy-mini" data-copy="Cuando tu vendedor tarda 40 minutos en contestar en WhatsApp, no estás dejando sobre la mesa un ticket suelto: estás regalándole a tu competidor un cliente que durante los próximos dos años le va a dejar miles de dólares, mientras vos pagaste la factura publicitaria de Meta para conseguirlo.">
+            📋 Copiar Argumento LTV
+          </button>
+        </div>
+      </section>
+
+      <!-- 4. Oferta Grand Slam -->
+      <section class="playbook-section" id="sec-grandslam">
+        <div class="section-header">
+          <div class="section-num">4</div>
+          <h3>La Oferta Grand Slam: El Lead Magnet Diagnóstico</h3>
+        </div>
+        <p class="section-lead">
+          Para eliminar el riesgo inicial del prospecto, no intentamos vender una implementación desde el primer minuto. Vendemos la <strong>Auditoría Diagnóstica Gratuita en 5 minutos</strong> con el Analizador ACTÚEN+.
+        </p>
+
+        <div class="pro-card" style="border-left: 5px solid var(--spoter-pink); background: var(--bg-card);">
+          <span class="card-badge badge-pink">El Gancho Irresistible</span>
+          <h4 style="font-size: 17px; margin-bottom: 10px;">"Danos el export de WhatsApp de los últimos 30 días y te mostramos tus números en vivo"</h4>
+          <p style="font-size: 14px; margin-bottom: 16px;">
+            <em>"No te pedimos que cambies de software ni que modifiques tu forma de trabajar hoy. Danos una exportación de chats. En 5 minutos, nuestro motor analítico te muestra con gráficos exactos dónde se están enfriando tus clientes, cuántos mensajes basura estás pagando y cuánto dinero te ahorrarías el próximo mes."</em>
+          </p>
+          <button class="btn-copy-mini" data-copy="Danos una exportación de tus chats de WhatsApp de los últimos 30 días. En 5 minutos, nuestro motor analítico ACTÚEN+ te muestra en vivo cuántos leads cayeron en Zona Fría, cuánto tiempo pierde tu equipo en mensajes fragmentados y cuánto dinero exacto podés recuperar al mes.">
+            📋 Copiar Propuesta de Diagnóstico
+          </button>
+        </div>
+      </section>
+
+      <!-- 5. Argumentario ACTÚEN+ -->
+      <section class="playbook-section" id="sec-pilares">
+        <div class="section-header">
+          <div class="section-num">5</div>
+          <h3>Los 7 Pilares ACTÚEN+ como Argumentario Comercial</h3>
+        </div>
+        <p class="section-lead">
+          Cada letra del Método ACTÚEN+ resuelve un dolor específico que el Analizador diagnostica en el Semáforo:
+        </p>
+
+        <div class="pillars-grid">
+          <!-- A -->
+          <div class="pillar-box">
+            <div class="pillar-header-row">
+              <div class="pillar-char">A</div>
+              <div>
+                <div class="pillar-name-text">Atraer y Atender</div>
+                <span style="font-size:11px;color:var(--text-muted);">Filtro sin Menús Infinitos</span>
+              </div>
+            </div>
+            <div class="pillar-problem-block">
+              <strong>El Problema:</strong> Menús laberínticos de 8 opciones donde el 40% de los usuarios abandona.
+            </div>
+            <div class="pillar-solution-block">
+              <strong>Argumento Spoter:</strong> Identificamos quién es el cliente en el primer mensaje y lo derivamos al instante al recurso o asesor adecuado.
+            </div>
+          </div>
+
+          <!-- C -->
+          <div class="pillar-box">
+            <div class="pillar-header-row">
+              <div class="pillar-char">C</div>
+              <div>
+                <div class="pillar-name-text">Cero Vueltas</div>
+                <span style="font-size:11px;color:var(--text-muted);">Regla del Bloque Único</span>
+              </div>
+            </div>
+            <div class="pillar-problem-block">
+              <strong>El Problema:</strong> Ráfagas de 5 mensajes aislados que generan sobrecarga y confusión.
+            </div>
+            <div class="pillar-solution-block">
+              <strong>Argumento Spoter:</strong> Entregamos cotización, requisitos y llamado a la acción en un único mensaje estructurado (o en dos burbujas con el atajo <code>[---saltomensaje---]</code> sin fragmentación manual).
+            </div>
+          </div>
+
+          <!-- T -->
+          <div class="pillar-box">
+            <div class="pillar-header-row">
+              <div class="pillar-char">T</div>
+              <div>
+                <div class="pillar-name-text">Tiempos Aceitados</div>
+                <span style="font-size:11px;color:var(--text-muted);">Blindaje contra la Zona Fría</span>
+              </div>
+            </div>
+            <div class="pillar-problem-block">
+              <strong>El Problema:</strong> Esperas de 25 a 45 minutos. Cada minuto extra reduce la conversión 10%.
+            </div>
+            <div class="pillar-solution-block">
+              <strong>Argumento Spoter:</strong> Inyectamos oxígeno conversacional antes de los 5 minutos para que el cliente nunca se vaya a la competencia.
+            </div>
+          </div>
+
+          <!-- U -->
+          <div class="pillar-box">
+            <div class="pillar-header-row">
+              <div class="pillar-char">U</div>
+              <div>
+                <div class="pillar-name-text">Ubicar la Intención</div>
+                <span style="font-size:11px;color:var(--text-muted);">Macro y Micro-intenciones</span>
+              </div>
+            </div>
+            <div class="pillar-problem-block">
+              <strong>El Problema:</strong> Cotizan el producto pero olvidan averiguar la localidad o entrega, demorando días.
+            </div>
+            <div class="pillar-solution-block">
+              <strong>Argumento Spoter:</strong> Anticipamos la intención completa solicitando el producto y las condiciones de despacho en el mismo turno.
+            </div>
+          </div>
+
+          <!-- E -->
+          <div class="pillar-box">
+            <div class="pillar-header-row">
+              <div class="pillar-char">E</div>
+              <div>
+                <div class="pillar-name-text">Experiencia Personalizada</div>
+                <span style="font-size:11px;color:var(--text-muted);">Protocolo de Rescate</span>
+              </div>
+            </div>
+            <div class="pillar-problem-block">
+              <strong>El Problema:</strong> El prospecto no responde más y nadie hace seguimiento contextual.
+            </div>
+            <div class="pillar-solution-block">
+              <strong>Argumento Spoter:</strong> Protocolo activo de rescate usando nombre y motivo específico de consulta para reenganchar cotizaciones congeladas.
+            </div>
+          </div>
+
+          <!-- N -->
+          <div class="pillar-box">
+            <div class="pillar-header-row">
+              <div class="pillar-char">N</div>
+              <div>
+                <div class="pillar-name-text">Nutrir y Cerrar</div>
+                <span style="font-size:11px;color:var(--text-muted);">Tipping Point Comercial</span>
+              </div>
+            </div>
+            <div class="pillar-problem-block">
+              <strong>El Problema:</strong> Cierres pasivos como *"cualquier duda avisame"* que dejan enfriar la venta.
+            </div>
+            <div class="pillar-solution-block">
+              <strong>Argumento Spoter:</strong> Cierre activo obligatorio con Tipping Point: pregunta de reserva de stock o confirmación de despacho.
+            </div>
+          </div>
+
+          <!-- + -->
+          <div class="pillar-box" style="grid-column: 1 / -1;">
+            <div class="pillar-header-row">
+              <div class="pillar-char">+</div>
+              <div>
+                <div class="pillar-name-text">Optimización Continua</div>
+                <span style="font-size:11px;color:var(--text-muted);">Descongestión de Cuellos de Botella</span>
+              </div>
+            </div>
+            <div class="pillar-problem-block">
+              <strong>El Problema:</strong> Un operador absorbe el 90% de los chats mientras el resto del equipo no tiene visibilidad.
+            </div>
+            <div class="pillar-solution-block">
+              <strong>Argumento Spoter:</strong> Derivación inteligente (Handoff) con atajos maestros para equilibrar la carga humana y potenciar la productividad.
+            </div>
+          </div>
+        </div>
+      </section>
+
+            <!-- 6. Triage Quirúrgico -->
+      <section class="playbook-section" id="sec-triage">
+        <div class="section-header">
+          <div class="section-num">6</div>
+          <h3>Triage Quirúrgico: Algoritmos IU / IC y Copiloto HITL</h3>
+        </div>
+        <p class="section-lead">
+          Uno de los mayores temores de los directivos es: <em>"No quiero que una Inteligencia Artificial alucine o conteste cualquier cosa a mis clientes VIP"</em>. Spoter resuelve esto con una arquitectura matemática revolucionaria: <strong>HITL (Human-in-the-Loop) gobernado por reglas determinísticas</strong>.
+        </p>
+
+        <div class="pro-card" style="background: var(--bg-card); border-left: 5px solid var(--spoter-pink); margin-bottom: 20px;">
+          <h4 style="font-size: 16px; margin-bottom: 8px;">Principio Rector de Spoter</h4>
+          <p style="font-size: 14px; font-weight: 600; color: var(--spoter-pink);">
+            "La IA interpreta el lenguaje. El IC cuantifica la intención. El IU ordena la cola. El Motor Lite decide la estrategia. El operador humano ejecuta asistido."
+          </p>
+        </div>
+
+        <div class="card-grid-2">
+          <!-- Tarjeta IC -->
+          <div class="triage-card">
+            <span class="triage-badge triage-badge-ic">🎯 IC • Índice de Conversión (0 a 100)</span>
+            <h4>¿Qué tan cerca de comprar está el cliente?</h4>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">
+              No es una opinión subjetiva. Se calcula matemáticamente con 5 variables objetivas y calibración semántica MASS:
+            </p>
+            <ul class="triage-list">
+              <li><span><strong>E (Etapa del Embudo):</strong> Cotización, negociación o cierre</span> <span>0 a 25 pts</span></li>
+              <li><span><strong>I (Intención Observable):</strong> Catálogo, cuotas, CBU o stock</span> <span>0 a 30 pts</span></li>
+              <li><span><strong>G (Engagement y Ritmo):</strong> Velocidad de respuesta del cliente</span> <span>0 a 20 pts</span></li>
+              <li><span><strong>H (Habilitantes):</strong> DNI, dirección de obra, modelo</span> <span>0 a 15 pts</span></li>
+              <li><span><strong>R (Reconexión):</strong> Retorno espontáneo tras silencio</span> <span>0 a 10 pts</span></li>
+              <li><span><strong>Calibración Semántica MASS:</strong> Objeción vs señal de compra</span> <span>[-15, +15] pts</span></li>
+            </ul>
+          </div>
+
+          <!-- Tarjeta IU -->
+          <div class="triage-card">
+            <span class="triage-badge triage-badge-iu">⚡ IU • Índice de Urgencia (0 a 100)</span>
+            <h4>¿A quién atiende el operador en este segundo?</h4>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">
+              Destruye el cuello de botella de la atención por orden de llegada (FIFO). Ordena la bandeja en tiempo real:
+            </p>
+            <ul class="triage-list">
+              <li><span><strong>Módulo A (Contexto & Origen):</strong> Pauta Meta/Google o VIP</span> <span>Ponderado</span></li>
+              <li><span><strong>Módulo B (SLA & Espera):</strong> Curva asintótica contra SLA</span> <span>Ponderado</span></li>
+              <li><span><strong>Módulo C (Compromisos Horarios):</strong> Llamadas pactadas</span> <span>Ponderado</span></li>
+              <li><span><strong>Módulo D (Intención IC):</strong> Leads calientes al puesto #1</span> <span>Prioridad Máxima</span></li>
+              <li><span><strong>Regla Anti-Inanición:</strong> Nadie queda postergado eternamente</span> <span>Garantizado</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Spoter Lite y Protección Meta 24h -->
+        <div class="pro-card" style="margin-top: 20px;">
+          <h4 style="font-size: 16px; margin-bottom: 10px;">⚡ Spoter Lite: El Motor Determinístico de Fases y Rescate</h4>
+          <p style="font-size: 13.5px; color: var(--text-secondary); margin-bottom: 14px;">
+            Spoter Lite no genera respuestas descontroladas ni insiste eternamente. Opera bajo 3 fases predecibles:
+          </p>
+          <div class="card-grid-2" style="gap: 14px;">
+            <div style="background: var(--bg-primary); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <strong style="color: #10b981;">1. Fase de Gracia (&lt; 30% sesión):</strong>
+              <p style="font-size: 12.5px; color: var(--text-secondary); margin-top: 4px;">
+                No descarta prospectos al inicio. Si un lead no contesta en el primer turno, se le da espacio sin quemar el contacto.
+              </p>
+            </div>
+            <div style="background: var(--bg-primary); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <strong style="color: #f59e0b;">2. Fase de Trabajo (30% a 60% sesión):</strong>
+              <p style="font-size: 12.5px; color: var(--text-secondary); margin-top: 4px;">
+                Alerta caídas de intención y asiste al operador sugiriendo promociones, fotos de stock o prueba social.
+              </p>
+            </div>
+            <div style="background: var(--bg-primary); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <strong style="color: var(--spoter-pink);">3. Cierre y Ventana de Rescate (60% a 100%):</strong>
+              <p style="font-size: 12.5px; color: var(--text-secondary); margin-top: 4px;">
+                Ejecuta el <strong>Último Rescate</strong> (pregunta resolutiva de un toque para recuperar presupuestos dormidos).
+              </p>
+            </div>
+            <div style="background: var(--bg-primary); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <strong style="color: #60a5fa;">⏱️ Blindaje Ventana 24h Meta API:</strong>
+              <p style="font-size: 12.5px; color: var(--text-secondary); margin-top: 4px;">
+                Alerta preventiva a las 20 horas de inactividad para garantizar el cierre dentro de la ventana gratuita de WhatsApp.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. Preguntas SPIN -->
+      <section class="playbook-section" id="sec-spin">
+        <div class="section-header">
+          <div class="section-num">7</div>
+          <h3>Guion Interactivo de Preguntas SPIN</h3>
+        </div>
+        <p class="section-lead">
+          Hacé clic en cada etapa para ver las preguntas exactas que llevan al cliente a reconocer su dolor y venderse a sí mismo la solución:
+        </p>
+
+        <div class="spin-tabs-container">
+          <div class="spin-nav">
+            <button class="spin-btn active" data-target="spin-sit">1. Situación (S)</button>
+            <button class="spin-btn" data-target="spin-prob">2. Problema (P)</button>
+            <button class="spin-btn" data-target="spin-imp">3. Implicación (I) 💥</button>
+            <button class="spin-btn" data-target="spin-npq">4. Necesidad / ROI (N)</button>
+          </div>
+
+          <!-- Situación -->
+          <div class="spin-content-panel active" id="spin-sit">
+            <div class="spin-question-card">
+              <div class="spin-q-text">"¿Cuántas conversaciones nuevas ingresan aproximadamente por día a su WhatsApp comercial?"</div>
+              <button class="btn-copy-mini" data-copy="¿Cuántas conversaciones nuevas ingresan aproximadamente por día a su WhatsApp comercial?">📋 Copiar</button>
+            </div>
+            <div class="spin-question-card">
+              <div class="spin-q-text">"¿Cuántos operadores o vendedores atienden actualmente la línea de atención?"</div>
+              <button class="btn-copy-mini" data-copy="¿Cuántos operadores o vendedores atienden actualmente la línea de atención?">📋 Copiar</button>
+            </div>
+            <div class="spin-question-card">
+              <div class="spin-q-text">"¿Qué porcentaje de los leads que ingresan provienen de anuncios pagos en Meta o Google Ads?"</div>
+              <button class="btn-copy-mini" data-copy="¿Qué porcentaje de los leads que ingresan provienen de anuncios pagos en Meta o Google Ads?">📋 Copiar</button>
+            </div>
+          </div>
+
+          <!-- Problema -->
+          <div class="spin-content-panel" id="spin-prob">
+            <div class="spin-question-card">
+              <div class="spin-q-text">"¿Suelen notar que muchos prospectos preguntan precio y luego no responden más?"</div>
+              <button class="btn-copy-mini" data-copy="¿Suelen notar que muchos prospectos preguntan precio y luego no responden más?">📋 Copiar</button>
+            </div>
+            <div class="spin-question-card">
+              <div class="spin-q-text">"¿Tienen medido cuánto tiempo pasa desde que el cliente escribe hasta que el asesor le da la cotización final?"</div>
+              <button class="btn-copy-mini" data-copy="¿Tienen medido cuánto tiempo pasa desde que el cliente escribe hasta que el asesor le da la cotización final?">📋 Copiar</button>
+            </div>
+            <div class="spin-question-card">
+              <div class="spin-q-text">"¿Sienten que sus asesores pasan el día escribiendo las mismas respuestas una y otra vez en lugar de cerrar operaciones?"</div>
+              <button class="btn-copy-mini" data-copy="¿Sienten que sus asesores pasan el día escribiendo las mismas respuestas una y otra vez en lugar de cerrar operaciones?">📋 Copiar</button>
+            </div>
+          </div>
+
+          <!-- Implicación -->
+          <div class="spin-content-panel" id="spin-imp">
+            <div class="spin-question-card" style="border-left-color: var(--danger);">
+              <div class="spin-q-text">"Si un lead les costó $3 USD en pauta y espera 35 minutos sin respuesta... ¿a dónde creen que va a comprar si necesita el producto con urgencia?"</div>
+              <button class="btn-copy-mini" data-copy="Si un lead les costó $3 USD en pauta y espera 35 minutos sin respuesta... ¿a dónde creen que va a comprar si necesita el producto con urgencia?">📋 Copiar</button>
+            </div>
+            <div class="spin-question-card" style="border-left-color: var(--danger);">
+              <div class="spin-q-text">"Cuando tu asesora estrella tiene 40 chats acumulados en la bandeja, ¿cuántos presupuestos quedan sin seguimiento esa misma semana?"</div>
+              <button class="btn-copy-mini" data-copy="Cuando tu asesora estrella tiene 40 chats acumulados en la bandeja, ¿cuántos presupuestos quedan sin seguimiento esa misma semana?">📋 Copiar</button>
+            </div>
+            <div class="spin-question-card" style="border-left-color: var(--danger);">
+              <div class="spin-q-text">"A fin de mes, ¿cuántas ventas estiman que se pierden simplemente por no haber respondido en los primeros 5 minutos?"</div>
+              <button class="btn-copy-mini" data-copy="A fin de mes, ¿cuántas ventas estiman que se pierden simplemente por no haber respondido en los primeros 5 minutos?">📋 Copiar</button>
+            </div>
+          </div>
+
+          <!-- Necesidad -->
+          <div class="spin-content-panel" id="spin-npq">
+            <div class="spin-question-card" style="border-left-color: var(--success);">
+              <div class="spin-q-text">"Si lográramos que el 100% de los leads reciban su cotización completa y detallada en menos de 90 segundos, ¿cómo impactaría eso en su facturación?"</div>
+              <button class="btn-copy-mini" data-copy="Si lográramos que el 100% de los leads reciban su cotización completa y detallada en menos de 90 segundos, ¿cómo impactaría eso en su facturación?">📋 Copiar</button>
+            </div>
+            <div class="spin-question-card" style="border-left-color: var(--success);">
+              <div class="spin-q-text">"Si automatizamos el 40% de las consultas repetitivas para que su equipo solo atienda clientes listos para pagar, ¿cuánto tiempo y costo operativo se ahorrarían?"</div>
+              <button class="btn-copy-mini" data-copy="Si automatizamos el 40% de las consultas repetitivas para que su equipo solo atienda clientes listos para pagar, ¿cuánto tiempo y costo operativo se ahorrarían?">📋 Copiar</button>
+            </div>
+            <div class="spin-question-card" style="border-left-color: var(--success);">
+              <div class="spin-q-text">"¿Tendría sentido correr una muestra de sus chats en nuestro Analizador ACTÚEN+ para ver en números reales cuánto dinero están dejando sobre la mesa?"</div>
+              <button class="btn-copy-mini" data-copy="¿Tendría sentido correr una muestra de sus chats en nuestro Analizador ACTÚEN+ para ver en números reales cuánto dinero están dejando sobre la mesa?">📋 Copiar</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. Demo con Analizador -->
+      <section class="playbook-section" id="sec-demo">
+        <div class="section-header">
+          <div class="section-num">8</div>
+          <h3>Paso a Paso: Cómo Conducir una Demo Demoledora</h3>
+        </div>
+        <p class="section-lead">
+          Estructura de 4 pasos para ejecutar en vivo frente al cliente (vía Zoom o presencial) utilizando el Analizador ACTÚEN+:
+        </p>
+
+        <div class="workflow-timeline">
+          <div class="workflow-step">
+            <div class="step-badge-large">Paso <span>1</span></div>
+            <div class="step-info">
+              <h4>Carga Transparente de Datos (Minuto 0 a 2)</h4>
+              <p>
+                Abrí el Analizador (`localhost:8080`). Destacá que el motor analiza archivos CSV exportados sin pedir claves ni contraseñas. Cargá el archivo del cliente (o el Lote de Prueba si es prospección inicial).
+              </p>
+            </div>
+          </div>
+
+          <div class="workflow-step">
+            <div class="step-badge-large">Paso <span>2</span></div>
+            <div class="step-info">
+              <h4>Calibración en el Wizard (Minuto 2 a 4)</h4>
+              <p>
+                Mostrale cómo el sistema reconoce automáticamente su <strong>Rubro</strong>, calcula su <strong>% de Afinidad Comercial</strong> (Ventas vs Soporte) y calibra los SLAs de respuesta específicos de su industria.
+              </p>
+            </div>
+          </div>
+
+          <div class="workflow-step">
+            <div class="step-badge-large">Paso <span>3</span></div>
+            <div class="step-info">
+              <h4>El Diagnóstico del Semáforo y Picos Horarios (Minuto 4 a 10)</h4>
+              <p>
+                Mostrá los <strong>Picos 1, 2 y 3</strong> de saturación. Hacé clic en la tarjeta roja de <strong>Espera Media / Zona Fría</strong> y desplegá la <strong>Solución Probable Spoter</strong> en la tarjeta de Cero Vueltas para mostrar la plantilla sugerida.
+              </p>
+            </div>
+          </div>
+
+          <div class="workflow-step">
+            <div class="step-badge-large">Paso <span>4</span></div>
+            <div class="step-info">
+              <h4>Brechas de Automatización: ¿Por qué intervienen los Asesores? (Minuto 8 a 11)</h4>
+              <p>
+                Andá a la pestaña 4. Mostrale el módulo <strong>«Brechas de Automatización»</strong>: <em>«Mirá tu pantalla: más del 90% de las veces que tus operadores atendieron a mano, fue por 3 preguntas estándar (precios básicos, fletes y facturación). Están quemando cientos de horas al mes en tipeo manual que una Base de Conocimiento Inteligente de Spoter resuelve en mensaje cero.»</em>
+              </p>
+            </div>
+          </div>
+
+          <!-- Paso 6: Simulador de Ahorro y Cierre -->
+          <div class="demo-step">
+            <div class="step-num">6</div>
+            <div class="step-info">
+              <h4>Simulador de Ahorro y Cierre con Descarga de Informe (Minuto 11 a 15)</h4>
+              <p>
+                Andá a la pestaña 5. Mové el slider al 35% de optimización para mostrar el ahorro mensual en miles de mensajes y dólares. Hacé clic en <strong>Descargar Informe (.md)</strong> en el menú desplegable y entregáselo en el acto.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. Manejo de Objeciones -->
+      <section class="playbook-section" id="sec-objeciones">
+        <div class="section-header">
+          <div class="section-num">9</div>
+          <h3>Manejo de Objeciones de Élite (Flashcards con Scripts)</h3>
+        </div>
+        <p class="section-lead">
+          Hacé clic en cualquier objeción para desplegar la argumentación estratégica y copiar el script exacto de respuesta:
+        </p>
+
+        <!-- Objeción 1 -->
+        <div class="objection-card">
+          <div class="objection-header">
+            <div class="objection-title">
+              <span>🤖</span>
+              <span>"Ya tenemos un bot / usamos ManyChat / Kommo / autorespondedor."</span>
+            </div>
+            <span class="objection-arrow">▼</span>
+          </div>
+          <div class="objection-body">
+            <p>
+              <strong>Fundamento Estratégico:</strong> Reconocer que la empresa ya valora la tecnología, pero contrastar los árboles rígidos de botones con una verdadera Sucursal Virtual.
+            </p>
+            <div class="script-box">
+              "Excelente que ya confíen en la automatización. La diferencia es que los bots tradicionales son árboles rígidos de opciones que la gente abandona porque no entienden lenguaje natural ni contexto. Spoter no es un bot de botones: es una Sucursal Virtual basada en el Método ACTÚEN+ que cotiza en un solo bloque y transfiere al humano sin fricción. Justamente las empresas que más nos contratan son aquellas que ya tenían un bot y notaron que los leads se les escapaban."
+              <div class="script-box-actions">
+                <button class="btn-copy-mini" data-copy="Excelente que ya confíen en la automatización. La diferencia es que los bots tradicionales son árboles rígidos de opciones que la gente abandona porque no entienden lenguaje natural ni contexto. Spoter no es un bot de botones: es una Sucursal Virtual basada en el Método ACTÚEN+ que cotiza en un solo bloque y transfiere al humano sin fricción. Justamente las empresas que más nos contratan son aquellas que ya tenían un bot y notaron que los leads se les escapaban.">📋 Copiar Script</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Objeción 2 -->
+        <div class="objection-card">
+          <div class="objection-header">
+            <div class="objection-title">
+              <span>👤</span>
+              <span>"Nuestros clientes son especiales, prefieren atención 100% humana."</span>
+            </div>
+            <span class="objection-arrow">▼</span>
+          </div>
+          <div class="objection-body">
+            <p>
+              <strong>Fundamento Estratégico:</strong> Validar la calidez humana pero evidenciar que tardar 30 minutos en responder destruye la experiencia.
+            </p>
+            <div class="script-box">
+              "Coincidimos totalmente: la calidez humana cierra las ventas complejas. El problema es que hoy tus asesores humanos tardan 30 minutos en responder un 'Hola' o pasar una lista de precios, y para cuando atienden, el cliente ya le compró a la competencia. Spoter no reemplaza a tu vendedor: actúa como su copiloto de élite. Filtra el lead, le entrega la información inicial en 30 segundos y le deja al asesor humano la mesa servida para que solo tenga que entrar y cerrar la venta con calidez."
+              <div class="script-box-actions">
+                <button class="btn-copy-mini" data-copy="Coincidimos totalmente: la calidez humana cierra las ventas complejas. El problema es que hoy tus asesores humanos tardan 30 minutos en responder un 'Hola' o pasar una lista de precios, y para cuando atienden, el cliente ya le compró a la competencia. Spoter no reemplaza a tu vendedor: actúa como su copiloto de élite. Filtra el lead, le entrega la información inicial en 30 segundos y le deja al asesor humano la mesa servida para que solo tenga que entrar y cerrar la venta con calidez.">📋 Copiar Script</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Objeción 3 -->
+        <div class="objection-card">
+          <div class="objection-header">
+            <div class="objection-title">
+              <span>🔒</span>
+              <span>"¿Es seguro pasarles el archivo CSV de WhatsApp? ¿Y la privacidad?"</span>
+            </div>
+            <span class="objection-arrow">▼</span>
+          </div>
+          <div class="objection-body">
+            <p>
+              <strong>Fundamento Estratégico:</strong> Transmitir absoluta seriedad técnica, procesamiento local de datos y disposición a firmar acuerdos de confidencialidad.
+            </p>
+            <div class="script-box">
+              "La seguridad es absoluta. El Analizador ACTÚEN+ opera de forma privada. Los datos se procesan con algoritmos analíticos estadísticos que evalúan patrones de velocidad, longitud y volumen de mensajes, sin almacenar datos sensibles ni transferir bases de datos a terceros. Si lo prefieren, firmamos un acuerdo de confidencialidad (NDA) antes de correr la muestra."
+              <div class="script-box-actions">
+                <button class="btn-copy-mini" data-copy="La seguridad es absoluta. El Analizador ACTÚEN+ opera de forma privada. Los datos se procesan con algoritmos analíticos estadísticos que evalúan patrones de velocidad, longitud y volumen de mensajes, sin almacenar datos sensibles ni transferir bases de datos a terceros. Si lo prefieren, firmamos un acuerdo de confidencialidad (NDA) antes de correr la muestra.">📋 Copiar Script</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Objeción 4 -->
+        <div class="objection-card">
+          <div class="objection-header">
+            <div class="objection-title">
+              <span>⏳</span>
+              <span>"No tenemos tiempo ahora para implementar cambios o capacitar al personal."</span>
+            </div>
+            <span class="objection-arrow">▼</span>
+          </div>
+          <div class="objection-body">
+            <p>
+              <strong>Fundamento Estratégico:</strong> Reencuadrar la falta de tiempo como la razón principal para contratar el servicio de inmediato.
+            </p>
+            <div class="script-box">
+              "Justamente implementamos Spoter porque a tu equipo hoy no le alcanza el tiempo. El Método ACTÚEN+ no requiere meses de capacitación: nosotros diseñamos la arquitectura, configuramos las plantillas maestras y dejamos el canal funcionando. Tu equipo empezará a notar desde la primera semana que la bandeja de entrada se descongestiona un 40%."
+              <div class="script-box-actions">
+                <button class="btn-copy-mini" data-copy="Justamente implementamos Spoter porque a tu equipo hoy no le alcanza el tiempo. El Método ACTÚEN+ no requiere meses de capacitación: nosotros diseñamos la arquitectura, configuramos las plantillas maestras y dejamos el canal funcionando. Tu equipo empezará a notar desde la primera semana que la bandeja de entrada se descongestiona un 40%.">📋 Copiar Script</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Objeción 5 -->
+        <div class="objection-card">
+          <div class="objection-header">
+            <div class="objection-title">
+              <span>💵</span>
+              <span>"¿Cuánto cuesta y en cuánto tiempo veo el retorno de la inversión?"</span>
+            </div>
+            <span class="objection-arrow">▼</span>
+          </div>
+          <div class="objection-body">
+            <p>
+              <strong>Fundamento Estratégico:</strong> Mostrar que recuperar apenas 3 o 4 clientes pagará el 100% de la inversión en el primer mes.
+            </p>
+            <div class="script-box">
+              "El retorno se proyecta en el mismo informe que acabamos de generar: si hoy estás perdiendo clientes por demoras en Zona Fría y gastando horas en mensajes fragmentados, recuperar apenas 3 o 4 ventas que antes se fugaban paga el 100% del servicio en los primeros 30 días. Spoter no es un costo operativo; es un multiplicador de ingresos garantizado por métricas."
+              <div class="script-box-actions">
+                <button class="btn-copy-mini" data-copy="El retorno se proyecta en el mismo informe que acabamos de generar: si hoy estás perdiendo clientes por demoras en Zona Fría y gastando horas en mensajes fragmentados, recuperar apenas 3 o 4 ventas que antes se fugaban paga el 100% del servicio en los primeros 30 días. Spoter no es un costo operativo; es un multiplicador de ingresos garantizado por métricas.">📋 Copiar Script</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Objeción 6: Ya probamos un bot y los clientes piden humano -->
+        <div class="objection-card">
+          <div class="objection-header">
+            <div class="objection-title">
+              <span>⚠️</span>
+              <span>"Ya pusimos un bot o menú en WhatsApp hace un tiempo y no nos sirvió: los clientes se frustran y piden hablar con un humano o abandonan."</span>
+            </div>
+            <span class="objection-arrow">▼</span>
+          </div>
+          <div class="objection-body">
+            <p>
+              <strong>Fundamento Estratégico:</strong> Los bots tradicionales basados en árboles de decisión rígidos (ej. Presione 1, 2 o 3) son ciegos semánticamente. Cuando el cliente escribe en lenguaje natural, el bot no entiende, genera fricción y le tira el problema al operador humano.
+            </p>
+            <div class="script-box">
+              "Totalmente comprensible, y de hecho es exactamente lo que vemos en el 90% de las empresas que auditamos: los bots viejos fracasan porque son menús telefónicos trasladados a WhatsApp. Si el cliente escribe '¿cuánto me sale el envío a Pilar con descarga?', el bot no sabe qué hacer y le tira el problema a tu vendedor. En tu auditoría detectamos que más del 90% de los clientes que pidieron hablar con un asesor o que sacaron a tu equipo a la cancha, preguntaron exactamente las mismas 3 cosas estándar (precios de catálogo, fletes y facturación). Spoter no es un árbol rígido: es un motor con Inteligencia Artificial y Base de Conocimiento RAG que entiende el lenguaje del cliente, responde la duda en 1 solo bloque estructurado con viñetas, y solo deriva al operador cuando hay una negociación o compra real, entregándole la ficha con el plan de acción listo."
+              <div class="script-box-actions">
+                <button class="btn-copy-mini" data-copy="Totalmente comprensible, y de hecho es exactamente lo que vemos en el 90% de las empresas que auditamos: los bots viejos fracasan porque son menús telefónicos trasladados a WhatsApp. Si el cliente escribe '¿cuánto me sale el envío a Pilar con descarga?', el bot no sabe qué hacer y le tira el problema a tu vendedor. En tu auditoría detectamos que más del 90% de los clientes que pidieron hablar con un asesor o que sacaron a tu equipo a la cancha, preguntaron exactamente las mismas 3 cosas estándar (precios de catálogo, fletes y facturación). Spoter no es un árbol rígido: es un motor con Inteligencia Artificial y Base de Conocimiento RAG que entiende el lenguaje del cliente, responde la duda en 1 solo bloque estructurado con viñetas, y solo deriva al operador cuando hay una negociación o compra real, entregándole la ficha con el plan de acción listo.">📋 Copiar Script</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8. Scripts de Contacto -->
+      <section class="playbook-section" id="sec-scripts">
+        <div class="section-header">
+          <div class="section-num">10</div>
+          <h3>Scripts Listos para Enviar (WhatsApp & LinkedIn)</h3>
+        </div>
+        <p class="section-lead">
+          Mensajes directos con estructura probada para prospección en frío y seguimiento post-diagnóstico:
+        </p>
+
+        <div class="card-grid-2">
+          <!-- Script Prospección -->
+          <div class="pro-card">
+            <span class="card-badge badge-pink">Script A • Prospección en Frío</span>
+            <h4>Mensaje Inicial a Directores o Dueños</h4>
+            <div class="script-box" style="font-size:12.5px;">
+              "Hola *[Nombre]*, ¿cómo estás? Te escribo porque estuve analizando la presencia digital de *[Empresa]* y veo que invierten fuerte en captar clientes.<br><br>
+              En Spoter auditamos canales comerciales de WhatsApp para empresas de *[Rubro]*. Notamos que en el sector, el 70% de las ventas que se caen no son por precio ni producto, sino por demoras de más de 10 minutos y exceso de mensajes para cotizar.<br><br>
+              Desarrollamos una auditoría con el Método ACTÚEN+ que analiza una muestra de chats y detecta en 5 minutos las fugas exactas de tu canal y cuánto dinero te ahorraría corregirlas.<br><br>
+              ¿Te interesaría que te corra un diagnóstico sin cargo de 15 minutos esta semana para ver los números de tu operación? Avisame y coordinamos un Zoom express. ¡Saludos!"
+              <div class="script-box-actions">
+                <button class="btn-copy-mini" data-copy="Hola [Nombre], ¿cómo estás? Te escribo porque estuve analizando la presencia digital de [Empresa] y veo que invierten fuerte en captar clientes. En Spoter auditamos canales comerciales de WhatsApp para empresas de [Rubro]. Notamos que en el sector, el 70% de las ventas que se caen no son por precio ni producto, sino por demoras de más de 10 minutos y exceso de mensajes para cotizar. Desarrollamos una auditoría con el Método ACTÚEN+ que analiza una muestra de chats y detecta en 5 minutos las fugas exactas de tu canal y cuánto dinero te ahorraría corregirlas. ¿Te interesaría que te corra un diagnóstico sin cargo de 15 minutos esta semana para ver los números de tu operación? Avisame y coordinamos un Zoom express. ¡Saludos!">📋 Copiar Mensaje</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Script Seguimiento -->
+          <div class="pro-card">
+            <span class="card-badge badge-success">Script B • Post-Auditoría</span>
+            <h4>Mensaje de Entrega del Informe Ejecutivo</h4>
+            <div class="script-box" style="font-size:12.5px;">
+              "¡Hola *[Nombre]*! Te adjunto el informe ejecutivo de la auditoría que corrimos con el Analizador ACTÚEN+ sobre los chats de *[Empresa]*.<br><br>
+              🔴 *Puntos críticos detectados:*<br>
+              • Un *[X]%* de los leads cayeron en Zona Fría (demoras > SLA del sector).<br>
+              • Tasa de fragmentación del *[Y]%* (mensajes cortados que saturan la línea).<br>
+              • Beneficio económico proyectado: *$[Monto] ARS/mes* en optimización.<br><br>
+              ¿Tenés 10 minutos mañana a las *11:00 hs* para revisar juntos la estrategia de solución para tu Sucursal Virtual?<br>
+              👉 Confirmame y te paso el link de Meet."
+              <div class="script-box-actions">
+                <button class="btn-copy-mini" data-copy="¡Hola [Nombre]! Te adjunto el informe ejecutivo de la auditoría que corrimos con el Analizador ACTÚEN+ sobre los chats de [Empresa]. Puntos críticos detectados: Un [X]% de los leads cayeron en Zona Fría. Tasa de fragmentación del [Y]%. Beneficio económico proyectado: $[Monto] ARS/mes. ¿Tenés 10 minutos mañana para revisar juntos la estrategia de solución para tu Sucursal Virtual? Confirmame y te paso el link.">📋 Copiar Mensaje</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 9. Checklist de Cierre -->
+      <section class="playbook-section" id="sec-checklist">
+        <div class="section-header">
+          <div class="section-num">11</div>
+          <h3>Checklist de Cierre del Vendedor Spoter</h3>
+        </div>
+        <p class="section-lead">
+          Rutina de verificación obligatoria antes de iniciar cada reunión de presentación o auditoría:
+        </p>
+
+        <div class="pro-card">
+          <ul style="list-style: none; display: flex; flex-direction: column; gap: 12px; font-size: 13.5px;">
+            <li>✅ <strong>Analizador ACTÚEN+ en línea:</strong> Tener abierto `http://localhost:8080` listo para cargar el dataset.</li>
+            <li>✅ <strong>Benchmarks del Sector estudiados:</strong> Conocer el SLA saludable del rubro (ej. Salud &lt; 5m, Corralón &lt; 6m, SaaS &lt; 3m).</li>
+            <li>✅ <strong>Postura de Autoridad Silenciosa:</strong> Dejar hablar al cliente el 70% del tiempo mediante preguntas SPIN.</li>
+            <li>✅ <strong>Cero tecnicismos vacíos:</strong> No mencionar "te armamos un bot"; posicionar siempre la **Sucursal Virtual Conversacional**.</li>
+            <li>✅ <strong>Compromiso de acción:</strong> Nunca terminar una llamada sin un avance concreto (fecha de implementación o entrega de chats para auditoría formal).</li>
+          </ul>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast-msg" id="toastMsg">✅ Texto copiado al portapapeles</div>
+
+  <script>
+    // Theme Toggle
+    const btnTheme = document.getElementById('btnThemeToggle');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const savedTheme = localStorage.getItem('spoter_manual_theme') || (prefersDark ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    btnTheme.textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+
+    btnTheme.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('spoter_manual_theme', next);
+      btnTheme.textContent = next === 'dark' ? '🌙' : '☀️';
+    });
+
+    // SPIN Tabs
+    const spinBtns = document.querySelectorAll('.spin-btn');
+    spinBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        spinBtns.forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.spin-content-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        const target = document.getElementById(btn.getAttribute('data-target'));
+        if (target) target.classList.add('active');
+      });
+    });
+
+    // Objections Accordion
+    const objectionHeaders = document.querySelectorAll('.objection-header');
+    objectionHeaders.forEach(header => {
+      header.addEventListener('click', () => {
+        const card = header.parentElement;
+        card.classList.toggle('open');
+      });
+    });
+
+    // Copy Buttons with Toast
+    const toast = document.getElementById('toastMsg');
+    const copyBtns = document.querySelectorAll('.btn-copy-mini');
+    copyBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const text = btn.getAttribute('data-copy');
+        if (text) {
+          navigator.clipboard.writeText(text).then(() => {
+            toast.textContent = "📋 Copiado al portapapeles";
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
+          });
+        }
+      });
+    });
+
+    // Sidebar active link spy on scroll
+    const sections = document.querySelectorAll('.playbook-section');
+    const navLinks = document.querySelectorAll('.sidebar-link');
+
+    window.addEventListener('scroll', () => {
+      let current = '';
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop - 100;
+        if (pageYOffset >= sectionTop) {
+          current = section.getAttribute('id');
+        }
+      });
+
+      navLinks.forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === `#${current}`) {
+          link.classList.add('active');
+        }
+      });
+    });
+
+    // LTV Calculator Interactive Logic
+    let manualCurrency = 'USD';
+    const FX_RATE_MANUAL = 1250;
+
+    const inTicket = document.getElementById('manInputTicket');
+    const inFreq = document.getElementById('manInputFreq');
+    const inYears = document.getElementById('manInputYears');
+    const inLeads = document.getElementById('manInputLeads');
+    const inCac = document.getElementById('manInputCac');
+
+    const lblManTicket = document.getElementById('lblManTicket');
+    const lblManCac = document.getElementById('lblManCac');
+
+    const outLtvUnit = document.getElementById('manResLtvUnit');
+    const outCapitalDestroyed = document.getElementById('manResCapitalDestroyed');
+    const outCacLost = document.getElementById('manResCacLost');
+    const outRecovered = document.getElementById('manResRecovered');
+
+    const btnManUsd = document.getElementById('btnManualUsd');
+    const btnManArs = document.getElementById('btnManualArs');
+
+    function formatManualMoney(amount) {
+      if (manualCurrency === 'ARS') {
+        return '$' + Math.round(amount).toLocaleString('es-AR') + ' ARS';
+      }
+      return '$' + Math.round(amount).toLocaleString('en-US') + ' USD';
+    }
+
+    function calculateManualLtv() {
+      if (!inTicket || !inFreq || !inYears || !inLeads || !inCac) return;
+      const ticket = parseFloat(inTicket.value) || 0;
+      const freq = parseFloat(inFreq.value) || 0;
+      const years = parseFloat(inYears.value) || 0;
+      const leads = parseFloat(inLeads.value) || 0;
+      const cac = parseFloat(inCac.value) || 0;
+
+      const ltvUnit = ticket * freq * years;
+      const lostImmediate = leads * ticket * 0.65;
+      const lostLtvTotal = leads * ltvUnit * 0.65;
+      const lostCacTotal = leads * cac;
+      const totalDestroyed = lostLtvTotal + lostCacTotal;
+      const potentialRecovered = totalDestroyed * 0.75;
+
+      outLtvUnit.textContent = formatManualMoney(ltvUnit);
+      outCapitalDestroyed.textContent = formatManualMoney(totalDestroyed);
+      outCacLost.textContent = formatManualMoney(lostCacTotal);
+      outRecovered.textContent = formatManualMoney(potentialRecovered);
+    }
+
+    if (inTicket) {
+      [inTicket, inFreq, inYears, inLeads, inCac].forEach(inp => {
+        inp.addEventListener('input', calculateManualLtv);
+      });
+    }
+
+    if (btnManUsd && btnManArs) {
+      btnManUsd.onclick = () => {
+        if (manualCurrency === 'USD') return;
+        manualCurrency = 'USD';
+        btnManUsd.classList.add('active');
+        btnManArs.classList.remove('active');
+        lblManTicket.textContent = 'Ticket Promedio ($ USD):';
+        lblManCac.textContent = 'CAC Estimado Pauta ($ USD):';
+        inTicket.value = Math.round((parseFloat(inTicket.value) || 1062500) / FX_RATE_MANUAL);
+        inCac.value = Math.round((parseFloat(inCac.value) || 150000) / FX_RATE_MANUAL);
+        calculateManualLtv();
+      };
+
+      btnManArs.onclick = () => {
+        if (manualCurrency === 'ARS') return;
+        manualCurrency = 'ARS';
+        btnManArs.classList.add('active');
+        btnManUsd.classList.remove('active');
+        lblManTicket.textContent = 'Ticket Promedio ($ ARS):';
+        lblManCac.textContent = 'CAC Estimado Pauta ($ ARS):';
+        inTicket.value = Math.round((parseFloat(inTicket.value) || 850) * FX_RATE_MANUAL);
+        inCac.value = Math.round((parseFloat(inCac.value) || 120) * FX_RATE_MANUAL);
+        calculateManualLtv();
+      };
+    }
+
+  </script>
+</body>
+</html>

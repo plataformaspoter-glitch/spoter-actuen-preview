@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spoter | Analizador ACTÚEN+ - Auditoría Conversacional en WhatsApp</title>
+  
+  <!-- Tipografía Oficial Montserrat -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js para visualizaciones interactivas -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- PapaParse para procesamiento autónomo -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  
+  <script>
+    // Limpieza de Service Workers y cachés residuales de otros proyectos en localhost:8080
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        for (const reg of registrations) reg.unregister();
+      });
+    }
+    if ('caches' in window) {
+      caches.keys().then(names => {
+        for (const name of names) caches.delete(name);
+      });
+    }
+  </script>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+  <div class="container">
+    
+    <!-- Encabezado Principal Spoter (Limpio al Iniciar) -->
+    <header class="app-header">
+      <div class="brand-group">
+        <img src="https://spoter.com.ar/wp-content/uploads/2022/11/Logo-Spoter.png" alt="Spoter" class="spoter-logo">
+        <div class="brand-titles">
+          <h1>Spoter <span>| Analizador ACTÚEN+</span></h1>
+          <p id="subTitleHeader">Auditoría Conversacional, Diagnóstico de Fugas y Optimización de Costos en WhatsApp</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="manual_ventas.html" target="_blank" class="btn-manual-link" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--spoter-pink); color: var(--spoter-pink); font-size: 12px; font-weight: 700; background: var(--spoter-pink-light); transition: all 0.2s ease;">
+          📖 Manual de Ventas
+        </a>
+        <div class="status-indicator" id="apiStatusBadge">
+          <span class="status-dot"></span> Verificando conexión...
+        </div>
+        <button class="btn-icon" id="btnTheme" title="Alternar tema claro/oscuro">🌙</button>
+      </div>
+    </header>
+
+    <!-- Panel Inicial de Carga / Ingestión (Se oculta tras procesar) -->
+    <section class="upload-container" id="dropzonePanel">
+      <!-- Cuadro inicial de Drag & Drop -->
+      <div class="dropzone-box" id="dropzoneBox">
+        <div class="upload-icon">⚡</div>
+        <h3>Auditoría y Optimización de Conversaciones de WhatsApp</h3>
+        <p class="dropzone-desc">
+          Arrastrá y soltá acá los archivos de exportación de WhatsApp en formato CSV para diagnosticar la interacción bajo el <strong>Método ACTÚEN+ de Spoter</strong>, detectar cuellos de botella y proyectar el ahorro económico.
+        </p>
+        
+        <!-- Indicador de Cantidad Máxima de Archivos -->
+        <div class="upload-max-badge">
+          <span class="max-badge-icon">📁</span>
+          <span>Capacidad máxima de procesamiento: <strong>Hasta 10 archivos CSV simultáneos</strong></span>
+        </div>
+      </div>
+      
+      <!-- Botones por FUERA del cuadro inicial -->
+      <div class="upload-btn-group-outside">
+        <button class="btn btn-primary btn-select-files" id="btnUpload">
+          📤 Seleccionar Archivos CSV
+        </button>
+        <button class="btn btn-secondary btn-test-batch" id="btnLoadDefault">
+          ⚡ Cargar Lote de Prueba
+        </button>
+        <input type="file" id="fileInput" multiple accept=".csv" style="display: none;">
+      </div>
+    </section>
+
+    <!-- Wizard Intermedio de Calibración Spoter (Se activa tras procesar y antes de mostrar resultados) -->
+    <section class="wizard-panel" id="wizardSection" style="display: none;">
+      <div class="wizard-header">
+        <div class="wizard-step-tag">Paso 1 de 2 • Configuración Previa al Diagnóstico</div>
+        <h2>⚙️ Calibración de Parámetros del Análisis ACTÚEN+</h2>
+        <p>
+          El sistema auditó las conversaciones y detectó los siguientes parámetros operativos. Podés confirmarlos o modificarlos antes de ingresar al informe completo:
+        </p>
+      </div>
+
+      <div class="wizard-steps-grid">
+        <!-- Paso 1: Rubro -->
+        <div class="wizard-step-card">
+          <div class="step-badge">1</div>
+          <div class="step-content">
+            <h4>🏢 Rubro de la Empresa</h4>
+            <p class="step-hint" id="wizRubroDetectedHint">Detectado automáticamente por vocabulario de clientes</p>
+            <select class="wizard-select" id="wizSelectRubro">
+              <option value="salud_obra_social">🏥 Salud, Obras Sociales & Prepagas</option>
+              <option value="construccion_corralon">🧱 Construcción, Corralones & Materiales</option>
+              <option value="automotor_concesionaria">🚗 Concesionarias, Talleres & Repuestos</option>
+              <option value="inmobiliaria_desarrollos">🏢 Inmobiliarias & Desarrollos</option>
+              <option value="seguros_fintech">💳 Seguros, Préstamos & Finanzas</option>
+              <option value="educacion_institutos">🎓 Educación, Cursos & Universidades</option>
+              <option value="comercio_retail">🛍️ Comercio, Retail & E-commerce</option>
+              <option value="turismo_hoteleria">✈️ Turismo, Hoteles & Agencias</option>
+              <option value="gastronomia_delivery">🍕 Gastronomía, Delivery & Bares</option>
+              <option value="saas_b2b_tecnologia">💻 Software, SaaS & B2B</option>
+              <option value="servicios_generales">⚙️ Servicios Profesionales & Generales</option>
+            </select>
+            <div class="step-detail" id="wizRubroDetail">Calibra SLA óptimo, plantillas y patrones de consulta del sector.</div>
+          </div>
+        </div>
+
+        <!-- Paso 2: Foco -->
+        <div class="wizard-step-card">
+          <div class="step-badge">2</div>
+          <div class="step-content">
+            <h4>🎯 Foco del Canal de Atención</h4>
+            <p class="step-hint" id="wizFocusDetectedHint">Evaluación comercial vs asistencial</p>
+            <select class="wizard-select" id="wizSelectFocus">
+              <option value="auto">🎯 Foco: Detección Automática</option>
+              <option value="ventas">🛍️ Modo Ventas / Comercial (Cotizaciones & Cierre)</option>
+              <option value="soporte">🎧 Modo Soporte / Gestión (Trámites & Reclamos)</option>
+            </select>
+            <div class="step-detail" id="wizFocusDetail">Define si se audita conversión comercial o eficiencia de resolución.</div>
+          </div>
+        </div>
+
+        <!-- Paso 3: Política de Handoff -->
+        <div class="wizard-step-card">
+          <div class="step-badge">3</div>
+          <div class="step-content">
+            <h4>🤖 Política de Handoff</h4>
+            <p class="step-hint">Derivación Bot ➔ Asesor Humano</p>
+            <select class="wizard-select" id="wizSelectHandoff">
+              <option value="hybrid">⚖️ Híbrido (Equilibrado)</option>
+              <option value="bot_priority">🤖 Bot Autoservicio (Max Automatización)</option>
+              <option value="human_priority">👤 Humano Prioritario (Venta Consultiva)</option>
+            </select>
+            <div class="step-detail" id="wizHandoffDetail">Ajusta el balance de automatización y auditoría de cuellos de botella.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Criterios de Calificación al finalizar el wizard -->
+      <div class="wizard-criteria-section" id="wizardCriteriaSection">
+        <div class="criteria-header">
+          <h3>🔍 Criterios de Calificación Spoter según tu Selección</h3>
+          <span class="criteria-tag-active" id="wizSummaryBadge">Configuración Lista</span>
+        </div>
+        <div class="qualification-grid" id="wizardQualGrid">
+          <div class="qualification-item">
+            <strong>🏢 Rubro & Benchmarks</strong>
+            <p id="wizTxtRubroQual">Cargando benchmark del sector...</p>
+          </div>
+          <div class="qualification-item">
+            <strong>🎯 Foco & Tipo de Interacción</strong>
+            <p id="wizTxtFocusQual">Calculando afinidad comercial...</p>
+          </div>
+          <div class="qualification-item">
+            <strong>🤖 Política de Handoff & Automatización</strong>
+            <p id="wizTxtHandoffQual">Evaluando balance bot vs personas...</p>
+          </div>
+          <div class="qualification-item">
+            <strong>⏱️ Calibración de SLA y Tiempos</strong>
+            <p id="wizTxtSlaQual">Ajustando umbrales de alerta y zona fría...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botón de Transición al Análisis -->
+      <div class="wizard-actions">
+        <button class="btn btn-primary btn-proceed-analysis" id="btnProceedToDashboard">
+          🚀 Pasar al Análisis ➔
+        </button>
+      </div>
+    </section>
+
+    <!-- Contenido del Dashboard (Se activa tras pasar el wizard) -->
+    <main id="dashboardContent" style="display: none;">
+
+      <!-- Barra Ejecutiva Superior de Mando (Se Mantiene Visible Bien Arriba) -->
+      <section class="executive-top-bar" id="executiveTopBar">
+        <div class="executive-context">
+          <div class="context-badges">
+            <span class="badge-rubro" id="badgeRubroTop">🏢 Rubro: Detectando...</span>
+            <span class="badge-files" id="badgeFilesTop">📁 0 archivos procesados</span>
+          </div>
+          <div class="context-selectors">
+            <div class="selector-group">
+              <label for="selectFocus">Foco del Canal:</label>
+              <select class="focus-select" id="selectFocus" title="Cambiar foco de análisis">
+                <option value="auto">🎯 Foco: Automático</option>
+                <option value="ventas">🛍️ Modo Ventas / Comercial</option>
+                <option value="soporte">🎧 Modo Soporte / Gestión</option>
+              </select>
+            </div>
+
+            <div class="selector-group">
+              <label for="selectHandoff">Política Handoff:</label>
+              <select class="focus-select" id="selectHandoff" title="Política de Handoff (Derivación Bot ➔ Asesor)">
+                <option value="hybrid">⚖️ Híbrido (Equilibrado)</option>
+                <option value="bot_priority">🤖 Bot Autoservicio (Max Automatización)</option>
+                <option value="human_priority">👤 Humano Prioritario (Venta Consultiva)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="executive-actions">
+          <button class="btn btn-primary" id="btnTopDownloadReport">
+            📥 Descargar Informe (.md)
+          </button>
+          <button class="btn btn-secondary" id="btnTopPrintReport">
+            🖨️ Guardar PDF
+          </button>
+          <button class="btn btn-outline-danger" id="btnResetAnalysis" title="Cargar nuevos archivos de chat">
+            🔄 Nuevo Análisis
+          </button>
+        </div>
+      </section>
+
+      <!-- Ficha Técnica de Calificación Automática Spoter (CÓMO se definieron) -->
+      <section class="qualification-panel" id="qualificationPanel">
+        <div class="qualification-header">
+          <h3>🔍 Criterios de Clasificación Automática de Spoter</h3>
+          <span style="font-size: 11px; color: var(--text-muted);">Análisis Semántico en Tiempo Real</span>
+        </div>
+        <div class="qualification-grid">
+          <div class="qualification-item" id="itemRubroQual">
+            <strong>🏢 Rubro Detectado</strong>
+            <p id="txtRubroQual">Analizando vocabulario y términos clave de los usuarios...</p>
+          </div>
+          <div class="qualification-item" id="itemFocusQual">
+            <strong>🎯 Foco de Negocio (Ventas vs Soporte)</strong>
+            <p id="txtFocusQual">Calculando afinidad comercial vs asistencial...</p>
+          </div>
+          <div class="qualification-item" id="itemHandoffQual">
+            <strong>🤖 Política de Handoff & Automatización</strong>
+            <p id="txtHandoffQual">Evaluando el balance de mensajes resueltos por bot vs personal humano...</p>
+          </div>
+          <div class="qualification-item" id="itemSlaQual">
+            <strong>⏱️ Calibración de SLA y Tiempos</strong>
+            <p id="txtSlaQual">Comparando los tiempos reales contra el estándar saludable del sector...</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Guía Explicativa del Semáforo Spoter -->
+      <div class="kpi-legend-bar">
+        <span class="legend-title">🚦 Semáforo de Calificación Spoter:</span>
+        <div class="legend-badges">
+          <span class="legend-item"><span class="dot-green"></span> <strong>Verde (Bueno):</strong> Cumple estándar saludable ACTÚEN+</span>
+          <span class="legend-item"><span class="dot-yellow"></span> <strong>Amarillo (Alerta):</strong> Fricción operativa / Mejorable</span>
+          <span class="legend-item"><span class="dot-red"></span> <strong>Rojo (Malo):</strong> Fuga de clientes, lentitud crítica o sobrecosto</span>
+        </div>
+      </div>
+
+      <!-- Banner de Métricas Clave (KPIs Clickables con Semáforo y Contexto) -->
+      <section class="kpi-grid">
+        <div class="kpi-card" id="cardKpiTotalMsgs" data-kpi="total_msgs" title="Hacé clic para ver la explicación">
+          <div class="kpi-title">
+            <span>Total Mensajes</span>
+            <span class="kpi-status-tag status-neutral" id="tagKpiTotalMsgs">ℹ️ AUDITADO</span>
+          </div>
+          <div class="kpi-value" id="kpiTotalMsgs">-</div>
+          <div class="kpi-sub" id="kpiTotalSub">Volumen analizado del período</div>
+        </div>
+
+        <div class="kpi-card" id="cardKpiClients" data-kpi="clients" title="Hacé clic para ver el desglose de los 3 picos de horarios">
+          <div class="kpi-title">
+            <span>Usuarios Atendidos</span>
+            <span class="kpi-status-tag status-neutral" id="tagKpiClients">📅 DEMANDA</span>
+          </div>
+          <div class="kpi-value" id="kpiClients">-</div>
+          <div class="kpi-peaks-vertical" id="kpiPeaksVerticalContainer">
+            <div class="kpi-peak-row">
+              <span class="peak-badge-num">1.</span>
+              <span class="peak-time" id="peakRowTime1">--:-- hs</span>
+              <span class="peak-count" id="peakRowCount1">(--)</span>
+            </div>
+            <div class="kpi-peak-row">
+              <span class="peak-badge-num">2.</span>
+              <span class="peak-time" id="peakRowTime2">--:-- hs</span>
+              <span class="peak-count" id="peakRowCount2">(--)</span>
+            </div>
+            <div class="kpi-peak-row">
+              <span class="peak-badge-num">3.</span>
+              <span class="peak-time" id="peakRowTime3">--:-- hs</span>
+              <span class="peak-count" id="peakRowCount3">(--)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="kpi-card alert" id="cardKpiFrag" data-kpi="fragmentation" title="Hacé clic para ver la explicación">
+          <div class="kpi-title">
+            <span>Fragmentación (C)</span>
+            <span class="kpi-status-tag status-alert" id="tagKpiFrag">🔴 MALO / CRÍTICO</span>
+          </div>
+          <div class="kpi-value" id="kpiFragmentation">-%</div>
+          <div class="kpi-sub" id="kpiFragSub">Ráfagas de 2 o más mensajes</div>
+        </div>
+
+        <div class="kpi-card warning" id="cardKpiWait" data-kpi="wait_time" title="Hacé clic para ver la explicación y SLA del rubro">
+          <div class="kpi-title">
+            <span>Espera Media (T)</span>
+            <span class="kpi-status-tag status-warning" id="tagKpiWait">🟡 ALERTA</span>
+          </div>
+          <div class="kpi-value" id="kpiAvgWait">- min</div>
+          <div class="kpi-sub" id="kpiWaitSub">SLA rubro: -</div>
+        </div>
+
+        <div class="kpi-card success" id="cardKpiSavings" data-kpi="savings" title="Hacé clic para ver el desglose del Beneficio Económico y ROI">
+          <div class="kpi-title">
+            <span>Beneficio Económico</span>
+            <span class="kpi-status-tag status-success" id="tagKpiSavings">🟢 BUENO / ROI</span>
+          </div>
+          <div class="kpi-value" id="kpiSavedMsgs">-$0 (-%)</div>
+          <div class="kpi-sub" id="kpiSavedSub">Ahorro mensual proyectado</div>
+        </div>
+
+        <div class="kpi-card warning" id="kpiCardBottleneck" data-kpi="bottleneck" title="Hacé clic para ver la distribución de carga y handoff">
+          <div class="kpi-title">
+            <span id="kpiBottleneckTitle">Carga de Atención</span>
+            <span class="kpi-status-tag status-warning" id="tagKpiBottleneck">🟡 ALERTA</span>
+          </div>
+          <div class="kpi-value" style="font-size: 16px;" id="kpiBottleneck">-</div>
+          <div class="kpi-sub" id="kpiBottleneckSub">Distribución del equipo</div>
+        </div>
+      </section>
+
+      <!-- Navegación por Pestañas Spoter (Botones Ejecutivos Grandes y Visibles) -->
+      <nav class="tabs-nav" id="mainTabsNav">
+        <button class="tab-btn active" data-tab="tabScorecard">
+          <span class="tab-num">1</span>
+          <span class="tab-label">Semáforo ACTÚEN+</span>
+        </button>
+        <button class="tab-btn" data-tab="tabTopics">
+          <span class="tab-num">2</span>
+          <span class="tab-label">Demanda & Ping-Pong</span>
+        </button>
+        <button class="tab-btn" data-tab="tabFriction">
+          <span class="tab-num">3</span>
+          <span class="tab-label">Fugas & Tiempos Calibrados</span>
+        </button>
+        <button class="tab-btn" data-tab="tabTemplates">
+          <span class="tab-num">4</span>
+          <span class="tab-label">Respuestas Maestras</span>
+        </button>
+        <button class="tab-btn" data-tab="tabSimulator">
+          <span class="tab-num">5</span>
+          <span class="tab-label">Simulador de Ahorro</span>
+        </button>
+      </nav>
+
+      <!-- Pestaña 1: Semáforo ACTÚEN+ -->
+      <section class="tab-pane active" id="tabScorecard">
+        <div class="scorecard-grid" id="scorecardGrid">
+          <!-- Renderizado dinámico desde app.js -->
+        </div>
+      </section>
+
+
+      <!-- Pestaña 2: Top Motivos de Consulta & Ping-Pong -->
+      <section class="tab-pane" id="tabTopics">
+        
+        <!-- Bloque Comparativo Ejecutivo: Ping-Pong Real vs Ideal -->
+        <div class="pingpong-compare-block">
+          <div class="pingpong-header">
+            <h3>🏓 Análisis Comparativo de Ping-Pong: Realidad vs. Estándar Ideal ACTÚEN+</h3>
+            <span class="pingpong-badge-excess" id="badgePingPongExcess">Factor Exceso: -</span>
+          </div>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+            Mide la cantidad de mensajes intercambiados entre el interlocutor (cliente) y la empresa para resolver una consulta. Se compara contra el estándar óptimo de <strong>4.5 mensajes totales</strong> (resolución en 1 solo bloque estructurado).
+          </p>
+          <div class="pingpong-cards-grid">
+            <div class="pingpong-card">
+              <div class="pingpong-card-title">👤 Interlocutor (Cliente)</div>
+              <div class="pingpong-card-val" id="ppClientVal">- msgs</div>
+              <div class="pingpong-card-sub" id="ppClientSub">Estándar Ideal: <strong>2.5 msgs</strong> (Consulta + Confirmación)</div>
+            </div>
+            <div class="pingpong-card">
+              <div class="pingpong-card-title">🏢 Operador (Empresa)</div>
+              <div class="pingpong-card-val" id="ppOpVal">- msgs</div>
+              <div class="pingpong-card-sub" id="ppOpSub">Estándar Ideal: <strong>2.0 msgs</strong> (Respuesta Maestra + Cierre)</div>
+            </div>
+            <div class="pingpong-card alert" id="cardPpTotal">
+              <div class="pingpong-card-title">🏓 Total Ping-Pong por Caso</div>
+              <div class="pingpong-card-val" id="ppTotalVal">- msgs</div>
+              <div class="pingpong-card-sub" id="ppTotalSub">Meta Saludable: <strong>4.5 a 6 msgs</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-grid">
+          <div class="card-panel">
+            <h3 id="topicsChartTitle">Consultas Principales y Nivel de Ping-Pong (Real vs Ideal)</h3>
+            <div style="height: 360px;">
+              <canvas id="chartTopics"></canvas>
+            </div>
+          </div>
+          <div class="card-panel">
+            <h3>Detalle Cuantitativo de Ping-Pong por Motivo de Consulta</h3>
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Categoría</th>
+                    <th>Usuarios</th>
+                    <th>%</th>
+                    <th>Msgs Cliente</th>
+                    <th>Msgs Operador</th>
+                    <th>Total Caso</th>
+                    <th>Exceso</th>
+                    <th>Semáforo</th>
+                  </tr>
+                </thead>
+                <tbody id="topicsTableBody">
+                  <!-- Renderizado dinámico -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Pestaña 3: Fugas Operativas, Tiempos y Horarios -->
+      <section class="tab-pane" id="tabFriction">
+        
+        <!-- Explicación de Zona Fría (Zona Azul) -->
+        <div class="info-callout" style="border-left: 4px solid #3b82f6; background: rgba(59, 130, 246, 0.07); margin-bottom: 24px;">
+          <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: #60a5fa; margin-bottom: 6px;">
+            <span>❄️ ¿Qué es la "Zona Fría" (Zona Azul) en el SLA de WhatsApp?</span>
+          </div>
+          <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin: 0;">
+            Representa todas las esperas superiores a <strong>15 minutos</strong>. En WhatsApp, un canal sincrónico e inmediato, cuando un lead o cliente espera más de 15 min entra en <em>enfriamiento crítico</em> ("lead frío"): <strong>más del 70% acude a la competencia o abandona la consulta frustrado</strong>. Es la zona donde se producen las mayores fugas de ventas y quejas operativas.
+          </p>
+        </div>
+
+        <!-- Gráficos de Tiempos Aceitados: Mensaje Inicial vs. En Conversación -->
+        <div style="margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+            <div>
+              <h3 style="font-family: var(--font-heading); font-size: 18px;">⏱️ Tiempos Aceitados (T): Mensaje Inicial vs. Mensajes en Conversación</h3>
+              <p style="font-size: 13px; color: var(--text-secondary);" id="slaDescriptionText">
+                Compara en la misma escala el tiempo de primera atención frente al tiempo de respuesta entre turnos sucesivos.
+              </p>
+            </div>
+          </div>
+
+          <div class="wait-times-comparison-grid">
+            <div class="card-panel">
+              <div class="chart-header-group">
+                <h4>⏱️ 1. Espera en Mensaje Inicial (Primera Atención / Cola)</h4>
+                <span class="badge-tag blue" id="tagInitialWaitAvg">Promedio: - min</span>
+              </div>
+              <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+                Tiempo transcurrido desde que el usuario escribe su primer mensaje hasta la primera respuesta de la empresa.
+              </p>
+              <div style="height: 240px;">
+                <canvas id="chartWaitTimesInitial"></canvas>
+              </div>
+            </div>
+
+            <div class="card-panel">
+              <div class="chart-header-group">
+                <h4>💬 2. Espera en Conversación (Continuidad / Ping-Pong)</h4>
+                <span class="badge-tag green" id="tagInConvWaitAvg">Promedio: - min</span>
+              </div>
+              <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+                Tiempo de espera entre mensajes sucesivos una vez que la conversación ya está abierta y en curso.
+              </p>
+              <div style="height: 240px;">
+                <canvas id="chartWaitTimesInConv"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mapa de Días y Horas de Inicio (Primer Contacto) -->
+        <div class="card-panel" style="margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+            <h3>📅 Mapa de Horarios y Días de Entrada (Cuándo Llegan tus Clientes)</h3>
+            <span class="badge-tag pink" id="badgeTop3HoursSchedule">Top 3 Picos: -</span>
+          </div>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;" id="scheduleSummaryText">
+            Permite dimensionar la cobertura de asesores y bots en horarios pico y fuera de hora comercial.
+          </p>
+          <div class="panel-grid" style="margin-bottom: 0;">
+            <div>
+              <h4 style="font-size: 13px; color: var(--spoter-pink); margin-bottom: 10px;">Distribución por Día de la Semana</h4>
+              <div style="height: 220px;">
+                <canvas id="chartWeekdaySchedule"></canvas>
+              </div>
+            </div>
+            <div>
+              <h4 style="font-size: 13px; color: var(--spoter-pink); margin-bottom: 10px;">Distribución por Hora del Día (00 a 23 hs)</h4>
+              <div style="height: 220px;">
+                <canvas id="chartHourlySchedule"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-grid">
+          <div class="card-panel">
+            <h3>Distribución de Ráfagas (Cero Vueltas)</h3>
+            <div style="height: 250px;">
+              <canvas id="chartBursts"></canvas>
+            </div>
+            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 15px; text-align: center;">
+              Las intervenciones de 2 o más mensajes consecutivos fragmentan la información y multiplican la carga mental.
+            </p>
+          </div>
+
+          <div class="card-panel">
+            <h3>Distribución de Carga: Bot vs Asesores Humanos</h3>
+            <div style="height: 250px;">
+              <canvas id="chartOperators"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-panel">
+          <h3>Métricas Críticas de Tiempos de Respuesta</h3>
+          <div class="kpi-grid" style="margin-top: 15px; margin-bottom: 0;">
+            <div class="kpi-card" data-kpi="avg_wait">
+              <div class="kpi-title"><span>Espera Promedio</span><span class="info-hint">ℹ️</span></div>
+              <div class="kpi-value" id="valAvgWait">-</div>
+            </div>
+            <div class="kpi-card" data-kpi="p90_wait">
+              <div class="kpi-title"><span>Percentil 90 (P90)</span><span class="info-hint">ℹ️</span></div>
+              <div class="kpi-value" id="valP90Wait">-</div>
+            </div>
+            <div class="kpi-card" data-kpi="p95_wait">
+              <div class="kpi-title"><span>Percentil 95 (P95)</span><span class="info-hint">ℹ️</span></div>
+              <div class="kpi-value" id="valP95Wait">-</div>
+            </div>
+            <div class="kpi-card alert" data-kpi="over_warning">
+              <div class="kpi-title"><span>Fuera de SLA</span><span class="info-hint">ℹ️</span></div>
+              <div class="kpi-value" id="valOver15">-</div>
+            </div>
+            <div class="kpi-card alert" data-kpi="drops">
+              <div class="kpi-title"><span>Expulsiones Sistema</span><span class="info-hint">ℹ️</span></div>
+              <div class="kpi-value" id="valDrops">-</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Pestaña 4: Respuestas Maestras del Rubro -->
+      <section class="tab-pane" id="tabTemplates">
+        <div style="margin-bottom: 18px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <h2 style="font-family: var(--font-heading); font-size: 20px;">Plantillas Condensadas "Cero Vueltas"</h2>
+            <p style="font-size: 13px; color: var(--text-secondary);" id="templatesSubTitle">
+              Reemplazan las conversaciones desordenadas por 1 solo bloque estructurado con viñetas y llamado a la acción.
+            </p>
+          </div>
+          <button class="btn btn-secondary" id="btnToggleMoreTemplates">
+            ➕ Ver Más Plantillas del Rubro
+          </button>
+        </div>
+        <div id="templatesList">
+          <!-- Renderizado dinámico de tarjetas Antes vs Después -->
+        </div>
+      </section>
+
+      <!-- Pestaña 5: Simulador de Ahorro y Beneficio Económico -->
+      <section class="tab-pane" id="tabSimulator">
+        <div class="simulator-box">
+          <h2 style="font-family: var(--font-heading); font-size: 22px; margin-bottom: 8px;">
+            Simulador de Eficiencia Operativa y Beneficio Económico
+          </h2>
+          
+          <!-- Explicación Clara del Objetivo de Optimización -->
+          <div class="info-callout" style="margin-top: 16px;">
+            <strong>🎯 ¿En base a qué se calcula el objetivo de optimización?</strong>
+            <p id="txtOptimizationRationale" style="margin-top: 6px; color: var(--text-secondary); font-size: 13px;">
+              Cargando línea de base de tu empresa...
+            </p>
+          </div>
+
+          <div class="slider-container">
+            <div style="display: flex; justify-content: space-between; font-weight: 700; margin-bottom: 10px;">
+              <span>Porcentaje de Eliminación de Mensajes Redundantes:</span>
+              <span id="sliderReductionVal" style="color: var(--spoter-pink); font-size: 20px;">60%</span>
+            </div>
+            <input type="range" id="reductionSlider" min="20" max="75" value="60" step="5">
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi-card success" data-kpi="sim_msgs">
+              <div class="kpi-title"><span>Mensajes Ahorrados</span><span class="info-hint">ℹ️</span></div>
+              <div class="kpi-value" id="simSavedMsgs">-</div>
+              <div class="kpi-sub" id="simSavedMsgsSub">Reducción mensual de envíos</div>
+            </div>
+            <div class="kpi-card success" data-kpi="sim_hours">
+              <div class="kpi-title"><span>Retorno Financiero Mensual</span><span class="info-hint">💰</span></div>
+              <div class="kpi-value" id="simSavedHours">-</div>
+              <div class="kpi-sub" id="simHoursSub">Horas liberadas + Ahorro de API</div>
+            </div>
+            <div class="kpi-card" data-kpi="sim_avg">
+              <div class="kpi-title"><span>Nuevo Promedio Conversación</span><span class="info-hint">ℹ️</span></div>
+              <div class="kpi-value" id="simNewAvg">-</div>
+              <div class="kpi-sub">Objetivo: 6 a 8 mensajes</div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 14px; margin-top: 30px; flex-wrap: wrap;">
+            <button class="btn btn-primary" id="btnExportReport">
+              📄 Descargar Reporte Ejecutivo (.md)
+            </button>
+            <button class="btn btn-success" id="btnExportCanned">
+              💾 Exportar Atajos para CRM / WhatsApp (.json)
+            </button>
+            <button class="btn btn-secondary" onclick="window.print()">
+              🖨️ Imprimir / Guardar en PDF
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- Modal de Confirmación para "Nuevo Análisis" (Protege contra borrado accidental) -->
+  <div class="modal-backdrop" id="modalConfirmReset">
+    <div class="modal-dialog" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 style="color: var(--danger);">⚠️ Iniciar Nuevo Análisis</h3>
+        <button class="modal-close-btn" id="btnCancelResetCross">&times;</button>
+      </div>
+      <div class="modal-section">
+        <p style="font-size: 14px; margin-bottom: 12px;">
+          ¿Estás seguro de que deseás reiniciar el análisis actual de <strong id="resetCompanyName">la empresa</strong>?
+        </p>
+        <p style="font-size: 13px; color: var(--text-muted); background: var(--bg-primary); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+          💡 <strong>Recomendación Spoter:</strong> Te sugerimos descargar el reporte ejecutivo antes de continuar por las dudas de que sea una acción accidental.
+        </p>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+        <button class="btn btn-primary" id="btnDownloadBeforeReset" style="justify-content: center;">
+          📥 Descargar Informe Primero (.md)
+        </button>
+        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 6px;">
+          <button class="btn btn-secondary" id="btnCancelReset">
+            Cancelar
+          </button>
+          <button class="btn btn-danger" id="btnConfirmReset">
+            Sí, Limpiar y Cargar Nuevos
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Explicativo para Tarjetas (Clickable Cards) -->
+  <div class="modal-backdrop" id="explainModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="modalTitle">Detalle de la Métrica</h3>
+        <button class="modal-close-btn" id="modalCloseBtn">&times;</button>
+      </div>
+      <div class="modal-section">
+        <h4>¿Qué significa este dato?</h4>
+        <p id="modalMeaning" style="white-space: pre-line;">-</p>
+      </div>
+      <div class="modal-section">
+        <h4>¿Cómo se calculó a partir de tus chats?</h4>
+        <p id="modalCalculation" style="white-space: pre-line;">-</p>
+      </div>
+      <div class="modal-section">
+        <h4>¿Por qué es crítico según el Método ACTÚEN+?</h4>
+        <p id="modalImpact" style="white-space: pre-line;">-</p>
+      </div>
+      <div class="modal-benchmark">
+        <strong>🎯 Benchmark Saludable:</strong> <span id="modalBenchmark">-</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notificación Toast Flotante -->
+  <div class="toast" id="toastNotification">Mensaje</div>
+
+  <script src="app.js"></script>
+</body>
+</html>

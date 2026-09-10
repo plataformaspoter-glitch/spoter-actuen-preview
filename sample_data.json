@@ -1,0 +1,744 @@
+{
+  "meta": {
+    "generated_at": "2026-01-15T10:00:00.000000",
+    "engine_mode": "server",
+    "company_name": "Corralón Demo",
+    "company_number": "5490000000000",
+    "detected_rubro": "Construcción / Corralón / Materiales",
+    "detected_rubro_key": "construccion_corralon",
+    "total_rubros_in_system": 11,
+    "business_focus": "ventas",
+    "is_forced_focus": false,
+    "handoff_policy": "hybrid",
+    "files_count": 2,
+    "file_names": [
+      "mensajes_demo_01.CSV",
+      "mensajes_demo_02.CSV"
+    ],
+    "sales_affinity_percentage": 96.5,
+    "support_affinity_percentage": 3.5,
+    "total_rows": 32768,
+    "unique_clients": 1334,
+    "company_messages": 18248,
+    "client_messages": 14520,
+    "company_ratio": 1.26,
+    "avg_messages_per_client": 24.6,
+    "baseline_company_msgs_per_client": 13.7,
+    "target_company_msgs_per_client": 5.0,
+    "is_anonymized_demo": true
+  },
+  "schedule": {
+    "hourly": [
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      2,
+      11,
+      94,
+      152,
+      193,
+      171,
+      146,
+      123,
+      105,
+      98,
+      115,
+      65,
+      28,
+      16,
+      6,
+      6,
+      1,
+      1
+    ],
+    "weekdays": {
+      "Lunes": 331,
+      "Martes": 242,
+      "Miércoles": 245,
+      "Jueves": 218,
+      "Viernes": 184,
+      "Sábado": 108,
+      "Domingo": 6
+    },
+    "peak_hour": "10:00 a 11:00 hs",
+    "peak_day": "Lunes",
+    "top_peak_hours": [
+      {
+        "hour": 10,
+        "hour_range": "10:00 a 11:00 hs",
+        "count": 193,
+        "percentage": 14.5
+      },
+      {
+        "hour": 11,
+        "hour_range": "11:00 a 12:00 hs",
+        "count": 171,
+        "percentage": 12.8
+      },
+      {
+        "hour": 9,
+        "hour_range": "09:00 a 10:00 hs",
+        "count": 152,
+        "percentage": 11.4
+      }
+    ],
+    "peak_hours_summary": "10:00 hs (14.5%) | 11:00 hs (12.8%) | 09:00 hs (11.4%)",
+    "business_hours_percentage": 93.2,
+    "after_hours_percentage": 6.8,
+    "business_hours_count": 1243,
+    "after_hours_count": 91
+  },
+  "handoff": {
+    "policy": "hybrid",
+    "bot_messages": 3271,
+    "bot_share_percentage": 17.9,
+    "human_messages": 14977,
+    "human_share_percentage": 82.1,
+    "top_human_operator": "Asesora 1",
+    "top_human_messages": 14670,
+    "top_human_percentage_of_human": 98.0,
+    "top_human_percentage_of_total": 80.4,
+    "is_bot_dominant": false
+  },
+  "handoff_gap_analysis": {
+    "total_human_handoffs": 1299,
+    "avoidable_handoffs_count": 1298,
+    "avoidable_handoffs_percentage": 99.9,
+    "consultative_handoffs_count": 1,
+    "consultative_handoffs_percentage": 0.1,
+    "recoverable_hours_month": 227.0,
+    "top_triggers": [
+      {
+        "category_key": "precios_materiales",
+        "title": "Cotizaciones de Materiales y Áridos",
+        "icon": "📋",
+        "count": 1170,
+        "percentage": 90.1,
+        "human_hours_spent": 206.2,
+        "is_avoidable": true,
+        "automation_feasibility": "Alta (Inmediata)",
+        "solution_type": "Base de Conocimiento RAG",
+        "solution_action": "Sincronizar lista de precios de materiales para cotizaciones instantáneas en un solo bloque estructurado.",
+        "sample_client_phrases": [
+          "Si estaban cerrados deberían haber avisado, el contenedor nos hace correr multa en el barrio desde hoy.",
+          "Buenas! Me podrías pasar un presupuesto de esto por favor . . 12 caños 60x40 1,6m . 3 kg de electrodos punta azul 2 1/2",
+          "Hola buenos días"
+        ],
+        "sample_operator_responses": [
+          "Buenos dias",
+          "Buen día! Ya te paso la cotización",
+          "Buenos dias, tela media sombra al 90%??"
+        ],
+        "template_target_id": "presupuesto_corralon"
+      },
+      {
+        "category_key": "stock_retiro",
+        "title": "Stock, Carga en Depósito y Horarios",
+        "icon": "📦",
+        "count": 65,
+        "percentage": 5.0,
+        "human_hours_spent": 8.4,
+        "is_avoidable": true,
+        "automation_feasibility": "Media (Integración)",
+        "solution_type": "Consulta de Inventario Spoter",
+        "solution_action": "Vincular stock mínimo y condiciones de retiro para responder sin consultar al depósito.",
+        "sample_client_phrases": [
+          "Hasta que hora tienen abierto?",
+          "Buen dia.. tienen tela olímpica y rollizos para cierre de terreno?",
+          "Por mlineal?"
+        ],
+        "sample_operator_responses": [
+          "rollizos trabajamos de 2,5",
+          "Buenas tardes!",
+          "Buenos dias!"
+        ],
+        "template_target_id": "hierros_mallas"
+      },
+      {
+        "category_key": "fletes_logistica",
+        "title": "Envíos, Fletes y Descarga en Obra",
+        "icon": "🚚",
+        "count": 42,
+        "percentage": 3.2,
+        "human_hours_spent": 8.2,
+        "is_avoidable": true,
+        "automation_feasibility": "Alta (Inmediata)",
+        "solution_type": "Matriz de Zonas Spoter",
+        "solution_action": "Cargar radios de entrega, tarifas de flete y requisitos de acceso de camión en la Base de Conocimiento.",
+        "sample_client_phrases": [
+          "Hola tengo un envío programado para mañana y quería agregar un producto mas",
+          "Cotizar por separado",
+          "Buenas tardes"
+        ],
+        "sample_operator_responses": [
+          "Buenas tardes, no puedo agregar material para mañana",
+          "Buenas tardes!",
+          "Buenas tardes"
+        ],
+        "template_target_id": "flete_corralon"
+      },
+      {
+        "category_key": "pagos_facturacion",
+        "title": "Pagos, Alias, CBU y Facturación A / B",
+        "icon": "💳",
+        "count": 16,
+        "percentage": 1.2,
+        "human_hours_spent": 2.7,
+        "is_avoidable": true,
+        "automation_feasibility": "Alta (Inmediata)",
+        "solution_type": "Atajo Maestro Inmediato",
+        "solution_action": "Configurar atajo de medios de pago y recolección automática de CUIT/Razón Social en mensaje cero.",
+        "sample_client_phrases": [
+          "sabes que , necesito por favor la factura de la 2da OC que te pase .",
+          "Pago con transferencia",
+          "[IMAGE]"
+        ],
+        "sample_operator_responses": [
+          "Buenos días! Enseguida te la emito",
+          "Buenos dias!",
+          "Buenas tardes!"
+        ],
+        "template_target_id": "cierre_corralon"
+      },
+      {
+        "category_key": "frustracion_asesor",
+        "title": "Solicitud de Asesor o Atención Humana",
+        "icon": "⚠️",
+        "count": 5,
+        "percentage": 0.4,
+        "human_hours_spent": 1.5,
+        "is_avoidable": true,
+        "automation_feasibility": "Alta (Conversacional)",
+        "solution_type": "IA Conversacional Spoter",
+        "solution_action": "Eliminar menús rígidos y permitir atención fluida en lenguaje natural.",
+        "sample_client_phrases": [
+          "Hola, alguien me puede atender por favor",
+          "Necesito hablar con un asesor",
+          "Buenas tardes una consulta ustedes necesitan para atención al público?"
+        ],
+        "sample_operator_responses": [
+          "Buenos dias",
+          "Buenos dias!",
+          "Buenos dias como estas?"
+        ],
+        "template_target_id": "presupuesto_corralon"
+      },
+      {
+        "category_key": "acopio_obras",
+        "title": "Venta Mayorista, Acopio y Grandes Obras",
+        "icon": "🤝",
+        "count": 1,
+        "percentage": 0.1,
+        "human_hours_spent": 0.4,
+        "is_avoidable": false,
+        "automation_feasibility": "Consultiva (Humano)",
+        "solution_type": "Copiloto HITL Spoter",
+        "solution_action": "Derivación guiada con ficha de intencionalidad comercial y volumen para el asesor comercial.",
+        "sample_client_phrases": [
+          "Tengo cuenta corriente a nombre de la constructora, necesito pedir estos materiales por favor"
+        ],
+        "sample_operator_responses": [
+          "Buenas tardes!"
+        ],
+        "template_target_id": "rescate_corralon"
+      }
+    ]
+  },
+  "fragmentation": {
+    "rate": 51.2,
+    "burst_1_msg": 4521,
+    "burst_2_msgs": 2190,
+    "burst_3_plus_msgs": 2548,
+    "total_bursts": 9259
+  },
+  "wait_times": {
+    "average_minutes": 32.3,
+    "median_minutes": 2.0,
+    "p90_minutes": 24.0,
+    "p95_minutes": 39.0,
+    "sla": {
+      "ideal_immediate": 2.0,
+      "acceptable": 6.0,
+      "warning": 15.0,
+      "critical": 30.0,
+      "benchmark_text": "En materiales para la construcción, leads que esperan > 15 min cotizan con otro corralón y se pierden."
+    },
+    "over_warning_count": 2318,
+    "over_warning_percentage": 15.6,
+    "system_drops": 265,
+    "brackets": {
+      "< 2m (Inmediato)": 8783,
+      "2 - 6m (Aceptable)": 2046,
+      "6 - 15m (Alerta)": 1668,
+      "15 - 30m (❄️ Zona Fría)": 1257,
+      "> 30m (Crítico)": 1061
+    },
+    "initial_response": {
+      "average_minutes": 167.3,
+      "median_minutes": 11.0,
+      "p90_minutes": 51.0,
+      "p95_minutes": 71.0,
+      "count": 1284,
+      "over_warning_count": 538,
+      "over_warning_percentage": 41.9,
+      "ok_summary": {
+        "count": 746,
+        "percentage": 58.1,
+        "label": "Atención Oportuna / Saludable (3 Franjas)"
+      },
+      "risk_summary": {
+        "count": 538,
+        "percentage": 41.9,
+        "label": "Zona de Riesgo / Fuga (2 Franjas)"
+      },
+      "brackets": {
+        "< 2m (Inmediato)": 281,
+        "2 - 6m (Aceptable)": 198,
+        "6 - 15m (Alerta)": 267,
+        "15 - 30m (❄️ Zona Fría)": 250,
+        "> 30m (Crítico)": 288
+      }
+    },
+    "in_conversation": {
+      "average_minutes": 19.5,
+      "median_minutes": 2.0,
+      "p90_minutes": 20.0,
+      "p95_minutes": 34.0,
+      "count": 13518,
+      "over_warning_count": 1779,
+      "over_warning_percentage": 13.2,
+      "ok_summary": {
+        "count": 11739,
+        "percentage": 86.8,
+        "label": "Atención Oportuna / Saludable (3 Franjas)"
+      },
+      "risk_summary": {
+        "count": 1779,
+        "percentage": 13.2,
+        "label": "Zona de Riesgo / Fuga (2 Franjas)"
+      },
+      "brackets": {
+        "< 2m (Inmediato)": 8490,
+        "2 - 6m (Aceptable)": 1848,
+        "6 - 15m (Alerta)": 1401,
+        "15 - 30m (❄️ Zona Fría)": 1006,
+        "> 30m (Crítico)": 773
+      }
+    }
+  },
+  "ping_pong": {
+    "real_client_avg": 10.9,
+    "real_operator_avg": 13.7,
+    "real_total_avg": 24.6,
+    "ideal_client_avg": 3.5,
+    "ideal_operator_avg": 3.0,
+    "ideal_total_avg": 6.5,
+    "excess_factor": 3.8,
+    "excess_percentage": 278.5,
+    "explanation": "Cada caso promedia 24.6 mensajes (10.9 del cliente + 13.7 del operador) frente al estándar calibrado para Construcción / Corralón / Materiales (6.5 mensajes totales: 3.5 cliente + 3.0 operador).",
+    "industry_benchmark_note": "Estándar de industria (Construcción / Corralón / Materiales): 6.5 msgs"
+  },
+  "topics": [
+    {
+      "category": "Presupuesto General / Lista de Materiales",
+      "conversations": 917,
+      "percentage": 68.7,
+      "avg_messages_per_client": 28.8,
+      "avg_client_messages": 12.7,
+      "avg_operator_messages": 16.1,
+      "ideal_client_messages": 3.5,
+      "ideal_operator_messages": 3.0,
+      "ideal_total_messages": 6.5,
+      "ping_pong_rate": 4.4,
+      "ping_pong_excess_percentage": 343.2,
+      "ping_pong_turns": 14.4,
+      "ping_pong_severity": "CRÍTICO",
+      "status_explanation": "Fricción severa: ping-pong excesivo que demora la resolución.",
+      "badge_class": "red",
+      "total_messages": 26417,
+      "client_messages": 11685,
+      "operator_messages": 14732
+    },
+    {
+      "category": "Cemento, Cal y Adhesivos",
+      "conversations": 365,
+      "percentage": 27.4,
+      "avg_messages_per_client": 34.8,
+      "avg_client_messages": 15.6,
+      "avg_operator_messages": 19.2,
+      "ideal_client_messages": 3.5,
+      "ideal_operator_messages": 3.0,
+      "ideal_total_messages": 6.5,
+      "ping_pong_rate": 5.4,
+      "ping_pong_excess_percentage": 435.2,
+      "ping_pong_turns": 17.4,
+      "ping_pong_severity": "CRÍTICO",
+      "status_explanation": "Fricción severa: ping-pong excesivo que demora la resolución.",
+      "badge_class": "red",
+      "total_messages": 12697,
+      "client_messages": 5692,
+      "operator_messages": 7005
+    },
+    {
+      "category": "Envíos, Fletes y Zonas de Obra",
+      "conversations": 351,
+      "percentage": 26.3,
+      "avg_messages_per_client": 43.9,
+      "avg_client_messages": 20.1,
+      "avg_operator_messages": 23.7,
+      "ideal_client_messages": 3.5,
+      "ideal_operator_messages": 3.0,
+      "ideal_total_messages": 6.5,
+      "ping_pong_rate": 6.7,
+      "ping_pong_excess_percentage": 574.7,
+      "ping_pong_turns": 21.9,
+      "ping_pong_severity": "CRÍTICO",
+      "status_explanation": "Fricción severa: ping-pong excesivo que demora la resolución.",
+      "badge_class": "red",
+      "total_messages": 15393,
+      "client_messages": 7068,
+      "operator_messages": 8325
+    },
+    {
+      "category": "Chapas, Perfiles y Caños",
+      "conversations": 301,
+      "percentage": 22.6,
+      "avg_messages_per_client": 34.7,
+      "avg_client_messages": 15.0,
+      "avg_operator_messages": 19.7,
+      "ideal_client_messages": 3.5,
+      "ideal_operator_messages": 3.0,
+      "ideal_total_messages": 6.5,
+      "ping_pong_rate": 5.3,
+      "ping_pong_excess_percentage": 433.2,
+      "ping_pong_turns": 17.3,
+      "ping_pong_severity": "CRÍTICO",
+      "status_explanation": "Fricción severa: ping-pong excesivo que demora la resolución.",
+      "badge_class": "red",
+      "total_messages": 10432,
+      "client_messages": 4515,
+      "operator_messages": 5917
+    },
+    {
+      "category": "Hierros y Mallas Cima",
+      "conversations": 284,
+      "percentage": 21.3,
+      "avg_messages_per_client": 42.2,
+      "avg_client_messages": 18.7,
+      "avg_operator_messages": 23.5,
+      "ideal_client_messages": 3.5,
+      "ideal_operator_messages": 3.0,
+      "ideal_total_messages": 6.5,
+      "ping_pong_rate": 6.5,
+      "ping_pong_excess_percentage": 549.8,
+      "ping_pong_turns": 21.1,
+      "ping_pong_severity": "CRÍTICO",
+      "status_explanation": "Fricción severa: ping-pong excesivo que demora la resolución.",
+      "badge_class": "red",
+      "total_messages": 11995,
+      "client_messages": 5312,
+      "operator_messages": 6683
+    },
+    {
+      "category": "Áridos (Arena, Ripio, Piedra)",
+      "conversations": 263,
+      "percentage": 19.7,
+      "avg_messages_per_client": 37.8,
+      "avg_client_messages": 16.8,
+      "avg_operator_messages": 21.0,
+      "ideal_client_messages": 3.5,
+      "ideal_operator_messages": 3.0,
+      "ideal_total_messages": 6.5,
+      "ping_pong_rate": 5.8,
+      "ping_pong_excess_percentage": 480.9,
+      "ping_pong_turns": 18.9,
+      "ping_pong_severity": "CRÍTICO",
+      "status_explanation": "Fricción severa: ping-pong excesivo que demora la resolución.",
+      "badge_class": "red",
+      "total_messages": 9931,
+      "client_messages": 4406,
+      "operator_messages": 5525
+    },
+    {
+      "category": "Formas de Pago y Descuentos",
+      "conversations": 261,
+      "percentage": 19.6,
+      "avg_messages_per_client": 50.3,
+      "avg_client_messages": 22.9,
+      "avg_operator_messages": 27.4,
+      "ideal_client_messages": 3.5,
+      "ideal_operator_messages": 3.0,
+      "ideal_total_messages": 6.5,
+      "ping_pong_rate": 7.7,
+      "ping_pong_excess_percentage": 674.1,
+      "ping_pong_turns": 25.2,
+      "ping_pong_severity": "CRÍTICO",
+      "status_explanation": "Fricción severa: ping-pong excesivo que demora la resolución.",
+      "badge_class": "red",
+      "total_messages": 13133,
+      "client_messages": 5976,
+      "operator_messages": 7157
+    },
+    {
+      "category": "Reclamos y Contenedores",
+      "conversations": 210,
+      "percentage": 15.7,
+      "avg_messages_per_client": 49.3,
+      "avg_client_messages": 22.8,
+      "avg_operator_messages": 26.6,
+      "ideal_client_messages": 3.5,
+      "ideal_operator_messages": 3.0,
+      "ideal_total_messages": 6.5,
+      "ping_pong_rate": 7.6,
+      "ping_pong_excess_percentage": 659.1,
+      "ping_pong_turns": 24.7,
+      "ping_pong_severity": "CRÍTICO",
+      "status_explanation": "Fricción severa: ping-pong excesivo que demora la resolución.",
+      "badge_class": "red",
+      "total_messages": 10362,
+      "client_messages": 4784,
+      "operator_messages": 5578
+    }
+  ],
+  "operators": [
+    {
+      "operator": "Asesora 1",
+      "is_bot": false,
+      "messages": 14670,
+      "percentage": 80.4,
+      "est_hours_spent": 183.4
+    },
+    {
+      "operator": "Bot / Sistema",
+      "is_bot": true,
+      "messages": 3271,
+      "percentage": 17.9,
+      "est_hours_spent": 40.9
+    },
+    {
+      "operator": "Asesora 2",
+      "is_bot": false,
+      "messages": 271,
+      "percentage": 1.5,
+      "est_hours_spent": 3.4
+    },
+    {
+      "operator": "Asesor 3",
+      "is_bot": false,
+      "messages": 34,
+      "percentage": 0.2,
+      "est_hours_spent": 0.4
+    },
+    {
+      "operator": "Asesor 4",
+      "is_bot": false,
+      "messages": 2,
+      "percentage": 0.0,
+      "est_hours_spent": 0.0
+    }
+  ],
+  "actuen_scorecard": [
+    {
+      "pillar": "A - Atraer y Atender",
+      "score": 55,
+      "status": "ALERTA",
+      "focus_context": "Política de Handoff: HYBRID",
+      "diagnosis": "El bot de bienvenida se activó 2091 veces para 1334 usuarios (1.57 disparos/contacto). En clientes recurrentes, repetir el menú genera fricción antes de conectar con el asesor.",
+      "recommendation": "Filtro Directo: Identificar al cliente en el primer mensaje y transferir al asesor asignado sin menús infinitos."
+    },
+    {
+      "pillar": "C - Cero Vueltas",
+      "score": 35,
+      "status": "CRÍTICO",
+      "focus_context": "Cotización Todo-en-Uno",
+      "diagnosis": "El 51.2% de las respuestas de la empresa se envían en ráfagas de 2 o más mensajes seguidos. Se detectan preguntas aisladas como \"Buenos dias, como estas?...\", \"en que podemos ayudarte?...\", aumentando la carga cognitiva.",
+      "recommendation": "Imponer la Regla del Bloque Único: Unificar respuesta, viñetas explicativas y el requerimiento de datos en un solo mensaje estructurado."
+    },
+    {
+      "pillar": "T - Tiempos Aceitados",
+      "score": 35,
+      "status": "CRÍTICO",
+      "focus_context": "SLA Ideal: En materiales para la construcción, leads que esperan > 15 min cotizan con otro corralón y se pierden.",
+      "diagnosis": "Tiempo promedio de 32.3 min frente al SLA aceptable de 6 min en Construcción / Corralón / Materiales. El 15.6% de las consultas superaron el umbral de alerta (15 min). Hubo 265 expulsiones del sistema.",
+      "recommendation": "Inyectar oxígeno conversacional: Si la gestión demora más de 2 minutos, enviar un mensaje de contención predefinido."
+    },
+    {
+      "pillar": "U - Ubicar la Intención",
+      "score": 50,
+      "status": "ALERTA",
+      "focus_context": "Descubrimiento de Macro y Micro-intención",
+      "diagnosis": "En Construcción / Corralón / Materiales, el 68.7% de los usuarios ingresa por 'Presupuesto General / Lista de Materiales'. Actualmente se piden los requisitos en turnos separados en lugar de anticipar la necesidad.",
+      "recommendation": "Diseñar un Blueprint de Micro-intenciones: Al consultar por presupuesto general / lista de materiales, solicitar los datos clave en el turno inicial."
+    },
+    {
+      "pillar": "E - Experiencia Personalizada",
+      "score": 48,
+      "status": "ALERTA",
+      "focus_context": "Reactivación y Protocolo de Rescate",
+      "diagnosis": "Falta de protocolo activo para reenganchar conversaciones inactivas. Se detecta abandono sin seguimiento comercial del presupuesto.",
+      "recommendation": "Protocolo de Rescate: Reactivar al usuario utilizando su nombre y el motivo específico de su consulta, evitando plantillas robóticas."
+    },
+    {
+      "pillar": "N - Nutrir y Cerrar",
+      "score": 42,
+      "status": "CRÍTICO",
+      "focus_context": "Tipping Point Comercial",
+      "diagnosis": "Cierres pasivos frecuentes (ej. 'a disposición', 'cualquier duda nos avisas') que dejan el control en el usuario sin forzar el avance.",
+      "recommendation": "Cierre Activo Obligatorio: Cerrar con una pregunta de reserva o confirmación de pedido (Tipping Point)."
+    },
+    {
+      "pillar": "+ Optimización Continua",
+      "score": 50,
+      "status": "ALERTA",
+      "focus_context": "Carga Humana (82.1%) vs Bot (17.9%)",
+      "diagnosis": "Entre los operadores humanos, Asesora 1 concentra el 98.0% de la atención (14,670 msgs), generando un cuello de botella sistémico.",
+      "recommendation": "Cargar atajos rápidos de teclado para Asesora 1 y redistribuir la asignación de leads en horarios pico."
+    }
+  ],
+  "ltv_economics": {
+    "rubro_name": "Construcción / Corralón / Materiales",
+    "avg_ticket_usd": 850,
+    "annual_frequency": 4,
+    "retention_years": 2.0,
+    "ltv_usd": 6800,
+    "cac_usd": 120,
+    "ticket_name": "Presupuesto de Materiales",
+    "concept": "En corralones, el cliente compra repetidamente durante la obra y recomienda a otros constructores.",
+    "leads_analyzed": 1334,
+    "leads_at_risk_count": 288,
+    "leads_at_risk_percentage": 21.6,
+    "immediate_lost_usd": 159120,
+    "ltv_capital_at_risk_usd": 1272960,
+    "cac_wasted_usd": 34560,
+    "total_economic_risk_usd": 1307520,
+    "projected_recovered_ltv_usd": 980640,
+    "exchange_rate_ars": 1250,
+    "total_economic_risk_ars": 1634400000,
+    "projected_recovered_ltv_ars": 1225800000
+  },
+  "prioritization_audit": {
+    "avg_ic_score": 33.8,
+    "avg_iu_score": 62.4,
+    "high_intent_leads_count": 418,
+    "high_intent_delayed_count": 288,
+    "fifo_delayed_percentage": 68.9,
+    "whatsapp_24h_breaches": 36,
+    "whatsapp_24h_breach_percentage": 2.7,
+    "ic_distribution": {
+      "muy_alta_80_100": 0,
+      "alta_60_79": 0,
+      "media_40_59": 418,
+      "baja_20_39": 878,
+      "ruido_0_19": 38
+    },
+    "iu_presets": {
+      "comercial_avg": 66.1,
+      "velocidad_avg": 59.9,
+      "cumplimiento_avg": 61.8,
+      "calidad_avg": 63.6
+    },
+    "fifo_vs_spoter_wait": {
+      "fifo_high_intent_wait_min": 154.7,
+      "spoter_high_intent_wait_min": 2.0,
+      "wait_reduction_percentage": 98.7
+    }
+  },
+  "spoter_lite": {
+    "phases": {
+      "gracia_count": 32,
+      "gracia_percentage": 2.4,
+      "trabajo_count": 155,
+      "trabajo_percentage": 11.6,
+      "cierre_rescate_count": 1144,
+      "cierre_rescate_percentage": 85.8,
+      "ruido_stop_count": 3,
+      "ruido_stop_percentage": 0.2
+    },
+    "leads_rescatables_count": 410,
+    "leads_rescatables_percentage": 35.8,
+    "rescate_strategy_summary": "410 leads con intención activa (IC >= 40) quedaron abandonados sin aplicar una pregunta de rescate estructurada antes de declarar el silencio."
+  },
+  "savings": {
+    "current_company_messages": 18248,
+    "optimized_target_messages": 6670,
+    "baseline_msgs_per_client": 13.7,
+    "target_msgs_per_client": 5.0,
+    "messages_saved": 11578,
+    "reduction_percentage": 63.4,
+    "hours_saved_monthly": 144.7,
+    "optimization_rationale": "Línea de base actual: tu empresa envía hoy 13.7 mensajes por cliente. El estándar metodológico ACTÚEN+ en un solo bloque requiere 5.0 mensajes empresa para cerrar o resolver. El 63.4% de optimización representa la eliminación de 11,578 mensajes fragmentados innecesarios.",
+    "economic_benefit": {
+      "total_ars": 1244510,
+      "total_usd": 957.32,
+      "labor_savings_ars": 723500,
+      "api_savings_ars": 521010,
+      "hourly_rate_ref": 5000,
+      "msg_rate_ref": 45
+    }
+  },
+  "master_templates": [
+    {
+      "id": "presupuesto_corralon",
+      "title": "Presupuesto General con 7% OFF Contado",
+      "shortcut": "/coti",
+      "category": "Ventas / Materiales",
+      "before": "Buenos días -> 'en breve enviamos' -> PDF mudo -> medios de pago -> silencio (7 msgs).",
+      "after": "👋 ¡Hola! Te adjunto el presupuesto detallado de Corralón Demo (*Presupuesto N° {NRO_COTIZACION}*).\n\n📋 *Resumen de tu pedido:*\n• *Total de Lista / Tarjetas:* ${TOTAL_LISTA}\n• 💡 *Con 7% OFF (Efectivo / Transferencia / Débito):* *${TOTAL_DESCUENTO}*\n• *Disponibilidad:* Todo en stock para despacho inmediato.\n• *Flete:* Cotizado para {ZONA/LOCALIDAD}.\n\n⏱️ _Precios congelados por 48 horas._\n\n[---saltomensaje---]\n\n👉 *¿Querés que te reservemos los materiales para programar el camión para esta semana?*",
+      "tipping_point": "¿Querés que te reservemos los materiales para programar el camión para esta semana?",
+      "key_benefit": "Resume el precio en el chat, destaca el descuento contado y cierra con reserva."
+    },
+    {
+      "id": "aridos_corralon",
+      "title": "Consulta de Áridos (Arena Común, Lavada / Ripio)",
+      "shortcut": "/aridos",
+      "category": "Áridos",
+      "before": "'arena comun o lavada?' -> 'cuantos metros?' -> 'a que direccion?' (8 msgs).",
+      "after": "¡Hola! Contamos con stock de áridos tanto por m³ como por bolsón o camionada:\n\n🏗️ *Opciones disponibles:*\n• *Arena Común:* ${PRECIO_COMUN}/m³ _(Revoque grueso y contrapisos)_\n• *Arena Lavada / Fina:* ${PRECIO_LAVADA}/m³ _(Fino y pegado de cerámicos)_\n• *Ripio / Piedra Partida:* ${PRECIO_RIPIO}/m³\n💡 *7% de descuento abonando en efectivo o transferencia.*\n\n[---saltomensaje---]\n\n👉 *Decime cuántos metros aproximados necesitás y en qué zona está la obra para pasarte el valor final puesto en tu puerta.*",
+      "tipping_point": "Decime cuántos metros necesitás y en qué zona está la obra para cotizar flete.",
+      "key_benefit": "Resuelve la duda de áridos en 1 turno."
+    },
+    {
+      "id": "flete_corralon",
+      "title": "Consulta de Envíos, Fletes y Descarga",
+      "shortcut": "/flete",
+      "category": "Logística",
+      "before": "'¿Llegan a mi zona?' -> 'Sí' -> '¿Cuánto sale?' -> 'Pasame la calle' (6 msgs).",
+      "after": "¡Hola! Sí, realizamos entregas en toda la zona con la flota de camiones de Corralón Demo:\n\n📍 *Para confirmarte el costo exacto y día de entrega, envianos:*\n1. Lista o cantidad de materiales.\n2. Dirección aproximada o barrio.\n3. ¿La calle permite el ingreso de camión grande?\n\n[---saltomensaje---]\n\n👉 *Con estos datos te pasamos el costo final puesto en obra de inmediato.*",
+      "tipping_point": "Envianos lista, barrio y acceso de camión para confirmar flete de inmediato.",
+      "key_benefit": "Captura los 3 datos logísticos en 1 solo paso."
+    },
+    {
+      "id": "cierre_corralon",
+      "title": "Cierre, Cobro y Facturación",
+      "shortcut": "/pago",
+      "category": "Cierre de Venta",
+      "before": "CBU descolgado -> '¿de qué es el comprobante?' -> 'cuit?' -> 'dirección?' (5 msgs).",
+      "after": "🎯 *Para confirmar tu pedido N° {NRO_COTIZACION} y congelar el stock:*\n\n🏦 *Datos Bancarios Oficiales:*\n• *Titular:* Corralón Demo\n• *Alias:* `CORRAL.N.DEMO.OFICIAL`\n• *CBU:* `0270094610023521600015`\n• *Monto con 7% OFF:* *${MONTO_FINAL}*\n\n📝 *Una vez hecha la transferencia, envianos el comprobante con estos 4 datos en un solo mensaje:*\n1. Presupuesto N°: {NRO_COTIZACION}\n2. CUIT o DNI (para la factura):\n3. Dirección exacta de entrega:\n4. Nombre y teléfono de quién recibe en obra:\n\n[---saltomensaje---]\n\n¡Con eso ingresa inmediatamente a la hoja de ruta de logística! 🚚",
+      "tipping_point": "Una vez hecha la transferencia, envianos el comprobante con los 4 datos en un solo mensaje.",
+      "key_benefit": "Elimina el caos de identificación de pagos y reduce 5 mensajes a 1."
+    },
+    {
+      "id": "hierros_mallas",
+      "title": "Consulta de Hierros, Mallas y Viguetas",
+      "shortcut": "/hierros",
+      "category": "Hierros y Estructuras",
+      "before": "Múltiples mensajes preguntando medida por medida y flete por separado.",
+      "after": "👋 ¡Hola! Contamos con stock completo de hierro de obra certificado:\n\n🔩 *Valores por barra (12 mts):*\n• Hierro del 6: ${P_6} | del 8: ${P_8} | del 10: ${P_10} | del 12: ${P_12}\n• Malla Cima (del 4 / del 5 / del 6): Desde ${P_MALLA}\n• Alambre de fardo y estribos listos para armar.\n💡 *Precio bonificado abonando de contado/transferencia.*\n\n[---saltomensaje---]\n\n👉 *Pasame la lista completa de barras o mallas y la zona de obra para armarte el paquete con envío incluido.*",
+      "tipping_point": "Pasame la lista completa y la zona para armarte el paquete con envío incluido.",
+      "key_benefit": "Agrupa las medidas de hierro frecuentes y ancla el flete desde el inicio."
+    },
+    {
+      "id": "rescate_corralon",
+      "title": "Protocolo de Rescate Comercial (Post-Cotización)",
+      "shortcut": "/rescate",
+      "category": "Seguimiento",
+      "before": "Silencio o 'Hola pudiste ver el PDF?' (tasa de respuesta < 10%).",
+      "after": "👋 ¡Hola {NOMBRE}! ¿Cómo estás? Te escribo de Corralón Demo porque estamos coordinando la hoja de ruta de entregas para tu zona ({ZONA/BARRIO}).\n\nQueríamos consultarte si vas a confirmar el pedido del Presupuesto N° {NRO_COTIZACION} para reservarte el camión y sostenerte la bonificación especial de contado.\n\n[---saltomensaje---]\n\n👉 *¿Te guardamos el lugar de entrega para esta semana o precisás hacer algún ajuste en los materiales?*",
+      "tipping_point": "¿Te guardamos el lugar de entrega para esta semana o precisás algún ajuste?",
+      "key_benefit": "Reactivación contextual que ofrece valor logístico en lugar de presionar."
+    }
+  ]
+}

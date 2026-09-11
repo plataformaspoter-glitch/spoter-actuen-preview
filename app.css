@@ -2744,3 +2744,9 @@ input[type="range"] {
   background: rgba(127, 127, 127, 0.15);
   color: var(--text-secondary);
 }
+
+/* Análisis completo en el navegador: el aviso pasa a ser un argumento a favor */
+.engine-mode-banner.banner-privacidad {
+  background: var(--success-bg, rgba(16, 185, 129, 0.12));
+  border-color: var(--success, #10b981);
+}

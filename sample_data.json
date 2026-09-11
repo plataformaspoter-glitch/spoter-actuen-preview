@@ -12,8 +12,8 @@
     "handoff_policy": "hybrid",
     "files_count": 2,
     "file_names": [
-      "mensajes_demo_01.CSV",
-      "mensajes_demo_02.CSV"
+      "mensajes_202609031054.CSV",
+      "mensajes_202609031055.CSV"
     ],
     "sales_affinity_percentage": 96.5,
     "support_affinity_percentage": 3.5,
@@ -124,7 +124,7 @@
         "solution_action": "Sincronizar lista de precios de materiales para cotizaciones instantáneas en un solo bloque estructurado.",
         "sample_client_phrases": [
           "Si estaban cerrados deberían haber avisado, el contenedor nos hace correr multa en el barrio desde hoy.",
-          "Buenas! Me podrías pasar un presupuesto de esto por favor . . 12 caños 60x40 1,6m . 3 kg de electrodos punta azul 2 1/2",
+          "Buenas! Me podrías pasar un presupuesto de esto por favor . . 10 caños 60x40 1,6m . 2 kg de electrodos punta azul 2 1/2",
           "Hola buenos días"
         ],
         "sample_operator_responses": [
@@ -567,35 +567,35 @@
     },
     {
       "pillar": "U - Ubicar la Intención",
-      "score": 50,
+      "score": 55,
       "status": "ALERTA",
-      "focus_context": "Descubrimiento de Macro y Micro-intención",
-      "diagnosis": "En Construcción / Corralón / Materiales, el 68.7% de los usuarios ingresa por 'Presupuesto General / Lista de Materiales'. Actualmente se piden los requisitos en turnos separados en lugar de anticipar la necesidad.",
-      "recommendation": "Diseñar un Blueprint de Micro-intenciones: Al consultar por presupuesto general / lista de materiales, solicitar los datos clave en el turno inicial."
+      "focus_context": "Índice de Conversión medio: 54.9/100",
+      "diagnosis": "El IC medio de la cartera es 54.9/100: 589 conversaciones con intención alta y 218 que quedaron en zona fría o ruido sobre 1334 analizadas. El 68.7% ingresa por 'Presupuesto General / Lista de Materiales'. Un IC bajo puede venir de tráfico frío o de no extraer la necesidad completa en el turno inicial; el desglose por conversación permite distinguirlo.",
+      "recommendation": "Diseñar un Blueprint de Micro-intenciones: Al consultar por presupuesto general / lista de materiales, solicitar los datos clave (habilitantes) en el turno inicial para elevar el IC."
     },
     {
       "pillar": "E - Experiencia Personalizada",
-      "score": 48,
-      "status": "ALERTA",
-      "focus_context": "Reactivación y Protocolo de Rescate",
-      "diagnosis": "Falta de protocolo activo para reenganchar conversaciones inactivas. Se detecta abandono sin seguimiento comercial del presupuesto.",
+      "score": 9,
+      "status": "CRÍTICO",
+      "focus_context": "Protocolo de Rescate: 91.0% de la fase de cierre quedó sin reactivar",
+      "diagnosis": "De 1144 conversaciones que llegaron a la fase de cierre/rescate, 1041 (91.0%) conservaban intención activa (IC >= 40) y quedaron abandonadas sin una pregunta de rescate estructurada. Es abandono sin seguimiento comercial del presupuesto.",
       "recommendation": "Protocolo de Rescate: Reactivar al usuario utilizando su nombre y el motivo específico de su consulta, evitando plantillas robóticas."
     },
     {
       "pillar": "N - Nutrir y Cerrar",
-      "score": 42,
+      "score": 10,
       "status": "CRÍTICO",
-      "focus_context": "Tipping Point Comercial",
-      "diagnosis": "Cierres pasivos frecuentes (ej. 'a disposición', 'cualquier duda nos avisas') que dejan el control en el usuario sin forzar el avance.",
+      "focus_context": "Tipping Point Comercial · 89.6% de cierres pasivos",
+      "diagnosis": "El 89.6% de los cierres termina con un mensaje que no incluye pregunta de avance ni llamado a la acción, dejando el control en el usuario. Medido sobre 1,264 conversaciones con cierre propio, excluyendo difusiones y mensajes automáticos.",
       "recommendation": "Cierre Activo Obligatorio: Cerrar con una pregunta de reserva o confirmación de pedido (Tipping Point)."
     },
     {
       "pillar": "+ Optimización Continua",
-      "score": 50,
-      "status": "ALERTA",
-      "focus_context": "Carga Humana (82.1%) vs Bot (17.9%)",
-      "diagnosis": "Entre los operadores humanos, Asesora 1 concentra el 98.0% de la atención (14,670 msgs), generando un cuello de botella sistémico.",
-      "recommendation": "Cargar atajos rápidos de teclado para Asesora 1 y redistribuir la asignación de leads en horarios pico."
+      "score": 35,
+      "status": "CRÍTICO",
+      "focus_context": "Carga Humana (82.1%) vs Bot (17.9%) · Capital expuesto: $3,641,080 USD",
+      "diagnosis": "Entre los operadores humanos, Asesora 1 concentra el 98.0% de la atención (14,670 msgs), generando un cuello de botella sistémico. En paralelo, 802 leads (60.1%) con intención activa esperaron más allá del umbral de alerta: $3,641,080 USD de capital de cartera expuesto.",
+      "recommendation": "Cargar atajos rápidos de teclado para Asesora 1 y redistribuir la asignación de leads en horarios pico. Priorizar por Índice de Urgencia para que el capital en riesgo se atienda primero."
     }
   ],
   "ltv_economics": {
@@ -608,42 +608,42 @@
     "ticket_name": "Presupuesto de Materiales",
     "concept": "En corralones, el cliente compra repetidamente durante la obra y recomienda a otros constructores.",
     "leads_analyzed": 1334,
-    "leads_at_risk_count": 288,
-    "leads_at_risk_percentage": 21.6,
-    "immediate_lost_usd": 159120,
-    "ltv_capital_at_risk_usd": 1272960,
-    "cac_wasted_usd": 34560,
-    "total_economic_risk_usd": 1307520,
-    "projected_recovered_ltv_usd": 980640,
+    "leads_at_risk_count": 802,
+    "leads_at_risk_percentage": 60.1,
+    "immediate_lost_usd": 443105,
+    "ltv_capital_at_risk_usd": 3544840,
+    "cac_wasted_usd": 96240,
+    "total_economic_risk_usd": 3641080,
+    "projected_recovered_ltv_usd": 2730810,
     "exchange_rate_ars": 1250,
-    "total_economic_risk_ars": 1634400000,
-    "projected_recovered_ltv_ars": 1225800000
+    "total_economic_risk_ars": 4551350000,
+    "projected_recovered_ltv_ars": 3413512500
   },
   "prioritization_audit": {
-    "avg_ic_score": 33.8,
-    "avg_iu_score": 62.4,
-    "high_intent_leads_count": 418,
-    "high_intent_delayed_count": 288,
-    "fifo_delayed_percentage": 68.9,
+    "avg_ic_score": 54.9,
+    "avg_iu_score": 67.6,
+    "high_intent_leads_count": 1116,
+    "high_intent_delayed_count": 802,
+    "fifo_delayed_percentage": 71.9,
     "whatsapp_24h_breaches": 36,
     "whatsapp_24h_breach_percentage": 2.7,
     "ic_distribution": {
-      "muy_alta_80_100": 0,
-      "alta_60_79": 0,
-      "media_40_59": 418,
-      "baja_20_39": 878,
-      "ruido_0_19": 38
+      "muy_alta_80_100": 64,
+      "alta_60_79": 525,
+      "media_40_59": 527,
+      "baja_20_39": 209,
+      "ruido_0_19": 9
     },
     "iu_presets": {
-      "comercial_avg": 66.1,
-      "velocidad_avg": 59.9,
-      "cumplimiento_avg": 61.8,
-      "calidad_avg": 63.6
+      "comercial_avg": 71.7,
+      "velocidad_avg": 64.9,
+      "cumplimiento_avg": 66.9,
+      "calidad_avg": 69.0
     },
     "fifo_vs_spoter_wait": {
-      "fifo_high_intent_wait_min": 154.7,
+      "fifo_high_intent_wait_min": 257.9,
       "spoter_high_intent_wait_min": 2.0,
-      "wait_reduction_percentage": 98.7
+      "wait_reduction_percentage": 99.2
     }
   },
   "spoter_lite": {
@@ -657,9 +657,9 @@
       "ruido_stop_count": 3,
       "ruido_stop_percentage": 0.2
     },
-    "leads_rescatables_count": 410,
-    "leads_rescatables_percentage": 35.8,
-    "rescate_strategy_summary": "410 leads con intención activa (IC >= 40) quedaron abandonados sin aplicar una pregunta de rescate estructurada antes de declarar el silencio."
+    "leads_rescatables_count": 1041,
+    "leads_rescatables_percentage": 91.0,
+    "rescate_strategy_summary": "1041 leads con intención activa (IC >= 40) quedaron abandonados sin aplicar una pregunta de rescate estructurada antes de declarar el silencio."
   },
   "savings": {
     "current_company_messages": 18248,
@@ -672,7 +672,7 @@
     "optimization_rationale": "Línea de base actual: tu empresa envía hoy 13.7 mensajes por cliente. El estándar metodológico ACTÚEN+ en un solo bloque requiere 5.0 mensajes empresa para cerrar o resolver. El 63.4% de optimización representa la eliminación de 11,578 mensajes fragmentados innecesarios.",
     "economic_benefit": {
       "total_ars": 1244510,
-      "total_usd": 957.32,
+      "total_usd": 995.61,
       "labor_savings_ars": 723500,
       "api_savings_ars": 521010,
       "hourly_rate_ref": 5000,

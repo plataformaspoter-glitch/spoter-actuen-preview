@@ -22,6 +22,37 @@ import json
 from collections import defaultdict, Counter
 from datetime import datetime
 
+# --- Catálogo: fuente única de verdad ------------------------------------------
+# rubros.json lo consumen este motor y el navegador. Cualquier dato de rubro,
+# plantilla, categoría o supuesto económico va ahí, nunca duplicado en el código.
+
+_RUTA_CATALOGO = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'rubros.json')
+
+def _cargar_catalogo():
+    try:
+        with open(_RUTA_CATALOGO, encoding='utf-8') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        raise SystemExit(
+            f"No se encontró rubros.json en {_RUTA_CATALOGO}.\n"
+            "Es la fuente de verdad del catálogo. Se regenera con:\n"
+            "    python3 tools/generar_rubros_json.py"
+        )
+    except json.JSONDecodeError as e:
+        raise SystemExit(f"rubros.json está corrupto: {e}")
+
+CATALOGO = _cargar_catalogo()
+CATALOGO_RUBROS = CATALOGO['rubros']
+SUPUESTOS = CATALOGO['supuestos_economicos']
+PINGPONG_POR_RUBRO = {k: tuple(v) for k, v in CATALOGO['pingpong_por_rubro'].items()}
+
+
+def derivar_alias(nombre_empresa):
+    """Alias bancario a partir del nombre de la empresa."""
+    base = re.sub(r'[^A-Za-z0-9]', '.', (nombre_empresa or '').strip().upper()).strip('.')
+    return f"{base}.OFICIAL" if base and base != 'EMPRESA' else 'PAGOS.OFICIALES'
+
+
 # --- Normalización de valores de entrada -------------------------------------
 # Los encabezados de columna se normalizan en parse_files(); acá se normalizan
 # los VALORES, que varían según la plataforma que exportó el CSV.
@@ -86,243 +117,9 @@ class ActuenAnalyzer:
         self.handoff_policy = handoff_policy  # 'bot_priority', 'hybrid', 'human_priority'
 
         # Catálogo Exhaustivo de Rubros y SLAs
-        self.rubro_catalog = {
-            'salud_obra_social': {
-                'name': 'Salud / Obra Social / Medicina Prepaga',
-                'description': 'Gestión de autorizaciones, turnos médicos, cartilla, recetas y reintegros.',
-                'keywords': [r'autoriz', r'afiliad', r'turno', r'm[eé]dic', r'receta', r'cartilla', r'reintegro', r'estudio', r'cl[ií]nic', r'orden', r'cobertura', r'prestador', r'farmacia', r'medicamento', r'plan', r'paciente', r'salud', r'obra social', r'prepaga', r'credencial', r'carnet', r'odontol', r'psicol', r'kinesio'],
-                'default_focus': 'soporte',
-                'sla': {
-                    'ideal_immediate': 2.0,
-                    'acceptable': 5.0,
-                    'warning': 12.0,
-                    'critical': 25.0,
-                    'benchmark_text': 'En salud, la contención inicial debe ser < 2 min y la resolución de autorizaciones < 12 min.'
-                },
-                'ltv_model': {'avg_ticket_usd': 70, 'annual_frequency': 12, 'retention_years': 3.5, 'cac_usd': 95, 'ticket_name': 'Cuota / Copago Mensual', 'concept': 'En salud, perder un afiliado por demora en autorizaciones destruye el valor de años de cuotas.'},
-                'categories': {
-                    'Autorizaciones y Órdenes Médicas': [r'autoriz', r'orden', r'estudio', r'pr[aá]ctica', r'ecograf', r'resonanc', r'laboratorio', r'an[aá]lisis', r'biopsia'],
-                    'Turnos y Cartilla Médica': [r'turno', r'cartilla', r'm[eé]dic', r'especialista', r'profesional', r'consultorio', r'guardia', r'horario'],
-                    'Reintegros y Facturación Médica': [r'reintegro', r'factura', r'cbu', r'gasto', r'comprobante', r'reembolso', r'alias'],
-                    'Recetas y Farmacia': [r'receta', r'farmacia', r'medicamento', r'remedio', r'dosis', r'descuento farmacia'],
-                    'Afiliación, Credenciales y Cuotas': [r'afiliad', r'credencial', r'cuota', r'plan', r'alta', r'baja', r'carnet', r'titular', r'adherente'],
-                    'Reclamos y Demoras de Atención': [r'demora', r'reclamo', r'queja', r'urgencia', r'no me atienden', r'espera', r'cancel', r'mal servicio']
-                }
-            },
-            'construccion_corralon': {
-                'name': 'Construcción / Corralón / Materiales',
-                'description': 'Venta de materiales gruesos, áridos, hierros, terminaciones y logística en obra.',
-                'keywords': [r'cemento', r'hierro', r'arena', r'ripio', r'chapa', r'ladrillo', r'cal\b', r'obra', r'flete', r'pallet', r'camionada', r'malla', r'perfil', r'klaukol', r'weber', r'áridos', r'aridos', r'galpon', r'vigueta', r'corralon', r'corralón'],
-                'default_focus': 'ventas',
-                'sla': {
-                    'ideal_immediate': 2.0,
-                    'acceptable': 6.0,
-                    'warning': 15.0,
-                    'critical': 30.0,
-                    'benchmark_text': 'En materiales para la construcción, leads que esperan > 15 min cotizan con otro corralón y se pierden.'
-                },
-                'ltv_model': {'avg_ticket_usd': 850, 'annual_frequency': 4, 'retention_years': 2.0, 'cac_usd': 120, 'ticket_name': 'Presupuesto de Materiales', 'concept': 'En corralones, el cliente compra repetidamente durante la obra y recomienda a otros constructores.'},
-                'categories': {
-                    'Presupuesto General / Lista de Materiales': [r'presupuesto', r'cotiz', r'lista', r'precio', r'cuanto me sale', r'materiales'],
-                    'Envíos, Fletes y Zonas de Obra': [r'envio', r'envío', r'flete', r'llegan', r'entreg', r'descarga', r'camion', r'barrio', r'calle'],
-                    'Cemento, Cal y Adhesivos': [r'cemento', r'cal\b', r'klaukol', r'weber', r'loma negra', r'holcim', r'pegamento'],
-                    'Chapas, Perfiles y Caños': [r'chapa', r'perfil', r'tubo', r'caño', r'aislante', r'zingueria', r'clavador'],
-                    'Áridos (Arena, Ripio, Piedra)': [r'arena', r'ripio', r'piedra', r'camionada', r'm3\b', r'metro cubico', r'anchoris'],
-                    'Hierros y Mallas Cima': [r'hierro', r'malla', r'del 8', r'del 10', r'del 12', r'del 6', r'alambre', r'estribo'],
-                    'Formas de Pago y Descuentos': [r'pago', r'cuota', r'tarjeta', r'transferencia', r'efectivo', r'descuento', r'debito', r'cheque'],
-                    'Reclamos y Contenedores': [r'demora', r'contenedor', r'pedido', r'a que hora vienen', r'reclamo', r'multa', r'falta']
-                }
-            },
-            'automotor_concesionaria': {
-                'name': 'Automotor / Concesionaria / Repuestos',
-                'description': 'Venta de vehículos 0km, usados, planes de ahorro, service y repuestos.',
-                'keywords': [r'auto\b', r'veh[ií]culo', r'concesionari', r'0km', r'usado', r'plan de ahorro', r'cuota plan', r'adjudicad', r'kilometraje', r'repuesto', r'taller', r'service', r'motor', r'chasis', r'test drive', r'patente'],
-                'default_focus': 'ventas',
-                'sla': {
-                    'ideal_immediate': 3.0,
-                    'acceptable': 8.0,
-                    'warning': 20.0,
-                    'critical': 45.0,
-                    'benchmark_text': 'El comprador de autos contacta hasta 4 concesionarias; responder antes de 5 min duplica la tasa de visita.'
-                },
-                'ltv_model': {'avg_ticket_usd': 18000, 'annual_frequency': 0.4, 'retention_years': 5.0, 'cac_usd': 450, 'ticket_name': 'Vehículo / Plan de Ahorro', 'concept': 'En concesionarias, cada cliente genera ingresos por compra, service oficial, repuestos y recompras.'},
-                'categories': {
-                    'Consulta de Modelos y Stock': [r'modelo', r'version', r'stock', r'color', r'0km', r'usado', r'ficha t[eé]cnica'],
-                    'Financiación y Cuotas de Plan': [r'plan', r'cuota', r'financi', r'anticipo', r'tasa', r'cr[eé]dito', r'banco'],
-                    'Cotización de Usado en Parte de Pago': [r'usado', r'toma', r'mi auto', r'entrego', r'a[ñn]o', r'km', r'tasaci[oó]n'],
-                    'Turnos de Service y Taller': [r'service', r'taller', r'mantenimiento', r'turno', r'aceite', r'frenos', r'garant[ií]a'],
-                    'Repuestos y Accesorios': [r'repuesto', r'pieza', r'accesorio', r'bateria', r'cubierta', r'neumatico']
-                }
-            },
-            'inmobiliaria_desarrollos': {
-                'name': 'Inmobiliaria / Desarrollos / Alquileres',
-                'description': 'Alquileres, venta de propiedades, lotes, tasaciones y desarrollos de pozo.',
-                'keywords': [r'inmobiliari', r'alquiler', r'departamento', r'depto', r'casa\b', r'terreno', r'lote', r'propiedad', r'expensas', r'garant[ií]a', r'recibo de sueldo', r'tasaci[oó]n', r'venta', r'escritura', r'pozo'],
-                'default_focus': 'ventas',
-                'sla': {
-                    'ideal_immediate': 3.0,
-                    'acceptable': 10.0,
-                    'warning': 25.0,
-                    'critical': 60.0,
-                    'benchmark_text': 'En real estate, el prospecto busca agendar visita o conocer requisitos en el primer contacto.'
-                },
-                'ltv_model': {'avg_ticket_usd': 45000, 'annual_frequency': 0.25, 'retention_years': 4.0, 'cac_usd': 600, 'ticket_name': 'Propiedad / Alquiler Anual', 'concept': 'En real estate, el prospecto desatendido alquila o compra con otra inmobiliaria y se pierde la comisión y futuras operaciones.'},
-                'categories': {
-                    'Disponibilidad y Ficha de Propiedades': [r'disponible', r'fotos', r'video', r'ambientes', r'dormitorios', r'zona', r'ubicaci[oó]n'],
-                    'Requisitos y Condiciones de Alquiler': [r'requisito', r'alquiler', r'garant[ií]a', r'recibo', r'mes de dep[oó]sito', r'expensas'],
-                    'Coordinación de Visitas': [r'visita', r'verla', r'conocer', r'cuando se puede', r'horario', r'agendar'],
-                    'Venta, Lotes y Planes de Pozo': [r'venta', r'precio', r'valor', r'cuotas', r'anticipo', r'pozo', r'loteo'],
-                    'Tasaciones y Consultas de Propietarios': [r'tasar', r'tasaci[oó]n', r'vender', r'poner en alquiler', r'administraci[oó]n']
-                }
-            },
-            'seguros_fintech': {
-                'name': 'Seguros / Fintech / Finanzas',
-                'description': 'Pólizas de seguro, denuncias de siniestros, créditos, tarjetas y transferencias.',
-                'keywords': [r'seguro', r'p[oó]liza', r'siniestro', r'choque', r'cobertura', r'franquicia', r'cr[eé]dito', r'pr[eé]stamo', r'tarjeta', r'saldo', r'l[ií]mite', r'transferencia', r'banco', r'inter[eé]s', r'cbu'],
-                'default_focus': 'soporte',
-                'sla': {
-                    'ideal_immediate': 1.5,
-                    'acceptable': 4.0,
-                    'warning': 10.0,
-                    'critical': 20.0,
-                    'benchmark_text': 'En siniestros o transacciones financieras, el cliente necesita asistencia y contención inmediata.'
-                },
-                'ltv_model': {'avg_ticket_usd': 45, 'annual_frequency': 12, 'retention_years': 3.0, 'cac_usd': 85, 'ticket_name': 'Póliza Mensual / Préstamo', 'concept': 'En seguros y finanzas, la retención anual multiplica el margen operativo; la desatención dispara el churn.'},
-                'categories': {
-                    'Denuncias de Siniestros y Choques': [r'siniestro', r'choque', r'accidente', r'robo', r'gr[uú]a', r'auxilio', r'taller'],
-                    'Cotización y Contratación de Póliza': [r'cotiz', r'precio', r'cobertura', r'terceros', r'todo riesgo', r'auto', r'hogar'],
-                    'Préstamos y Tarjetas de Crédito': [r'prestamo', r'préstamo', r'credito', r'crédito', r'límite', r'requisitos', r'cuotas'],
-                    'Consultas de Pagos y Débito Automático': [r'pago', r'cuota', r'debito', r'cobro', r'vencimiento', r'comprobante'],
-                    'Gestión de Cuenta y Reclamos': [r'cuenta', r'bloqueo', r'clave', r'reclamo', r'desconozco', r'tarjeta perdida']
-                }
-            },
-            'educacion_institutos': {
-                'name': 'Educación / Universidades / Cursos',
-                'description': 'Inscripciones a carreras, diplomaturas, fechas de examen, aranceles y títulos.',
-                'keywords': [r'carrera', r'curso', r'diplomatura', r'universidad', r'facultad', r'inscripci[oó]n', r'arancel', r'cuota', r'matr[ií]cula', r'alumno', r'profesor', r'examen', r't[ií]tulo', r'modalidad', r'online', r'presencial'],
-                'default_focus': 'ventas',
-                'sla': {
-                    'ideal_immediate': 3.0,
-                    'acceptable': 10.0,
-                    'warning': 25.0,
-                    'critical': 60.0,
-                    'benchmark_text': 'En educación, enviar plan de estudios y aranceles en 1 solo mensaje acelera la preinscripción.'
-                },
-                'ltv_model': {'avg_ticket_usd': 130, 'annual_frequency': 10, 'retention_years': 2.5, 'cac_usd': 150, 'ticket_name': 'Matrícula y Cuota Mensual', 'concept': 'En educación, un alumno inscripto permanece entre 2 y 4 años abonando aranceles continuos.'},
-                'categories': {
-                    'Planes de Estudio y Modalidades': [r'carrera', r'programa', r'plan de estudio', r'materias', r'duraci[oó]n', r'modalidad', r'virtual'],
-                    'Aranceles, Matrículas y Becas': [r'arancel', r'cuota', r'matricula', r'cuanto sale', r'costo', r'beca', r'descuento'],
-                    'Proceso de Preinscripción e Ingreso': [r'inscribir', r'inscripcion', r'anotarme', r'requisito', r'fecha limite', r'ingreso'],
-                    'Consultas de Alumnos y Exámenes': [r'alumno', r'examen', r'mesa', r'final', r'nota', r'certificado', r'constancia'],
-                    'Administración y Pagos': [r'comprobante', r'factura', r'pago de cuota', r'recibo', r'deuda']
-                }
-            },
-            'comercio_retail': {
-                'name': 'Comercio / Retail / E-Commerce / Moda',
-                'description': 'Venta minorista, indumentaria, calzado, tecnología, catálogo y envíos.',
-                'keywords': [r'producto', r'talle', r'stock', r'env[ií]o', r'comprar', r'cat[aá]logo', r'devoluc', r'garant[ií]a', r'carrito', r'pedido', r'remera', r'pantalon', r'zapatilla', r'tienda', r'local'],
-                'default_focus': 'ventas',
-                'sla': {
-                    'ideal_immediate': 2.0,
-                    'acceptable': 5.0,
-                    'warning': 12.0,
-                    'critical': 25.0,
-                    'benchmark_text': 'En compras de retail por chat, el 60% de los clientes compra en los primeros 10 min si hay stock y link.'
-                },
-                'ltv_model': {'avg_ticket_usd': 50, 'annual_frequency': 4.5, 'retention_years': 2.0, 'cac_usd': 28, 'ticket_name': 'Ticket Promedio de Compra', 'concept': 'En e-commerce y retail, el comprador satisfecho recompra de 4 a 6 veces al año y comparte catálogos.'},
-                'categories': {
-                    'Stock, Talles y Modelos': [r'stock', r'disponible', r'talle', r'color', r'modelo', r'catálogo', r'catalogo', r'medidas'],
-                    'Precios, Promociones y Cuotas': [r'precio', r'cuanto sale', r'cuánto sale', r'cuota', r'tarjeta', r'descuento', r'promo', r'efectivo'],
-                    'Envíos y Puntos de Retiro': [r'envio', r'envío', r'domicilio', r'sucursal', r'retiro', r'correo', r'codigo postal', r'cp'],
-                    'Cambios, Devoluciones y Fallas': [r'cambio', r'devoluc', r'garantia', r'garantía', r'falla', r'rotura', r'talle chico'],
-                    'Estado de Pedido y Seguimiento': [r'donde esta mi pedido', r'seguimiento', r'cuando llega', r'despacharon', r'codigo de envio']
-                }
-            },
-            'turismo_hoteleria': {
-                'name': 'Turismo / Hotelería / Alquiler Temporario',
-                'description': 'Reservas de hoteles, cabañas, paquetes de viaje, excursiones y vuelos.',
-                'keywords': [r'hotel', r'caba[ñn]a', r'reserva', r'check-in', r'check-out', r'noche', r'pasaje', r'vuelo', r'paquete', r'turismo', r'excursi[oó]n', r'hospedaje', r'desayuno', r'pileta'],
-                'default_focus': 'ventas',
-                'sla': {
-                    'ideal_immediate': 2.0,
-                    'acceptable': 5.0,
-                    'warning': 15.0,
-                    'critical': 30.0,
-                    'benchmark_text': 'En turismo la disponibilidad es volátil; cotizar tarifas y noches de inmediato asegura la seña.'
-                },
-                'ltv_model': {'avg_ticket_usd': 380, 'annual_frequency': 1.8, 'retention_years': 3.0, 'cac_usd': 75, 'ticket_name': 'Estadía / Paquete Turístico', 'concept': 'En hotelería y turismo, la fidelización asegura temporadas futuras y elimina comisiones de OTAs.'},
-                'categories': {
-                    'Tarifas y Disponibilidad de Fechas': [r'tarifa', r'precio', r'disponibilidad', r'fecha', r'noche', r'cuanto cuesta', r'personas'],
-                    'Servicios y Comodidades del Lugar': [r'desayuno', r'pileta', r'estacionamiento', r'cochera', r'wifi', r'mascota', r'aire'],
-                    'Confirmación de Reserva y Seña': [r'reserva', r'seña', r'bloquear', r'confirmar', r'transferencia', r'tarjeta'],
-                    'Coordinación de Llegada (Check-in)': [r'check in', r'check-in', r'a que hora', r'llegada', r'llaves', r'direccion', r'como llegar'],
-                    'Cancelaciones y Modificaciones': [r'cancelar', r'reprogramar', r'cambio de fecha', r'devolucion']
-                }
-            },
-            'gastronomia_delivery': {
-                'name': 'Gastronomía / Restaurantes / Delivery',
-                'description': 'Pedidos de comida, reservas de mesa, menús diarios y delivery.',
-                'keywords': [r'comida', r'men[uú]', r'carta\b', r'pedido', r'delivery', r'mesa\b', r'reserva mesa', r'pizza', r'hamburguesa', r'sushi', r'empanada', r'plato', r'bebida', r'mozo'],
-                'default_focus': 'ventas',
-                'sla': {
-                    'ideal_immediate': 1.0,
-                    'acceptable': 3.0,
-                    'warning': 6.0,
-                    'critical': 12.0,
-                    'benchmark_text': 'En gastronomía, demorar más de 5 min hace que el cliente abra otra app o pida en otro local.'
-                },
-                'ltv_model': {'avg_ticket_usd': 22, 'annual_frequency': 18, 'retention_years': 1.5, 'cac_usd': 15, 'ticket_name': 'Pedido / Mesa de Restaurante', 'concept': 'En gastronomía, el cliente habitual pide 1 a 2 veces por mes; un mensaje sin responder lo manda a la competencia.'},
-                'categories': {
-                    'Toma de Pedidos y Delivery': [r'quiero pedir', r'delivery', r'envio', r'para llevar', r'domicilio', r'cuanto demora'],
-                    'Carta, Menú y Promociones': [r'menu', r'menú', r'carta', r'precios', r'promos', r'que tienen', r'platos'],
-                    'Reservas de Mesas y Eventos': [r'reserva', r'mesa', r'personas', r'cumpleaños', r'horario', r'adentro', r'afuera'],
-                    'Medios de Pago y Facturación': [r'pago', r'alias', r'mercado pago', r'efectivo', r'tarjeta', r'posnet'],
-                    'Reclamos por Demora o Error en Pedido': [r'demora', r'no llega', r'frio', r'falta', r'vino mal', r'cancelar']
-                }
-            },
-            'saas_b2b_tecnologia': {
-                'name': 'Tecnología / SaaS / Servicios B2B',
-                'description': 'Software, demos comerciales, soporte técnico, integraciones y licencias.',
-                'keywords': [r'software', r'saas', r'plataforma', r'sistema', r'licencia', r'demo', r'integraci[oó]n', r'api\b', r'login', r'usuario', r'contrase[ñn]a', r'ticket', r'error', r'falla', r'bug', r'servidor'],
-                'default_focus': 'soporte',
-                'sla': {
-                    'ideal_immediate': 2.0,
-                    'acceptable': 6.0,
-                    'warning': 15.0,
-                    'critical': 35.0,
-                    'benchmark_text': 'En software B2B, las fallas críticas requieren primer contacto en < 5 min para evitar impacto operativo.'
-                },
-                'ltv_model': {'avg_ticket_usd': 280, 'annual_frequency': 12, 'retention_years': 3.0, 'cac_usd': 350, 'ticket_name': 'Suscripción Mensual B2B', 'concept': 'En software B2B, cada cliente fidelizado genera ingresos recurrentes mensuales e introduce upgrades de licencias.'},
-                'categories': {
-                    'Soporte Técnico y Reporte de Bugs': [r'no funciona', r'error', r'bug', r'problema', r'falla', r'caido', r'ticket'],
-                    'Accesos, Usuarios y Recuperación': [r'login', r'clave', r'contraseña', r'usuario', r'acceso', r'desbloqueo', r'permisos'],
-                    'Solicitud de Demo y Presupuestos': [r'demo', r'reunion', r'precio', r'planes', r'cotizar', r'presupuesto', r'probar'],
-                    'Facturación, Planes y Upgrades': [r'factura', r'plan', r'upgrade', r'licencias', r'renovacion', r'tarjeta'],
-                    'Consultas de Integración y API': [r'api', r'integracion', r'webhook', r'documentacion', r'configuracion']
-                }
-            },
-            'servicios_generales': {
-                'name': 'Servicios Profesionales / Atención General',
-                'description': 'Atención al cliente, trámites, presupuestos y soporte general multirubro.',
-                'keywords': [r'servicio', r'consulta', r'horario', r'turno', r'precio', r'ayuda', r'soporte', r'atenci[oó]n'],
-                'default_focus': 'soporte',
-                'sla': {
-                    'ideal_immediate': 2.5,
-                    'acceptable': 7.0,
-                    'warning': 15.0,
-                    'critical': 35.0,
-                    'benchmark_text': 'En atención general, el estándar óptimo de resolución en primer contacto es menor a 8 min.'
-                },
-                'ltv_model': {'avg_ticket_usd': 120, 'annual_frequency': 4.0, 'retention_years': 2.0, 'cac_usd': 60, 'ticket_name': 'Servicio / Honorario Base', 'concept': 'En servicios profesionales, la confianza inicial determina una relación comercial plurianual.'},
-                'categories': {
-                    'Consultas Generales y Horarios': [r'horario', r'abierto', r'direccion', r'dirección', r'donde estan', r'ubicación'],
-                    'Tarifas y Presupuestos': [r'precio', r'costo', r'cuanto', r'cuánto', r'presupuesto', r'valor'],
-                    'Soporte y Asistencia': [r'ayuda', r'soporte', r'no funciona', r'error', r'falla', r'problema'],
-                    'Gestión de Cuentas y Trámites': [r'cuenta', r'dni', r'trámite', r'tramite', r'estado', r'document'],
-                    'Reclamos y Quejas': [r'reclamo', r'queja', r'demora', r'mal servicio', r'desconozco']
-                }
-            }
-        }
+        # Catálogo de rubros: SLAs, modelos de LTV, keywords y categorías.
+        # Fuente única en rubros.json — lo consumen también app.js y el navegador.
+        self.rubro_catalog = CATALOGO_RUBROS
 
     def parse_files(self, file_paths):
         all_rows = []
@@ -685,20 +482,8 @@ class ActuenAnalyzer:
 
         # 8. Categorías dinámicas y Nivel de Ping-Pong Calibrado por Industria
         # Estándar flexible y específico según la complejidad natural del rubro
-        rubro_pingpong_map = {
-            'construccion_corralon': (3.5, 3.0),   # 6.5 total (acopio, fletes, listas de materiales)
-            'automotor_concesionaria': (4.0, 3.5), # 7.5 total (usado, financiación, service)
-            'inmobiliaria_desarrollos': (4.0, 3.5), # 7.5 total (visitas, requisitos, tasación)
-            'salud_obra_social': (3.0, 3.0),       # 6.0 total (autorizaciones, cartilla, DNI)
-            'seguros_fintech': (3.0, 3.0),         # 6.0 total (pólizas, siniestros)
-            'educacion_institutos': (3.5, 3.0),    # 6.5 total (planes de estudio, aranceles)
-            'comercio_retail': (3.0, 2.5),         # 5.5 total (stock, talle, envío)
-            'turismo_hoteleria': (3.5, 3.0),       # 6.5 total (fechas, comodidades, seña)
-            'gastronomia_delivery': (2.5, 2.5),    # 5.0 total (pedido rápido, delivery)
-            'saas_b2b_tecnologia': (3.5, 3.0),     # 6.5 total (tickets, demos)
-            'servicios_generales': (3.5, 3.0)      # 6.5 total
-        }
-        ideal_c, ideal_op = rubro_pingpong_map.get(best_rubro_key, (3.5, 3.0))
+        # Estándar de ping-pong por rubro: en rubros.json
+        ideal_c, ideal_op = PINGPONG_POR_RUBRO.get(best_rubro_key, (3.5, 3.0))
         IDEAL_CLIENT_MSGS = ideal_c
         IDEAL_OPERATOR_MSGS = ideal_op
         IDEAL_TOTAL_MSGS = round(IDEAL_CLIENT_MSGS + IDEAL_OPERATOR_MSGS, 1)
@@ -809,7 +594,7 @@ class ActuenAnalyzer:
                 "is_bot": is_bot,
                 "messages": count,
                 "percentage": round((count / (company_msgs_count or 1)) * 100, 1),
-                "est_hours_spent": round((count * 0.75) / 60, 1)
+                "est_hours_spent": round((count * SUPUESTOS['minutos_por_mensaje']) / 60, 1)
             })
 
         bot_share = round((bot_msgs_total / (company_msgs_count or 1)) * 100, 1)
@@ -842,6 +627,43 @@ class ActuenAnalyzer:
 
         handoff_gap_analysis = self._compute_handoff_gap_analysis(client_conversations, operator_counts, rubro_key=best_rubro_key)
 
+        # Cierre activo vs pasivo (pilar N). Se evalúa el último mensaje real de
+        # la empresa, descartando difusiones (mismo texto en muchas conversaciones)
+        # y mensajes automáticos: medir la calidad de cierre sobre una bienvenida
+        # de bot o un aviso de feriado no dice nada del asesor.
+        _cfg = CATALOGO['deteccion_cierre']
+        _re_auto = re.compile(_cfg['regex_automatico'], re.I)
+        _re_activo = re.compile(_cfg['regex_cierre_activo'], re.I)
+
+        _apariciones = Counter()
+        for _cid, _msgs in client_conversations.items():
+            for _t in {(m.get('Mensaje') or '').strip() for m in _msgs if is_propio(m)}:
+                if _t:
+                    _apariciones[_t] += 1
+        _difusiones = {t for t, n in _apariciones.items()
+                       if n >= _cfg['umbral_difusion_conversaciones']}
+
+        cierres_activos = 0
+        cierres_pasivos = 0
+        cierres_no_evaluables = 0
+        for _cid, _msgs in client_conversations.items():
+            _reales = [m for m in _msgs
+                       if is_propio(m)
+                       and (m.get('Mensaje') or '').strip()
+                       and (m.get('Mensaje') or '').strip() not in _difusiones
+                       and not _re_auto.search(m.get('Mensaje') or '')]
+            if not _reales:
+                cierres_no_evaluables += 1
+                continue
+            _ultimo = (_reales[-1].get('Mensaje') or '').strip()
+            if _re_activo.search(_ultimo):
+                cierres_activos += 1
+            else:
+                cierres_pasivos += 1
+
+        _evaluables = cierres_activos + cierres_pasivos
+        passive_closing_rate = round((cierres_pasivos / (_evaluables or 1)) * 100, 1)
+
         actuen_scorecard = self._evaluate_actuen_dynamic(
             focus=final_focus,
             rubro_name=rubro_info['name'],
@@ -856,7 +678,10 @@ class ActuenAnalyzer:
             top_questions=top_company_questions,
             topic_data=topic_data,
             ltv_econ=ltv_econ,
-            lite_phases=lite_phases
+            lite_phases=lite_phases,
+            prio_audit=prio_audit,
+            passive_closing_rate=passive_closing_rate,
+            cierres_evaluables=_evaluables
         )
 
         # 11. Proyección de Ahorro y Beneficio Económico Fundamentado
@@ -868,15 +693,15 @@ class ActuenAnalyzer:
         estimated_opt_company_msgs = int(unique_clients * target_msgs_per_client)
         saved_messages = max(0, company_msgs_count - estimated_opt_company_msgs)
         reduction_percentage = round((saved_messages / (company_msgs_count or 1)) * 100, 1)
-        saved_hours = round((saved_messages * 0.75) / 60, 1)
+        saved_hours = round((saved_messages * SUPUESTOS['minutos_por_mensaje']) / 60, 1)
 
         # Estimación de Beneficio Económico
-        hourly_rate_ars = 5000
-        msg_cost_ars = 45
+        hourly_rate_ars = SUPUESTOS['costo_hora_asesor_ars']
+        msg_cost_ars = SUPUESTOS['costo_mensaje_api_ars']
         labor_savings_ars = saved_hours * hourly_rate_ars
         api_savings_ars = saved_messages * msg_cost_ars
         total_financial_benefit_ars = labor_savings_ars + api_savings_ars
-        total_financial_benefit_usd = round(total_financial_benefit_ars / 1300, 2)
+        total_financial_benefit_usd = round(total_financial_benefit_ars / SUPUESTOS['tipo_cambio_ars'], 2)
 
         optimization_rationale = (
             f"Línea de base actual: tu empresa envía hoy {baseline_company_msgs_per_client} mensajes por cliente. "
@@ -1005,7 +830,7 @@ class ActuenAnalyzer:
             user_msgs = [m for m in msgs if not is_propio(m)]
             company_msgs = [m for m in msgs if is_propio(m)]
 
-            user_text = " ".join([m.get('Texto', '') for m in user_msgs]).lower()
+            user_text = " ".join([m.get('Mensaje', '') for m in user_msgs]).lower()
 
             # E: Etapa
             if re_closing.search(user_text):
@@ -1033,7 +858,7 @@ class ActuenAnalyzer:
 
             # G: Engagement
             g_ritmo = 8 if len(user_msgs) >= 3 else (5 if len(user_msgs) >= 1 else 0)
-            avg_char_len = (sum(len(m.get('Texto', '')) for m in user_msgs) / len(user_msgs)) if user_msgs else 0
+            avg_char_len = (sum(len(m.get('Mensaje', '')) for m in user_msgs) / len(user_msgs)) if user_msgs else 0
             has_q = 5 if '?' in user_text else 0
             g_sustancia = min(10, (5 if avg_char_len > 35 else 2) + has_q)
             g_val = g_ritmo + g_sustancia
@@ -1108,14 +933,14 @@ class ActuenAnalyzer:
                 if ic_score >= 40:
                     leads_rescatables += 1
 
-        conversion_loss_rate = 0.65
+        conversion_loss_rate = SUPUESTOS['tasa_caida_conversion']
         immediate_lost_usd = round(leads_at_risk_count * avg_ticket * conversion_loss_rate)
         ltv_capital_lost_usd = round(leads_at_risk_count * ltv_val * conversion_loss_rate)
         cac_wasted_usd = round(leads_at_risk_count * cac)
         total_economic_risk_usd = ltv_capital_lost_usd + cac_wasted_usd
 
-        projected_recovered_usd = round(total_economic_risk_usd * 0.75)
-        exchange_rate_ars = 1250
+        projected_recovered_usd = round(total_economic_risk_usd * SUPUESTOS['tasa_recuperacion_spoter'])
+        exchange_rate_ars = SUPUESTOS['tipo_cambio_ars']
         total_economic_risk_ars = total_economic_risk_usd * exchange_rate_ars
         projected_recovered_ars = projected_recovered_usd * exchange_rate_ars
 
@@ -1192,7 +1017,7 @@ class ActuenAnalyzer:
 
         return ltv_economics, prioritization_audit, spoter_lite
 
-    def _evaluate_actuen_dynamic(self, focus, rubro_name, sla, fragmentation_rate, avg_wait, pct_over_warning, system_drops, bot_welcomes, unique_clients, handoff_data, top_questions, topic_data, ltv_econ=None, lite_phases=None):
+    def _evaluate_actuen_dynamic(self, focus, rubro_name, sla, fragmentation_rate, avg_wait, pct_over_warning, system_drops, bot_welcomes, unique_clients, handoff_data, top_questions, topic_data, ltv_econ=None, lite_phases=None, prio_audit=None, passive_closing_rate=None, cierres_evaluables=0):
         scorecard = []
         is_sales = (focus == 'ventas')
         policy = handoff_data.get('policy', 'hybrid')
@@ -1240,34 +1065,86 @@ class ActuenAnalyzer:
             "recommendation": f"Inyectar oxígeno conversacional: Si la gestión demora más de {sla['ideal_immediate']:.0f} minutos, enviar un mensaje de contención predefinido."
         })
 
-        # U - Ubicar la Intención
+        # U - Ubicar la Intención (medido con el Índice de Conversión)
         top_inquiry = topic_data[0]['category'] if topic_data else 'la consulta principal'
+        prio = prio_audit or {}
+        avg_ic = prio.get('avg_ic_score', 0)
+        dist = prio.get('ic_distribution', {})
+        calientes = dist.get('muy_alta_80_100', 0) + dist.get('alta_60_79', 0)
+        frias = dist.get('baja_20_39', 0) + dist.get('ruido_0_19', 0)
+        total_ic = calientes + frias + dist.get('media_40_59', 0)
+
+        if avg_ic >= 60:
+            u_status = "ÓPTIMO"
+        elif avg_ic >= 40:
+            u_status = "ALERTA"
+        else:
+            u_status = "CRÍTICO"
+
         scorecard.append({
             "pillar": "U - Ubicar la Intención",
-            "score": 50,
-            "status": "ALERTA",
-            "focus_context": "Descubrimiento de Macro y Micro-intención",
-            "diagnosis": f"En {rubro_name}, el {topic_data[0]['percentage'] if topic_data else 30}% de los usuarios ingresa por '{top_inquiry}'. Actualmente se piden los requisitos en turnos separados en lugar de anticipar la necesidad.",
-            "recommendation": f"Diseñar un Blueprint de Micro-intenciones: Al consultar por {top_inquiry.lower()}, solicitar los datos clave en el turno inicial."
+            "score": round(avg_ic),
+            "status": u_status,
+            "focus_context": f"Índice de Conversión medio: {avg_ic}/100",
+            "diagnosis": (
+                f"El IC medio de la cartera es {avg_ic}/100: {calientes} conversaciones con intención alta "
+                f"y {frias} que quedaron en zona fría o ruido sobre {total_ic} analizadas. "
+                f"El {topic_data[0]['percentage'] if topic_data else 30}% ingresa por '{top_inquiry}'. "
+                "Un IC bajo puede venir de tráfico frío o de no extraer la necesidad completa en el turno inicial; "
+                "el desglose por conversación permite distinguirlo."
+            ),
+            "recommendation": f"Diseñar un Blueprint de Micro-intenciones: Al consultar por {top_inquiry.lower()}, solicitar los datos clave (habilitantes) en el turno inicial para elevar el IC."
         })
 
-        # E - Experiencia Personalizada
+        # E - Experiencia Personalizada (medido con las fases Spoter Lite)
+        lite = lite_phases or {}
+        fases = lite.get('phases', {})
+        rescatables = lite.get('leads_rescatables_count', 0)
+        pct_rescatables = lite.get('leads_rescatables_percentage', 0)
+        en_rescate = fases.get('cierre_rescate_count', 0)
+
+        if pct_rescatables >= 50:
+            e_status = "CRÍTICO"
+        elif pct_rescatables >= 20:
+            e_status = "ALERTA"
+        else:
+            e_status = "ÓPTIMO"
+
         scorecard.append({
             "pillar": "E - Experiencia Personalizada",
-            "score": 48,
-            "status": "ALERTA",
-            "focus_context": "Reactivación y Protocolo de Rescate",
-            "diagnosis": f"Falta de protocolo activo para reenganchar conversaciones inactivas. Se detecta abandono sin seguimiento {'comercial del presupuesto' if is_sales else 'del estado del trámite/caso'}.",
+            "score": max(0, min(100, round(100 - pct_rescatables))),
+            "status": e_status,
+            "focus_context": f"Protocolo de Rescate: {pct_rescatables}% de la fase de cierre quedó sin reactivar",
+            "diagnosis": (
+                f"De {en_rescate} conversaciones que llegaron a la fase de cierre/rescate, {rescatables} "
+                f"({pct_rescatables}%) conservaban intención activa (IC >= 40) y quedaron abandonadas sin una "
+                f"pregunta de rescate estructurada. Es abandono sin seguimiento "
+                f"{'comercial del presupuesto' if is_sales else 'del estado del trámite/caso'}."
+            ),
             "recommendation": "Protocolo de Rescate: Reactivar al usuario utilizando su nombre y el motivo específico de su consulta, evitando plantillas robóticas."
         })
 
         # N - Nutrir y Cerrar
+        # N - Nutrir y Cerrar (medido con la tasa de cierres pasivos)
+        pasivos = passive_closing_rate if passive_closing_rate is not None else 58.0
+        _uc = CATALOGO['deteccion_cierre']
+        if pasivos >= _uc['umbral_critico_pct']:
+            n_status = "CRÍTICO"
+        elif pasivos >= _uc['umbral_alerta_pct']:
+            n_status = "ALERTA"
+        else:
+            n_status = "ÓPTIMO"
+
         scorecard.append({
             "pillar": "N - Nutrir y Cerrar",
-            "score": 42,
-            "status": "CRÍTICO",
-            "focus_context": "Tipping Point Comercial" if is_sales else "Confirmación de FCR (Resolución)",
-            "diagnosis": "Cierres pasivos frecuentes (ej. 'a disposición', 'cualquier duda nos avisas') que dejan el control en el usuario sin forzar el avance.",
+            "score": max(0, min(100, round(100 - pasivos))),
+            "status": n_status,
+            "focus_context": ("Tipping Point Comercial" if is_sales else "Confirmación de FCR (Resolución)") + f" · {pasivos}% de cierres pasivos",
+            "diagnosis": (
+                f"El {pasivos}% de los cierres termina con un mensaje que no incluye pregunta de avance ni "
+                f"llamado a la acción, dejando el control en el usuario. Medido sobre {cierres_evaluables:,} "
+                "conversaciones con cierre propio, excluyendo difusiones y mensajes automáticos."
+            ),
             "recommendation": "Cierre Activo Obligatorio: " + ("Cerrar con una pregunta de reserva o confirmación de pedido (Tipping Point)." if is_sales else "Cerrar con confirmación explícita de solución ('¿Quedó resuelta tu gestión o necesitás algo más?').")
         })
 
@@ -1286,11 +1163,33 @@ class ActuenAnalyzer:
             plus_diag = f"Entre los operadores humanos, {top_human} concentra el {top_human_pct}% de la atención ({handoff_data.get('top_human_messages', 0):,} msgs), {'generando un cuello de botella sistémico' if is_human_bottleneck else 'con buena distribución de equipo'}."
             plus_recom = f"Cargar atajos rápidos de teclado para {top_human} y redistribuir la asignación de leads en horarios pico."
 
+        # El pilar + suma la consecuencia patrimonial: no solo cómo está repartida
+        # la carga, sino cuánto capital se está destruyendo mientras tanto.
+        ltv = ltv_econ or {}
+        en_riesgo = ltv.get('leads_at_risk_count', 0)
+        pct_riesgo = ltv.get('leads_at_risk_percentage', 0)
+        capital = ltv.get('total_economic_risk_usd', 0)
+
+        plus_score = 80 if plus_status == "ÓPTIMO" else 50
+        if pct_riesgo >= 30:
+            plus_status = "CRÍTICO"
+            plus_score = min(plus_score, 35)
+        elif pct_riesgo >= 15 and plus_status == "ÓPTIMO":
+            plus_status = "ALERTA"
+            plus_score = min(plus_score, 60)
+
+        if en_riesgo:
+            plus_diag += (
+                f" En paralelo, {en_riesgo} leads ({pct_riesgo}%) con intención activa esperaron más allá del "
+                f"umbral de alerta: ${capital:,} USD de capital de cartera expuesto."
+            )
+            plus_recom += " Priorizar por Índice de Urgencia para que el capital en riesgo se atienda primero."
+
         scorecard.append({
             "pillar": "+ Optimización Continua",
-            "score": 80 if plus_status == "ÓPTIMO" else 50,
+            "score": plus_score,
             "status": plus_status,
-            "focus_context": f"Carga Humana ({handoff_data.get('human_share_percentage', 0)}%) vs Bot ({bot_pct}%)",
+            "focus_context": f"Carga Humana ({handoff_data.get('human_share_percentage', 0)}%) vs Bot ({bot_pct}%) · Capital expuesto: ${capital:,} USD",
             "diagnosis": plus_diag,
             "recommendation": plus_recom
         })
@@ -1298,645 +1197,21 @@ class ActuenAnalyzer:
         return scorecard
 
     def _get_rubro_templates(self, rubro_key, focus, company_name=None):
-        is_sales = (focus == 'ventas')
+        """Plantillas maestras del rubro, desde rubros.json.
+
+        El JSON las guarda con los marcadores {{EMPRESA}} y {{ALIAS}}; acá se
+        sustituyen por los valores de la empresa detectada.
+        """
+        focus_key = 'ventas' if focus == 'ventas' else 'soporte'
+        por_rubro = CATALOGO['plantillas'].get(rubro_key) or CATALOGO['plantillas']['servicios_generales']
+        plantillas = por_rubro.get(focus_key) or por_rubro['ventas']
+
         c_name = company_name if (company_name and company_name != 'Empresa') else (self.company_name or 'Nuestra Empresa')
-        clean_alias_base = re.sub(r'[^A-Za-z0-9]', '.', c_name.strip().upper()).strip('.')
-        c_alias = f"{clean_alias_base}.OFICIAL" if clean_alias_base and clean_alias_base != 'EMPRESA' else 'PAGOS.OFICIALES'
+        c_alias = derivar_alias(c_name)
 
-        # 1. CONSTRUCCIÓN / CORRALÓN / MATERIALES (6 Plantillas)
-        if rubro_key == 'construccion_corralon':
-            return [
-                {
-                    "id": "presupuesto_corralon",
-                    "title": "Presupuesto General con 7% OFF Contado",
-                    "shortcut": "/coti",
-                    "category": "Ventas / Materiales",
-                    "before": "Buenos días -> 'en breve enviamos' -> PDF mudo -> medios de pago -> silencio (7 msgs).",
-                    "after": f"👋 ¡Hola! Te adjunto el presupuesto detallado de {c_name} (*Presupuesto N° {{NRO_COTIZACION}}*).\n\n📋 *Resumen de tu pedido:*\n• *Total de Lista / Tarjetas:* ${{TOTAL_LISTA}}\n• 💡 *Con 7% OFF (Efectivo / Transferencia / Débito):* *${{TOTAL_DESCUENTO}}*\n• *Disponibilidad:* Todo en stock para despacho inmediato.\n• *Flete:* Cotizado para {{ZONA/LOCALIDAD}}.\n\n⏱️ _Precios congelados por 48 horas._\n\n[---saltomensaje---]\n\n👉 *¿Querés que te reservemos los materiales para programar el camión para esta semana?*",
-                    "tipping_point": "¿Querés que te reservemos los materiales para programar el camión para esta semana?",
-                    "key_benefit": "Resume el precio en el chat, destaca el descuento contado y cierra con reserva."
-                },
-                {
-                    "id": "aridos_corralon",
-                    "title": "Consulta de Áridos (Arena Común, Lavada / Ripio)",
-                    "shortcut": "/aridos",
-                    "category": "Áridos",
-                    "before": "'arena comun o lavada?' -> 'cuantos metros?' -> 'a que direccion?' (8 msgs).",
-                    "after": "¡Hola! Contamos con stock de áridos tanto por m³ como por bolsón o camionada:\n\n🏗️ *Opciones disponibles:*\n• *Arena Común:* ${PRECIO_COMUN}/m³ _(Revoque grueso y contrapisos)_\n• *Arena Lavada / Fina:* ${PRECIO_LAVADA}/m³ _(Fino y pegado de cerámicos)_\n• *Ripio / Piedra Partida:* ${PRECIO_RIPIO}/m³\n💡 *7% de descuento abonando en efectivo o transferencia.*\n\n[---saltomensaje---]\n\n👉 *Decime cuántos metros aproximados necesitás y en qué zona está la obra para pasarte el valor final puesto en tu puerta.*",
-                    "tipping_point": "Decime cuántos metros necesitás y en qué zona está la obra para cotizar flete.",
-                    "key_benefit": "Resuelve la duda de áridos en 1 turno."
-                },
-                {
-                    "id": "flete_corralon",
-                    "title": "Consulta de Envíos, Fletes y Descarga",
-                    "shortcut": "/flete",
-                    "category": "Logística",
-                    "before": "'¿Llegan a mi zona?' -> 'Sí' -> '¿Cuánto sale?' -> 'Pasame la calle' (6 msgs).",
-                    "after": f"¡Hola! Sí, realizamos entregas en toda la zona con la flota de camiones de {c_name}:\n\n📍 *Para confirmarte el costo exacto y día de entrega, envianos:*\n1. Lista o cantidad de materiales.\n2. Dirección aproximada o barrio.\n3. ¿La calle permite el ingreso de camión grande?\n\n[---saltomensaje---]\n\n👉 *Con estos datos te pasamos el costo final puesto en obra de inmediato.*",
-                    "tipping_point": "Envianos lista, barrio y acceso de camión para confirmar flete de inmediato.",
-                    "key_benefit": "Captura los 3 datos logísticos en 1 solo paso."
-                },
-                {
-                    "id": "cierre_corralon",
-                    "title": "Cierre, Cobro y Facturación",
-                    "shortcut": "/pago",
-                    "category": "Cierre de Venta",
-                    "before": "CBU descolgado -> '¿de qué es el comprobante?' -> 'cuit?' -> 'dirección?' (5 msgs).",
-                    "after": f"🎯 *Para confirmar tu pedido N° {{NRO_COTIZACION}} y congelar el stock:*\n\n🏦 *Datos Bancarios Oficiales:*\n• *Titular:* {c_name}\n• *Alias:* `{c_alias}`\n• *CBU:* `0270094610023521600015`\n• *Monto con 7% OFF:* *${{MONTO_FINAL}}*\n\n📝 *Una vez hecha la transferencia, envianos el comprobante con estos 4 datos en un solo mensaje:*\n1. Presupuesto N°: {{NRO_COTIZACION}}\n2. CUIT o DNI (para la factura):\n3. Dirección exacta de entrega:\n4. Nombre y teléfono de quién recibe en obra:\n\n[---saltomensaje---]\n\n¡Con eso ingresa inmediatamente a la hoja de ruta de logística! 🚚",
-                    "tipping_point": "Una vez hecha la transferencia, envianos el comprobante con los 4 datos en un solo mensaje.",
-                    "key_benefit": "Elimina el caos de identificación de pagos y reduce 5 mensajes a 1."
-                },
-                {
-                    "id": "hierros_mallas",
-                    "title": "Consulta de Hierros, Mallas y Viguetas",
-                    "shortcut": "/hierros",
-                    "category": "Hierros y Estructuras",
-                    "before": "Múltiples mensajes preguntando medida por medida y flete por separado.",
-                    "after": "👋 ¡Hola! Contamos con stock completo de hierro de obra certificado:\n\n🔩 *Valores por barra (12 mts):*\n• Hierro del 6: ${P_6} | del 8: ${P_8} | del 10: ${P_10} | del 12: ${P_12}\n• Malla Cima (del 4 / del 5 / del 6): Desde ${P_MALLA}\n• Alambre de fardo y estribos listos para armar.\n💡 *Precio bonificado abonando de contado/transferencia.*\n\n[---saltomensaje---]\n\n👉 *Pasame la lista completa de barras o mallas y la zona de obra para armarte el paquete con envío incluido.*",
-                    "tipping_point": "Pasame la lista completa y la zona para armarte el paquete con envío incluido.",
-                    "key_benefit": "Agrupa las medidas de hierro frecuentes y ancla el flete desde el inicio."
-                },
-                {
-                    "id": "rescate_corralon",
-                    "title": "Protocolo de Rescate Comercial (Post-Cotización)",
-                    "shortcut": "/rescate",
-                    "category": "Seguimiento",
-                    "before": "Silencio o 'Hola pudiste ver el PDF?' (tasa de respuesta < 10%).",
-                    "after": f"👋 ¡Hola {{NOMBRE}}! ¿Cómo estás? Te escribo de {c_name} porque estamos coordinando la hoja de ruta de entregas para tu zona ({{ZONA/BARRIO}}).\n\nQueríamos consultarte si vas a confirmar el pedido del Presupuesto N° {{NRO_COTIZACION}} para reservarte el camión y sostenerte la bonificación especial de contado.\n\n[---saltomensaje---]\n\n👉 *¿Te guardamos el lugar de entrega para esta semana o precisás hacer algún ajuste en los materiales?*",
-                    "tipping_point": "¿Te guardamos el lugar de entrega para esta semana o precisás algún ajuste?",
-                    "key_benefit": "Reactivación contextual que ofrece valor logístico en lugar de presionar."
-                }
-            ]
-
-        # 2. COMERCIO / RETAIL / E-COMMERCE (6 Plantillas)
-        elif rubro_key == 'comercio_retail':
-            return [
-                {
-                    "id": "producto_retail",
-                    "title": "Catálogo, Precios, Stock y Talles Disponibles",
-                    "shortcut": "/producto",
-                    "category": "Ventas Retail",
-                    "before": "'¿Tenés stock?' -> 'Sí' -> '¿Cuánto sale?' -> '¿Qué talles hay?' (6 msgs).",
-                    "after": f"👋 ¡Hola! Sí, en {c_name} contamos con stock disponible de *{{PRODUCTO}}*:\n\n🛍️ *Detalles del artículo:*\n• *Variantes / Talles disponibles:* {{TALLES}}\n• *Precio de Lista:* ${{PRECIO}} *(hasta 3 o 6 cuotas con tarjeta)*\n• 💡 *10% OFF en Efectivo o Transferencia:* *${{PRECIO_DESCUENTO}}*\n• 🚚 *Despacho:* Envío a todo el país o retiro en sucursal hoy mismo.\n\n[---saltomensaje---]\n\n👉 *¿En qué variante o talle te gustaría reservarlo para pasarte el link de pago y congelar tu unidad?*",
-                    "tipping_point": "¿En qué variante o talle te gustaría reservarlo para pasarte el link de pago?",
-                    "key_benefit": "Condensa talle, cuotas, descuento contado y link en 1 solo bloque estructurado."
-                },
-                {
-                    "id": "envios_retail",
-                    "title": "Costos de Envío, Tiempos de Entrega y Envío Gratis",
-                    "shortcut": "/envio",
-                    "category": "Logística / Despacho",
-                    "before": "'¿Cuánto sale a mi ciudad?' -> 'Pasame el CP' -> 'Espera que cotizo' (5 msgs).",
-                    "after": "📦 *¡Hola! Realizamos despachos diarios con seguimiento en tiempo real:*\n\n• 🚚 *Envío a Domicilio:* 24 a 72 hs hábiles según tu zona.\n• 🏬 *Retiro en Sucursal / Punto Pick-up:* Sin costo de envío.\n• 🎁 *Envío BONIFICADO (GRATIS)* en compras superiores a ${MONTO_MINIMO}.\n\n[---saltomensaje---]\n\n👉 *Envianos tu Código Postal y Localidad para confirmarte el costo exacto y la fecha estimada de llegada.*",
-                    "tipping_point": "Envianos tu Código Postal y Localidad para confirmarte costo y fecha exacta.",
-                    "key_benefit": "Informa política de envío gratis y solicita el Código Postal en un solo paso."
-                },
-                {
-                    "id": "pago_retail",
-                    "title": "Medios de Pago, Cuotas y Datos de Transferencia",
-                    "shortcut": "/pago",
-                    "category": "Cobranzas",
-                    "before": "Pasa CBU suelto -> cliente transfiere sin poner detalle -> no se identifica el pago.",
-                    "after": f"💳 *Medios de Pago Habilitados en {c_name}:*\n\n1. *Transferencia Bancaria con 10% OFF:*\n• *Titular:* {c_name}\n• *Alias:* `{c_alias}`\n• *Total con Descuento:* *${{TOTAL_TRANSFERENCIA}}*\n2. *Tarjetas de Crédito / Débito:* En 3 cuotas sin interés mediante link seguro.\n\n[---saltomensaje---]\n\n👉 *Una vez realizada la transferencia, adjuntanos el comprobante junto con tu DNI para facturar y despachar tu pedido de inmediato.*",
-                    "tipping_point": "Adjuntanos el comprobante junto con tu DNI para facturar y despachar de inmediato.",
-                    "key_benefit": "Resume la cuenta bancaria, cuotas y requisitos de despacho en 1 paso."
-                },
-                {
-                    "id": "cambios_retail",
-                    "title": "Política de Cambios y Devoluciones sin Fricción",
-                    "shortcut": "/cambio",
-                    "category": "Postventa",
-                    "before": "Queja de cliente por cambio -> 'hablá con otro sector' -> derivaciones infinitas.",
-                    "after": f"👋 ¡Hola! Con gusto gestionamos el cambio de tu compra en {c_name}:\n\n🔄 *Para procesarlo de inmediato en el sistema:*\n1. Número de pedido o ticket de compra:\n2. Producto recibido y nuevo talle o modelo deseado:\n3. ¿Preferís cambio en local o coordinar retiro a domicilio?\n\n[---saltomensaje---]\n\n👉 *Apenas nos confirmes estos datos te reservamos la nueva unidad para asegurar el stock.*",
-                    "tipping_point": "Apenas nos confirmes te reservamos la nueva unidad para asegurar el stock.",
-                    "key_benefit": "Resuelve la postventa sin fricción y retiene al cliente."
-                },
-                {
-                    "id": "rescate_carrito",
-                    "title": "Protocolo de Rescate de Consulta / Carrito Abandonado",
-                    "shortcut": "/rescate",
-                    "category": "Seguimiento",
-                    "before": "'Hola pudiste ver?' -> Visto clavado y pérdida de la venta.",
-                    "after": f"👋 ¡Hola {{NOMBRE}}! Vimos que estuviste consultando por *{{PRODUCTO}}* en {c_name}.\n\nTe queríamos avisar que quedan las últimas unidades disponibles y te guardamos un beneficio de *envío bonificado* por el día de hoy.\n\n[---saltomensaje---]\n\n👉 *¿Querés que te reservemos el pedido antes de que vuelva al catálogo general?*",
-                    "tipping_point": "¿Querés que te reservemos el pedido antes de que vuelva al catálogo general?",
-                    "key_benefit": "Aplica escasez y beneficio de flete para cerrar la venta fría."
-                },
-                {
-                    "id": "promocion_combo",
-                    "title": "Oferta Combo / Up-sell de Productos Complementarios",
-                    "shortcut": "/combo",
-                    "category": "Ventas / Up-sell",
-                    "before": "Venta transaccional de 1 solo ítem sin ofrecer complementos.",
-                    "after": "💡 *¡Aprovechá la promoción complementaria de tu pedido!*\n\nLlevando el conjunto completo tenés un *15% OFF adicional* en la segunda unidad y mantenés el mismo costo de envío.\n\n[---saltomensaje---]\n\n👉 *¿Querés que te sumemos la opción complementaria al paquete para aprovechar la bonificación?*",
-                    "tipping_point": "¿Querés que te sumemos la opción complementaria al paquete para aprovechar el 15% OFF?",
-                    "key_benefit": "Aumenta el ticket promedio (LTV) ofreciendo combos en el momento óptimo."
-                }
-            ]
-
-        # 3. SALUD / OBRA SOCIAL / PREPAGA (6 Plantillas)
-        elif rubro_key == 'salud_obra_social':
-            return [
-                {
-                    "id": "autorizaciones",
-                    "title": "Gestión de Autorizaciones y Órdenes Médicas",
-                    "shortcut": "/autorizar",
-                    "category": "Trámites Médicos",
-                    "before": "Hola -> 'pasame foto' -> 'falta el diagnóstico' -> 'número de afiliado?' (5 mensajes).",
-                    "after": f"👋 ¡Hola! Te ayudamos a gestionar tu autorización médica en {c_name} en este mismo mensaje:\n\n📋 *Por favor envianos en un solo envío:*\n1. Foto clara de la orden médica (con diagnóstico, fecha y firma visible).\n2. Número de DNI o Credencial del afiliado/a:\n3. Lugar o clínica donde realizarás la práctica:\n\n⏱️ *Tiempo estimado de resolución:* 24 a 48 hs hábiles.\n\n[---saltomensaje---]\n\n👉 *Apenas nos envíes estos datos ingresamos tu solicitud a auditoría médica para su aprobación.*",
-                    "tipping_point": "Apenas nos envíes la foto y los 3 datos ingresamos la solicitud a auditoría médica.",
-                    "key_benefit": "Elimina el ping-pong pidiendo los requisitos de validación médica en un solo bloque."
-                },
-                {
-                    "id": "turnos",
-                    "title": "Solicitud de Turnos y Cartilla Médica",
-                    "shortcut": "/turnos",
-                    "category": "Cartilla / Turnos",
-                    "before": "'Quiero turno' -> 'para qué médico?' -> 'qué zona?' -> 'qué día podés?' (6 mensajes).",
-                    "after": "¡Hola! Con gusto coordinamos tu turno o te brindamos los profesionales disponibles en cartilla:\n\n🩺 *Para asignarte la mejor opción, respondenos en este mensaje:*\n• Especialidad o médico requerido:\n• Zona o localidad de preferencia:\n• Días u horarios en los que podés asistir:\n• DNI o N° de Afiliado:\n\n[---saltomensaje---]\n\n👉 *Con estos datos te enviamos las próximas fechas disponibles de inmediato.*",
-                    "tipping_point": "Con estos datos te enviamos las opciones disponibles para reservar tu turno.",
-                    "key_benefit": "Reúne especialidad, zona y disponibilidad del paciente en 1 turno."
-                },
-                {
-                    "id": "reintegros",
-                    "title": "Reintegros y Facturación Médica",
-                    "shortcut": "/reintegro",
-                    "category": "Facturación",
-                    "before": "Factura suelta -> 'de quién es?' -> 'pasame CBU' -> 'falta orden' (4 mensajes).",
-                    "after": "🎯 *Para procesar tu reintegro médico de forma directa:*\n\n📝 *Envianos en un solo mensaje:*\n1. Factura oficial (con CUIT del profesional o clínica).\n2. Orden médica o pedido de estudio que originó el gasto.\n3. CBU o Alias bancario del titular para el depósito.\n4. Nombre completo y DNI del afiliado:\n\n[---saltomensaje---]\n\n👉 *¿Contás con esta documentación a mano para cargar el expediente hoy mismo?*",
-                    "tipping_point": "¿Contás con esta documentación a mano para cargar el expediente hoy mismo?",
-                    "key_benefit": "Evita rechazos de reintegro por documentación incompleta."
-                },
-                {
-                    "id": "recetas_farmacia",
-                    "title": "Recetas Electrónicas y Cobertura de Farmacia",
-                    "shortcut": "/receta",
-                    "category": "Farmacia",
-                    "before": "'No me pasa la receta' -> 'qué farmacia?' -> 'qué remedio es?' (5 msgs).",
-                    "after": "👋 ¡Hola! Te asistimos con la validación de tu receta de medicamentos:\n\n💊 *Por favor envianos:*\n1. Foto de la receta o prescripción digital:\n2. Número de credencial de afiliado/a:\n3. Farmacia donde estás realizando la compra (Nombre y localidad):\n\n[---saltomensaje---]\n\n👉 *Validamos la cobertura en el sistema y te confirmamos en este mismo chat.*",
-                    "tipping_point": "Validamos la cobertura en el sistema y te confirmamos en este mismo chat.",
-                    "key_benefit": "Resuelve la autorización de farmacia en caliente sin idas y vueltas."
-                },
-                {
-                    "id": "credencial_digital",
-                    "title": "Descarga de Credencial Digital y Carnet",
-                    "shortcut": "/credencial",
-                    "category": "Afiliaciones",
-                    "before": "Cliente pide carnet -> asesor envía links rotos -> pide datos de nuevo.",
-                    "after": "📱 *¡Hola! Podés utilizar tu credencial digital de inmediato desde tu celular:*\n\n1. Ingresá a nuestro portal oficial: {LINK_PORTAL}\n2. Usuario: Tu número de DNI (sin puntos).\n3. Contraseña inicial: Los últimos 4 dígitos de tu DNI.\n\n💡 *Presentando la pantalla de la credencial en cualquier prestador o farmacia tenés atención directa sin carnet plástico.*\n\n[---saltomensaje---]\n\n👉 *¿Pudiste ingresar correctamente o requerís que te generemos una clave temporal?*",
-                    "tipping_point": "¿Pudiste ingresar correctamente o requerís que te generemos una clave temporal?",
-                    "key_benefit": "Autogestión inmediata con validación activa de acceso."
-                },
-                {
-                    "id": "cierre_fcr",
-                    "title": "Cierre de Consulta y Confirmación de Resolución (FCR)",
-                    "shortcut": "/fcr",
-                    "category": "Cierre / Calidad",
-                    "before": "'Cualquier cosa a disposición' (deja la gestión abierta o genera re-aperturas).",
-                    "after": "✅ *Tu gestión ha sido completada con éxito.*\n\nTe dejamos asentado el número de trámite para seguimiento. Recordá que también contás con nuestro portal web disponible las 24 horas.\n\n[---saltomensaje---]\n\n👉 *¿Quedó resuelta tu consulta o necesitás ayuda con algún otro trámite antes de finalizar?*",
-                    "tipping_point": "¿Quedó resuelta tu consulta o necesitás ayuda con algún otro trámite antes de finalizar?",
-                    "key_benefit": "Garantiza First Contact Resolution (FCR) y previene reaperturas de casos."
-                }
-            ]
-
-        # 4. AUTOMOTOR / CONCESIONARIA / REPUESTOS (5 Plantillas)
-        elif rubro_key == 'automotor_concesionaria':
-            return [
-                {
-                    "id": "unidad_auto",
-                    "title": "Ficha Técnica, Stock y Precio de Vehículo",
-                    "shortcut": "/auto",
-                    "category": "Ventas / 0km y Usados",
-                    "before": "'Hola precio del auto' -> '0km o usado?' -> 'qué versión?' (5 msgs).",
-                    "after": f"👋 ¡Hola! Te comparto la información de la unidad en {c_name}:\n\n🚗 *{{MODELO_VEHICULO}} - Versión {{VERSION}}*\n• *Precio de Lista:* ${{PRECIO_LISTA}}\n• 💡 *Bonificación especial este mes:* *${{PRECIO_BONIFICADO}}*\n• *Financiación exclusiva:* Hasta el 50% en tasa preferencial.\n• *Entrega:* Inmediata / En stock en salón.\n\n[---saltomensaje---]\n\n👉 *¿Te gustaría coordinar una visita al salón para verlo en persona y realizar un Test Drive esta semana?*",
-                    "tipping_point": "¿Te gustaría coordinar una visita para realizar un Test Drive esta semana?",
-                    "key_benefit": "Pasa precio, financiación y llama al Test Drive en un solo bloque."
-                },
-                {
-                    "id": "toma_usado",
-                    "title": "Tasación de Usado en Parte de Pago",
-                    "shortcut": "/usado",
-                    "category": "Tasaciones",
-                    "before": "Múltiples mensajes pidiendo año, modelo, fotos, kilometraje de a uno.",
-                    "after": f"¡Hola! Sí, en {c_name} tomamos tu vehículo usado como parte de pago al mejor valor de mercado.\n\n📋 *Para pasarte una cotización estimada de toma en este momento, envianos:*\n1. Marca, modelo y versión exacta:\n2. Año de patentamiento y kilometraje:\n3. ¿Sos titular y está al día de patentes/multas?\n4. 3 fotos generales (frente, lateral e interior):\n\n[---saltomensaje---]\n\n👉 *Con estos datos nuestro tasador te pasa el valor de toma de inmediato.*",
-                    "tipping_point": "Envianos los 4 datos y fotos para pasarte la cotización estimada de toma.",
-                    "key_benefit": "Pide toda la ficha de tasación de una sola vez."
-                },
-                {
-                    "id": "turno_taller",
-                    "title": "Coordinación de Service Oficial y Mantenimiento",
-                    "shortcut": "/service",
-                    "category": "Postventa / Taller",
-                    "before": "'Quiero hacer el service' -> 'cuántos km tiene?' -> 'qué patente?' (5 msgs).",
-                    "after": f"👋 ¡Hola! Con gusto coordinamos el turno de mantenimiento de tu unidad en {c_name}:\n\n🔧 *Por favor confirmanos en un solo mensaje:*\n1. Modelo y patente del vehículo:\n2. Kilometraje actual (ej. 10.000 / 20.000 km):\n3. ¿Deseás revisar algún punto específico además del service oficial?\n4. Sucursal y día de preferencia:\n\n[---saltomensaje---]\n\n👉 *Con estos datos te reservamos el horario de ingreso al taller hoy mismo.*",
-                    "tipping_point": "Con estos datos te reservamos el horario de ingreso al taller hoy mismo.",
-                    "key_benefit": "Centraliza los datos de postventa en 1 turno."
-                },
-                {
-                    "id": "repuestos_auto",
-                    "title": "Consulta de Repuestos y Accesorios Originales",
-                    "shortcut": "/repuesto",
-                    "category": "Repuestos",
-                    "before": "Múltiples repreguntas para saber número de chasis y pieza exacta.",
-                    "after": "👋 ¡Hola! Para cotizarte la pieza original exacta y confirmarte stock inmediato:\n\n🔩 *Envianos en este mensaje:*\n1. Número de Chasis o VIN (figura en la cédula verde):\n2. Pieza o repuesto solicitado (con foto si la tenés):\n\n[---saltomensaje---]\n\n👉 *Con el número de chasis te confirmamos disponibilidad y precio final en el acto.*",
-                    "tipping_point": "Envianos el número de chasis y la pieza para pasarte precio exacto.",
-                    "key_benefit": "Evita errores de catálogo solicitando el número de chasis en el turno inicial."
-                },
-                {
-                    "id": "rescate_concesionaria",
-                    "title": "Rescate de Consulta de Vehículo (Test Drive / Financiación)",
-                    "shortcut": "/rescate",
-                    "category": "Seguimiento",
-                    "before": "El asesor no hace seguimiento o pregunta '¿pudiste ver el precio?'.",
-                    "after": f"👋 ¡Hola {{NOMBRE}}! Te escribo del equipo comercial de {c_name}.\n\nNos ingresó un cupo de bonificación especial en tasa de financiación para la unidad {{MODELO}} que consultaste.\n\n[---saltomensaje---]\n\n👉 *¿Te gustaría aprovechar este cupo antes de que finalice la campaña este viernes?*",
-                    "tipping_point": "¿Te gustaría aprovechar este cupo de tasa antes de que finalice?",
-                    "key_benefit": "Aporta una excusa comercial real (tasa bonificada) para reactivar al prospecto."
-                }
-            ]
-
-        # 5. INMOBILIARIA / DESARROLLOS / ALQUILERES (5 Plantillas)
-        elif rubro_key == 'inmobiliaria_desarrollos':
-            return [
-                {
-                    "id": "inmueble_ficha",
-                    "title": "Ficha de Propiedad y Coordinación de Visita",
-                    "shortcut": "/propiedad",
-                    "category": "Propiedades",
-                    "before": "Fotos sueltas -> 'cuánto sale?' -> 'dónde queda?' -> 'cuándo se ve?' (7 msgs).",
-                    "after": f"👋 ¡Hola! Te comparto los detalles de la propiedad en {c_name}:\n\n🏡 *{{TIPO_PROPIEDAD}} en {{ZONA/BARRIO}}*\n• *Valor:* ${{VALOR_ALQUILER_VENTA}} *(Expensas: ${{EXPENSAS}})*\n• *Características:* {{CANT_DORMITORIOS}} dormitorios, {{BANOS}} baños, cochera y balcón.\n• *Disponibilidad:* Inmediata.\n\n📅 *Coordinación de Visitas:*\nDisponemos de turnos para visitarla los {{DIAS_VISITA}} de {{HORARIOS}}.\n\n[---saltomensaje---]\n\n👉 *¿Qué día y horario te queda más cómodo para agendar tu visita presencial?*",
-                    "tipping_point": "¿Qué día y horario te queda más cómodo para agendar tu visita presencial?",
-                    "key_benefit": "Resume precio, expensas, comodidades y agenda la visita en el acto."
-                },
-                {
-                    "id": "requisitos_alquiler",
-                    "title": "Requisitos y Condiciones de Ingreso para Alquiler",
-                    "shortcut": "/alquiler",
-                    "category": "Alquileres",
-                    "before": "Ping-pong eterno preguntando recibos de sueldo y garantías sueltas.",
-                    "after": "📋 *Condiciones y requisitos para alquilar {PROPIEDAD}:*\n\n1. *Titular:* Demostración de ingresos (últimos 3 recibos de sueldo o certificación contable).\n2. *Garantías:* 2 garantes con bono de sueldo o 1 garantía propietaria (o seguro de caución).\n3. *Gastos de ingreso:* 1 mes de alquiler + 1 mes de depósito de garantía + honorarios de contrato.\n\n[---saltomensaje---]\n\n👉 *¿Contás con esta documentación para enviarte el formulario de postulación directa?*",
-                    "tipping_point": "¿Contás con esta documentación para enviarte el formulario de postulación?",
-                    "key_benefit": "Filtra postulantes calificados sin repreguntas."
-                },
-                {
-                    "id": "tasacion_inmueble",
-                    "title": "Solicitud de Tasación Inmobiliaria",
-                    "shortcut": "/tasacion",
-                    "category": "Tasaciones",
-                    "before": "Múltiples preguntas dispersas sobre m2, estado y dirección.",
-                    "after": f"🏡 *¡Hola! Realizamos tasaciones profesionales de mercado en {c_name}:*\n\n📋 *Para coordinar la inspección técnica de tu propiedad, envianos:*\n1. Dirección exacta y barrio:\n2. Tipo de inmueble (Casa / Departamento / Lote / Local):\n3. Superficie estimada (m² cubiertos y totales):\n4. ¿El inmueble cuenta con escritura al día?\n\n[---saltomensaje---]\n\n👉 *Con estos datos te agendamos la visita de nuestro tasador sin costo.*",
-                    "tipping_point": "Envianos dirección, tipo, superficie y estado de escritura.",
-                    "key_benefit": "Agrupa la ficha del inmueble para tasación inmediata."
-                },
-                {
-                    "id": "loteo_pozo",
-                    "title": "Loteos, Terrenos y Desarrollos de Pozo",
-                    "shortcut": "/pozo",
-                    "category": "Inversiones / Lotes",
-                    "before": "Envía folleto sin precios -> prospecto no responde más.",
-                    "after": f"🏗️ *Oportunidad de Inversión en {c_name}:*\n\n• *Proyecto:* {{NOMBRE_PROYECTO}} en {{ZONA}}\n• *Lotes desde:* {{SUPERFICIE}} m² con servicios de luz, agua y cloacas.\n• 💡 *Plan de Financiación:* Anticipo del 30% y saldo en hasta 36 cuotas en pesos/dólares.\n\n[---saltomensaje---]\n\n👉 *¿Querés que te enviemos el masterplan con los lotes disponibles para coordinar una visita al predio?*",
-                    "tipping_point": "¿Querés que te enviemos el masterplan con los lotes disponibles?",
-                    "key_benefit": "Presenta el plan financiero y llama a visitar el desarrollo."
-                },
-                {
-                    "id": "rescate_propiedad",
-                    "title": "Seguimiento y Cierre de Visita a Propiedad",
-                    "shortcut": "/rescate",
-                    "category": "Seguimiento",
-                    "before": "'Hola qué te pareció el departamento?' -> silencio.",
-                    "after": f"👋 ¡Hola {{NOMBRE}}! ¿Cómo estás? Te escribo de {c_name} para consultar qué te pareció la visita a la propiedad de {{CALLE/BARRIO}}.\n\nEl propietario está abierto a evaluar una propuesta de reserva formal esta semana antes de abrirla a otros interesados.\n\n[---saltomensaje---]\n\n👉 *¿Te gustaría presentar una oferta de reserva o te mostramos otra alternativa en la misma zona?*",
-                    "tipping_point": "¿Te gustaría presentar una oferta formal o ver otra alternativa?",
-                    "key_benefit": "Estimula la reserva rápida o redirige a otra propiedad del portfolio."
-                }
-            ]
-
-        # 6. SEGUROS / FINTECH / FINANZAS (5 Plantillas)
-        elif rubro_key == 'seguros_fintech':
-            return [
-                {
-                    "id": "denuncia_siniestro",
-                    "title": "Denuncia de Siniestro, Choque o Auxilio Mecánico",
-                    "shortcut": "/siniestro",
-                    "category": "Siniestros / Urgencias",
-                    "before": "Cliente en crisis -> 'pasame póliza' -> 'quién chocó?' -> repreguntas dispersas.",
-                    "after": f"🚨 *Asistencia Inmediata por Siniestro - {c_name}:*\n\n1. ¿Hay personas lesionadas que requieran ambulancia urgente?\n2. Datos del vehículo asegurado (Patente y Nombre del Titular):\n3. Dirección exacta donde ocurrió el hecho o donde se encuentra la unidad:\n4. ¿Necesitás grúa / remolque en este momento?\n\n[---saltomensaje---]\n\n👉 *Respondenos con estos datos y te asignamos número de siniestro y móvil de auxilio de inmediato.*",
-                    "tipping_point": "Respondenos con los 4 datos y te asignamos auxilio y número de siniestro.",
-                    "key_benefit": "Prioriza la seguridad, evalúa auxilio y abre el expediente en 1 turno."
-                },
-                {
-                    "id": "cotizacion_seguro",
-                    "title": "Cotización de Seguro de Auto / Hogar",
-                    "shortcut": "/cotizaseguro",
-                    "category": "Ventas Seguros",
-                    "before": "Múltiples mensajes para saber año, modelo y tipo de cobertura.",
-                    "after": f"🛡️ *¡Hola! Cotizamos tu cobertura a medida en {c_name}:*\n\n📋 *Para pasarte la propuesta comparativa de las mejores compañías, envianos:*\n• Marca, modelo y año exacto del vehículo:\n• ¿Duerme en garage o en calle?\n• Localidad y código postal donde circula:\n• Cobertura de interés (Terceros Completo / Todo Riesgo con Franquicia):\n\n[---saltomensaje---]\n\n👉 *Con estos datos te pasamos el cuadro de valores con descuento por débito automático.*",
-                    "tipping_point": "Envianos los datos del vehículo para pasarte la cotización comparativa.",
-                    "key_benefit": "Reúne datos de riesgo en un solo bloque para cotización instantánea."
-                },
-                {
-                    "id": "prestamo_fintech",
-                    "title": "Solicitud de Préstamo o Límite de Crédito",
-                    "shortcut": "/credito",
-                    "category": "Créditos",
-                    "before": "Pide DNI -> luego recibo -> luego CBU en días distintos.",
-                    "after": f"💳 *Simulación de Crédito Inmediato en {c_name}:*\n\n📝 *Requisitos de pre-aprobación:*\n1. Número de DNI (sin puntos):\n2. Monto solicitado y cantidad de cuotas (ej. $500.000 en 12 cuotas):\n3. CBU o Alias bancario donde cobrás tus haberes:\n\n[---saltomensaje---]\n\n👉 *Validamos tu perfil crediticio en el sistema y te confirmamos la pre-aprobación en este chat.*",
-                    "tipping_point": "Envianos DNI, monto y CBU para verificar tu pre-aprobación de inmediato.",
-                    "key_benefit": "Verificación crediticia en caliente en un solo turno."
-                },
-                {
-                    "id": "pago_poliza",
-                    "title": "Estado de Cuenta, Pagos y Débito Automático",
-                    "shortcut": "/pago",
-                    "category": "Cobranzas",
-                    "before": "Pasa CBU suelto sin confirmar si la póliza queda vigente.",
-                    "after": f"📄 *Estado de Cuenta y Medios de Pago - {c_name}:*\n\n• *Póliza N°:* {{NRO_POLIZA}}\n• *Monto al día:* *${{MONTO_CUOTA}}*\n• *Alias de Pago:* `{c_alias}`\n• 💡 *Tip:* Adherite a débito automático con tarjeta y obtené un 10% de bonificación continua.\n\n[---saltomensaje---]\n\n👉 *Envianos tu comprobante para registrar la acreditación y emitir tu certificado de cobertura.*",
-                    "tipping_point": "Envianos tu comprobante para emitir tu certificado de cobertura de inmediato.",
-                    "key_benefit": "Vincula el pago con la vigencia de cobertura de la póliza."
-                },
-                {
-                    "id": "rescate_seguro",
-                    "title": "Protocolo de Rescate de Propuesta de Póliza",
-                    "shortcut": "/rescate",
-                    "category": "Seguimiento",
-                    "before": "Cliente no responde la cotización.",
-                    "after": f"👋 ¡Hola {{NOMBRE}}! Te escribo de {c_name} para consultarte si pudiste revisar la propuesta de seguro que te enviamos.\n\nPodemos sostenerte la bonificación del 20% en las primeras 3 cuotas si confirmamos el alta durante esta semana.\n\n[---saltomensaje---]\n\n👉 *¿Querés que emitamos la póliza para que tu vehículo quede cubierto a partir de hoy?*",
-                    "tipping_point": "¿Querés que emitamos la póliza para que tu vehículo quede cubierto hoy?",
-                    "key_benefit": "Ofrece beneficio económico y ancla la necesidad de protección inmediata."
-                }
-            ]
-
-        # 7. EDUCACIÓN / UNIVERSIDADES / CURSOS (5 Plantillas)
-        elif rubro_key == 'educacion_institutos':
-            return [
-                {
-                    "id": "info_carrera",
-                    "title": "Información de Carrera, Plan de Estudio y Aranceles",
-                    "shortcut": "/carrera",
-                    "category": "Admisiones",
-                    "before": "Envía PDF pesado sin explicar fechas ni precios.",
-                    "after": f"🎓 *¡Hola! Te compartimos la información de {{CARRERA_CURSO}} en {c_name}:*\n\n• *Duración:* {{DURACION}} (Modalidad Online / Híbrida con clases grabadas).\n• *Título / Certificación:* Oficial y de validez nacional.\n• 💡 *Matrícula Bonificada:* 100% OFF inscribiéndote antes del {{FECHA_LIMITE}}.\n• *Arancel Mensual:* ${{CUOTA}} por mes.\n\n[---saltomensaje---]\n\n👉 *¿Querés que te reservemos una vacante promocional para asegurar la bonificación de matrícula?*",
-                    "tipping_point": "¿Querés que te reservemos una vacante promocional para asegurar la bonificación?",
-                    "key_benefit": "Resume plan, modalidad y matrícula bonificada con llamado a la reserva."
-                },
-                {
-                    "id": "inscripcion_requisitos",
-                    "title": "Requisitos de Inscripción y Documentación",
-                    "shortcut": "/inscripcion",
-                    "category": "Inscripciones",
-                    "before": "Pide papeles de a uno durante semanas.",
-                    "after": f"📝 *Pasos para completar tu inscripción en {c_name}:*\n\n1. Foto de DNI (frente y dorso).\n2. Analítico secundario o constancia de título en trámite.\n3. Comprobante de pago del arancel inicial (Alias: `{c_alias}`).\n\n[---saltomensaje---]\n\n👉 *Apenas nos envíes la documentación te generamos tu usuario y clave del campus virtual.*",
-                    "tipping_point": "Apenas nos envíes los 3 requisitos te generamos tu acceso al campus virtual.",
-                    "key_benefit": "Centraliza el alta de alumno en 1 solo paso."
-                },
-                {
-                    "id": "fechas_examenes",
-                    "title": "Fechas de Exámenes y Trámites Académicos",
-                    "shortcut": "/examenes",
-                    "category": "Alumnos",
-                    "before": "Alumno pregunta fecha -> derivación a secretaría -> espera de días.",
-                    "after": "📅 *Calendario de Exámenes y Trámites Académicos:*\n\n• *Período de Inscripción a Finales:* Del {FECHA_INICIO} al {FECHA_FIN} desde el portal de alumnos.\n• *Requisito:* Estar al día con la cuota de cursada.\n\n[---saltomensaje---]\n\n👉 *¿Pudiste anotarte desde el portal o necesitás que verifiquemos tu estado académico en secretaría?*",
-                    "tipping_point": "¿Pudiste anotarte desde el portal o verificamos tu estado académico?",
-                    "key_benefit": "Resuelve la consulta académica sin demoras burocráticas."
-                },
-                {
-                    "id": "pago_cuota_edu",
-                    "title": "Pago de Cuotas y Aranceles Educativos",
-                    "shortcut": "/pago",
-                    "category": "Tesorería",
-                    "before": "CBU descolgado sin datos de alumno ni comprobante.",
-                    "after": f"🏦 *Datos Bancarios de Tesorería - {c_name}:*\n\n• *Titular:* {c_name}\n• *Alias:* `{c_alias}`\n• *Importe Cuota:* *${{MONTO_CUOTA}}*\n\n📝 *Al transferir, adjuntá el comprobante indicando:*\n1. Nombre y Apellido del Alumno:\n2. DNI:\n3. Carrera y mes que estás abonando:\n\n[---saltomensaje---]\n\n¡Con eso se acredita automáticamente en tu legajo! 🎓",
-                    "tipping_point": "Adjuntá comprobante con nombre, DNI y carrera para impactar en tu legajo.",
-                    "key_benefit": "Identifica los pagos de aranceles eliminando confusiones contables."
-                },
-                {
-                    "id": "rescate_carrera",
-                    "title": "Protocolo de Rescate de Interesado en Formación",
-                    "shortcut": "/rescate",
-                    "category": "Seguimiento",
-                    "before": "Interesado no responde después de pedir el programa.",
-                    "after": f"👋 ¡Hola {{NOMBRE}}! ¿Cómo estás? Te escribo del equipo de admisiones de {c_name}.\n\nEstamos cerrando el cupo del grupo que inicia la próxima semana y nos queda 1 lugar disponible con el arancel congelado.\n\n[---saltomensaje---]\n\n👉 *¿Te gustaría que te reservemos el lugar o querés conversar con un asesor pedagógico para despejar dudas?*",
-                    "tipping_point": "¿Te gustaría que te reservemos el lugar o conversás con un asesor pedagógico?",
-                    "key_benefit": "Usa escasez de cupos para recuperar postulantes indecisos."
-                }
-            ]
-
-        # 8. GASTRONOMÍA / DELIVERY / BARES (5 Plantillas)
-        elif rubro_key == 'gastronomia_delivery':
-            return [
-                {
-                    "id": "carta_pedido",
-                    "title": "Menú Digital, Promociones y Tomar Pedido",
-                    "shortcut": "/menu",
-                    "category": "Pedidos / Delivery",
-                    "before": "'Pasame la carta' -> fotos borrosas -> 'cuánto tarda?' -> 6 msgs.",
-                    "after": f"🍕 *¡Hola! Te damos la bienvenida a {c_name}:*\n\n📋 *Carta Digital y Promociones de Hoy:* {{LINK_CARTA}}\n• 💡 *Combo del Día:* {{COMBO_ESPECIAL}} a solo ${{PRECIO_COMBO}}.\n• ⏱️ *Demora estimada de cocina y reparto:* 30 a 45 minutos.\n\n[---saltomensaje---]\n\n👉 *Para marchar tu pedido, envianos: tu orden, dirección exacta y con qué medio abonás.*",
-                    "tipping_point": "Envianos tu orden, dirección exacta y medio de pago para marchar el pedido.",
-                    "key_benefit": "Pasa menú, demora y captura el pedido en un solo turno."
-                },
-                {
-                    "id": "reservas_mesa",
-                    "title": "Reservas de Mesas y Cumpleaños",
-                    "shortcut": "/reserva",
-                    "category": "Reservas",
-                    "before": "Múltiples mensajes para coordinar cantidad de personas y horario.",
-                    "after": f"🍽️ *¡Hola! Con gusto tomamos tu reserva en {c_name}:*\n\n📋 *Envianos en este mensaje:*\n1. Nombre y Apellido:\n2. Cantidad de personas (adultos y niños):\n3. Día y horario deseado:\n4. ¿Celebran algún evento especial (cumpleaños / aniversario)?\n\n[---saltomensaje---]\n\n👉 *Con estos datos te confirmamos la mesa asignada de inmediato.*",
-                    "tipping_point": "Envianos nombre, personas y horario para confirmarte la mesa asignada.",
-                    "key_benefit": "Centraliza la reserva del salón en un solo mensaje."
-                },
-                {
-                    "id": "pago_delivery",
-                    "title": "Medios de Pago y Datos de Transferencia Delivery",
-                    "shortcut": "/pago",
-                    "category": "Cobranzas",
-                    "before": "Repartidor llega y el cliente no transfirió.",
-                    "after": f"💳 *Confirmación de Pago - {c_name}:*\n\n• *Monto Total:* *${{TOTAL_PEDIDO}}*\n• *Alias de Transferencia:* `{c_alias}`\n• *Efectivo:* Por favor avisanos con cuánto dinero abonás para enviar cambio al repartidor.\n\n[---saltomensaje---]\n\n👉 *Envianos el comprobante para que el pedido salga inmediatamente con el cadete.*",
-                    "tipping_point": "Envianos el comprobante para que el pedido salga con el cadete.",
-                    "key_benefit": "Asegura la acreditación del cobro antes del despacho del delivery."
-                },
-                {
-                    "id": "demora_cocina",
-                    "title": "Mensaje de Contención por Demora en Pedido (Oxígeno)",
-                    "shortcut": "/demora",
-                    "category": "Atención / Cocina",
-                    "before": "Cliente enojado preguntando 'dónde está la comida' -> silencio.",
-                    "after": "⏱️ *¡Hola! Te informamos el estado de tu pedido:*\n\nTu comida ya está en la última etapa de empaquetado y sale con el próximo reparto. Te pedimos disculpas por los minutos de demora debido a la alta demanda.\n\n[---saltomensaje---]\n\n👉 *Apenas el cadete esté en camino te enviamos el aviso para que lo esperes.*",
-                    "tipping_point": "Apenas el cadete esté en camino te enviamos el aviso.",
-                    "key_benefit": "Inyecta oxígeno conversacional y calma la ansiedad del comensal."
-                },
-                {
-                    "id": "rescate_cliente",
-                    "title": "Reactivación de Clientes y Promoción de Fin de Semana",
-                    "shortcut": "/rescate",
-                    "category": "Fidelización",
-                    "before": "Sin contacto recurrente con clientes de la base.",
-                    "after": f"👋 ¡Hola {{NOMBRE}}! En {c_name} queremos mimarte este fin de semana:\n\n🎁 Tenés un *postre de cortesía* o un *15% de descuento* en tu próximo pedido usando el código `SPOTER15`.\n\n[---saltomensaje---]\n\n👉 *¿Te gustaría hacer tu pedido para esta noche o reservarte mesa para el finde?*",
-                    "tipping_point": "¿Te gustaría hacer tu pedido para esta noche o reservar mesa?",
-                    "key_benefit": "Reactivación de clientes antiguos aumentando la frecuencia anual (LTV)."
-                }
-            ]
-
-        # 9. SAAS / B2B / TECNOLOGÍA / SOFTWARE (5 Plantillas)
-        elif rubro_key == 'saas_b2b_tecnologia':
-            return [
-                {
-                    "id": "demo_saas",
-                    "title": "Agendar Demo en Vivo y Propuesta de Planes",
-                    "shortcut": "/demo",
-                    "category": "Ventas B2B",
-                    "before": "Múltiples mails y mensajes para encontrar horario de reunión.",
-                    "after": f"👋 ¡Hola! Te compartimos los detalles de la plataforma {c_name}:\n\n💻 *Solución integral para optimizar tus operaciones:*\n• Automatización de flujos y tableros en tiempo real.\n• Integración nativa con tus sistemas actuales.\n• Planes a medida según el volumen de tu equipo.\n\n📅 *Link directo para agendar tu Demo de 20 minutos:* {LINK_CALENDLY}\n\n[---saltomensaje---]\n\n👉 *¿Qué día te queda más cómodo para que un especialista te muestre la plataforma en acción?*",
-                    "tipping_point": "¿Qué día te queda más cómodo para que un especialista te muestre la plataforma?",
-                    "key_benefit": "Pasa valor de la solución y link de agenda directa sin fricción."
-                },
-                {
-                    "id": "triaje_soporte_saas",
-                    "title": "Triaje de Soporte Técnico y Diagnóstico de Bugs",
-                    "shortcut": "/soporte",
-                    "category": "Soporte Técnico",
-                    "before": "Usuario dice 'no anda' -> soporte pregunta usuario -> luego navegador (5 msgs).",
-                    "after": "🛠️ *Mesa de Ayuda Técnica:*\n\nPara reproducir y solucionar la incidencia con el equipo de ingeniería, envianos:\n1. Correo electrónico de tu cuenta de usuario:\n2. Módulo o pantalla donde ocurre el error:\n3. Breve descripción de lo ocurrido y captura de pantalla:\n\n[---saltomensaje---]\n\n👉 *Con estos datos aislamos la causa y te damos una solución inmediata.*",
-                    "tipping_point": "Con estos datos aislamos la causa y te damos una solución inmediata.",
-                    "key_benefit": "Captura el contexto técnico en 1 solo paso sin repreguntas."
-                },
-                {
-                    "id": "facturacion_b2b",
-                    "title": "Facturación B2B, Datos Fiscales y Cuentas Corporativas",
-                    "shortcut": "/factura",
-                    "category": "Administración B2B",
-                    "before": "Envío de facturas dispersas sin CUIT ni comprobante ordenado.",
-                    "after": f"💼 *Administración y Cobranzas - {c_name}:*\n\n• *Razón Social:* {c_name}\n• *CUIT:* 30-71829384-9 (IVA Responsable Inscripto)\n• *Alias Corporativo:* `{c_alias}`\n\n📝 *Envianos tu CUIT y comprobante para emitir tu Factura A correspondiente.*\n\n[---saltomensaje---]\n\n¡Con eso se acredita tu período de suscripción en el acto! 🚀",
-                    "tipping_point": "Envianos tu CUIT y comprobante para emitir tu Factura A de inmediato.",
-                    "key_benefit": "Estandariza los requisitos fiscales de clientes corporativos."
-                },
-                {
-                    "id": "onboarding_saas",
-                    "title": "Onboarding y Primeros Pasos de Configuración",
-                    "shortcut": "/onboarding",
-                    "category": "Customer Success",
-                    "before": "Cliente nuevo queda a la deriva sin saber cómo arrancar.",
-                    "after": f"🚀 *¡Te damos la bienvenida a {c_name}!*\n\nPara activar tu espacio de trabajo en menos de 10 minutos:\n1. Ingresá con tus credenciales a: {LINK_PLATAFORMA}\n2. Seguí la guía rápida de configuración inicial: {LINK_GUIA}\n\n[---saltomensaje---]\n\n👉 *¿Pudiste acceder correctamente o requerís que te asistamos en el primer acceso?*",
-                    "tipping_point": "¿Pudiste acceder correctamente o requerís que te asistamos en el primer acceso?",
-                    "key_benefit": "Acelera el Time-to-Value garantizando la adopción exitosa del software."
-                },
-                {
-                    "id": "rescate_trial",
-                    "title": "Protocolo de Rescate de Trial / Propuesta B2B",
-                    "shortcut": "/rescate",
-                    "category": "Seguimiento",
-                    "before": "Prospecto B2B deja de responder la propuesta.",
-                    "after": f"👋 ¡Hola {{NOMBRE}}! ¿Cómo estás? Te escribo de {c_name} para consultarte si pudiste revisar la propuesta para tu equipo.\n\nQueríamos ofrecerte extender tu período de prueba sin cargo por 14 días adicionales para que puedan validar el retorno con datos reales.\n\n[---saltomensaje---]\n\n👉 *¿Te parece bien si te activamos los 14 días extra para continuar la prueba?*",
-                    "tipping_point": "¿Te parece bien si te activamos los 14 días extra para continuar la prueba?",
-                    "key_benefit": "Elimina el riesgo de decisión ofreciendo extensión de prueba estratégica."
-                }
-            ]
-
-        # 10. TURISMO / HOTELES / AGENCIAS (5 Plantillas)
-        elif rubro_key == 'turismo_hoteleria':
-            return [
-                {
-                    "id": "paquete_turismo",
-                    "title": "Paquetes, Tarifas de Temporada e Itinerario",
-                    "shortcut": "/viaje",
-                    "category": "Ventas Turismo",
-                    "before": "'¿Cuánto sale viajar?' -> '¿qué destino?' -> '¿cuántas personas?' (6 msgs).",
-                    "after": f"✈️ *¡Hola! Te compartimos la propuesta de viaje en {c_name}:*\n\n🌴 *Destino: {{DESTINO}}*\n• *Incluye:* Pasajes aéreos, traslados y {{NOCHES}} noches de alojamiento con desayuno.\n• *Tarifa por pasajero:* ${{PRECIO_VIAJE}} *(Base Doble)*.\n• 💡 *Financiación:* Anticipo y cuotas fijas antes de la fecha de salida.\n\n[---saltomensaje---]\n\n👉 *¿Para qué fechas estimadas estás planificando viajar y cuántos pasajeros serían?*",
-                    "tipping_point": "¿Para qué fechas estás planificando viajar y cuántos pasajeros serían?",
-                    "key_benefit": "Condensa aéreos, hotel, tarifas y captura fechas en 1 paso."
-                },
-                {
-                    "id": "reserva_hotel",
-                    "title": "Disponibilidad de Habitaciones y Check-in/Check-out",
-                    "shortcut": "/hotel",
-                    "category": "Hotelería",
-                    "before": "Múltiples mensajes para consultar camas, desayuno y cochera.",
-                    "after": f"🏨 *¡Hola! Con gusto cotizamos tu estadía en {c_name}:*\n\n📋 *Para confirmarte tarifa exacta y disponibilidad de habitaciones, envianos:*\n1. Fecha de Check-in y Check-out:\n2. Cantidad de huéspedes (adultos y menores):\n3. Tipo de habitación deseada (Estándar / Superior / Suite):\n\n[---saltomensaje---]\n\n👉 *Con estos datos te pasamos el presupuesto final con desayuno y cochera incluidos.*",
-                    "tipping_point": "Envianos fechas y cantidad de huéspedes para pasarte el presupuesto final.",
-                    "key_benefit": "Centraliza los datos de la estadía hotelera en un solo bloque."
-                },
-                {
-                    "id": "pago_turismo",
-                    "title": "Confirmación de Reserva y Medios de Pago",
-                    "shortcut": "/pago",
-                    "category": "Cobranzas",
-                    "before": "Pasa datos de pago sin fijar fecha límite de seña.",
-                    "after": f"🎯 *Para confirmar tu reserva y congelar la tarifa en {c_name}:*\n\n🏦 *Datos de Seña / Pago:*\n• *Titular:* {c_name}\n• *Alias:* `{c_alias}`\n• *Monto de Seña (30%):* *${{MONTO_SENA}}*\n\n📝 *Envianos el comprobante junto con fotos de los DNI/Pasaportes de los viajeros para emitir los vouchers.*\n\n[---saltomensaje---]\n\n¡Con eso queda garantizada tu reserva oficial! 🧳",
-                    "tipping_point": "Envianos el comprobante y fotos de DNI para emitir tus vouchers de viaje.",
-                    "key_benefit": "Asegura la seña y captura la documentación de los viajeros de una vez."
-                },
-                {
-                    "id": "politica_cancelacion",
-                    "title": "Política de Cancelación y Reprogramación Flexible",
-                    "shortcut": "/cancelacion",
-                    "category": "Atención al Pasajero",
-                    "before": "Discusiones por cancelaciones sin términos claros.",
-                    "after": "📋 *Políticas de Cancelación y Flexibilidad de tu Reserva:*\n\n• *Reprogramación sin costo:* Hasta 15 días antes de la fecha de viaje.\n• *Cancelación con reembolso:* Según condiciones de la aerolínea y cadena hotelera contratada.\n\n[---saltomensaje---]\n\n👉 *¿Deseás que revisemos tu reserva para reprogramar las fechas de tu estadía?*",
-                    "tipping_point": "¿Deseás que revisemos tu reserva para reprogramar las fechas de estadía?",
-                    "key_benefit": "Informa con claridad y ofrece opciones de reprogramación activa."
-                },
-                {
-                    "id": "rescate_turismo",
-                    "title": "Protocolo de Rescate de Presupuesto de Viaje",
-                    "shortcut": "/rescate",
-                    "category": "Seguimiento",
-                    "before": "El viajero pide presupuesto y no contesta más.",
-                    "after": f"👋 ¡Hola {{NOMBRE}}! Te escribo de {c_name} porque la aerolínea/hotel sostiene la tarifa bonificada para tu viaje a {{DESTINO}} hasta el día de hoy.\n\n[---saltomensaje---]\n\n👉 *¿Te gustaría señar la tarifa antes de que aumente o querés que busquemos una alternativa en otra fecha?*",
-                    "tipping_point": "¿Te gustaría señar la tarifa antes del aumento o evaluamos otra fecha?",
-                    "key_benefit": "Aprovecha la urgencia de tarifas hoteleras y aéreas para cerrar."
-                }
-            ]
-
-        # 11. SERVICIOS PROFESIONALES / GENERALES (5 Plantillas)
-        else:
-            return [
-                {
-                    "id": "presupuesto_comercial",
-                    "title": "Presupuesto General con Bonificación Contado",
-                    "shortcut": "/coti",
-                    "category": "Ventas / Precios",
-                    "before": "Buenos días -> 'en breve enviamos valor' -> PDF adjunto -> silencio.",
-                    "after": f"👋 ¡Hola! Te adjunto el presupuesto detallado de {c_name} (*Cotización N° {{NRO_COTIZACION}}*):\n\n📋 *Resumen comercial de tu servicio:*\n• *Total de Lista / Financiado:* ${{TOTAL_LISTA}}\n• 💡 *Precio Especial Contado / Transferencia:* *${{TOTAL_DESCUENTO}}*\n• *Disponibilidad:* Turno inmediato de inicio o despacho de tareas.\n• *Alcance:* Cotizado para {{DETALLE_SERVICIO}}.\n\n⏱️ _Validez de precios: 48 horas._\n\n[---saltomensaje---]\n\n👉 *¿Querés que te reservemos la fecha de inicio para confirmar la gestión esta semana?*",
-                    "tipping_point": "¿Querés que te reservemos la fecha de inicio para confirmar esta semana?",
-                    "key_benefit": "Resume la oferta en el chat, destaca el descuento de contado y cierra con Tipping Point."
-                },
-                {
-                    "id": "medios_pago_gral",
-                    "title": "Medios de Pago, Transferencia y Facturación",
-                    "shortcut": "/pago",
-                    "category": "Cobranzas",
-                    "before": "Pasa CBU suelto -> pide comprobante -> cliente no pone número de pedido.",
-                    "after": f"🎯 *Para confirmar tu servicio y registrar el pago en {c_name}:*\n\n🏦 *Datos de Pago:*\n• *Titular:* {c_name}\n• *Alias:* `{c_alias}`\n• *Importe Final:* *${{MONTO_FINAL}}*\n\n📝 *Una vez hecha la transferencia, envianos:*\n1. Comprobante de pago:\n2. CUIT o DNI (para la factura):\n3. Razón Social o Nombre Completo:\n\n[---saltomensaje---]\n\n¡Con eso ingresa de inmediato a nuestro sistema de gestión! 🚀",
-                    "tipping_point": "Envianos comprobante, CUIT y Razón Social en un solo mensaje.",
-                    "key_benefit": "Elimina el caos de identificación de transferencias y reduce 4 mensajes a 1."
-                },
-                {
-                    "id": "triaje_soporte_gral",
-                    "title": "Triaje de Diagnóstico y Requisitos en 1 Turno",
-                    "shortcut": "/soporte",
-                    "category": "Soporte / Trámites",
-                    "before": "Hola -> 'qué problema tenés?' -> 'pasame captura' -> 'qué usuario sos?' (4 msgs).",
-                    "after": f"👋 ¡Hola! Te ayudamos a resolver tu solicitud en {c_name} en este mismo turno:\n\n🔍 *Para gestionarlo en este momento, envianos en un solo mensaje:*\n1. Número de cliente, DNI o usuario:\n2. Descripción breve de la consulta o gestión requerida:\n3. Foto o comprobante adjunto (si corresponde):\n\n[---saltomensaje---]\n\n👉 *Con estos datos aislamos la causa y te damos una respuesta inmediata.*",
-                    "tipping_point": "Con estos datos aislamos la causa y te damos una solución inmediata.",
-                    "key_benefit": "Diagnostica la gestión en 1 solo paso sin repreguntas."
-                },
-                {
-                    "id": "cierre_fcr_gral",
-                    "title": "Confirmación de Solución de Caso (FCR)",
-                    "shortcut": "/resuelto",
-                    "category": "Cierre / Calidad",
-                    "before": "Respuestas pasivas tipo 'listo, avisame si anda'.",
-                    "after": "✅ *Tu solicitud ha sido procesada y resuelta con éxito.*\n\nTe dejamos asentado el número de gestión para cualquier seguimiento futuro.\n\n[---saltomensaje---]\n\n👉 *¿Pudiste comprobar que funciona correctamente o requerís asistencia adicional antes de cerrar el caso?*",
-                    "tipping_point": "¿Pudiste comprobar que funciona correctamente o requerís asistencia adicional?",
-                    "key_benefit": "Valida la resolución efectiva (FCR) antes de dar por cerrado el ticket."
-                },
-                {
-                    "id": "rescate_comercial_gral",
-                    "title": "Protocolo de Rescate y Seguimiento de Contacto Frío",
-                    "shortcut": "/rescate",
-                    "category": "Seguimiento",
-                    "before": "Silencio o 'Hola pudiste ver?' (tasa de respuesta menor al 10%).",
-                    "after": f"👋 ¡Hola {{NOMBRE}}! ¿Cómo estás? Te escribo de {c_name} para consultar si pudiste revisar la propuesta comercial que te enviamos.\n\nEstamos coordinando la agenda de altas y entregas de esta semana y queríamos asegurarte las condiciones bonificadas.\n\n[---saltomensaje---]\n\n👉 *¿Querés que te guardemos el lugar de reserva o necesitás que ajustemos algún punto del presupuesto?*",
-                    "tipping_point": "¿Querés que te guardemos el lugar de reserva o ajustamos algún punto?",
-                    "key_benefit": "Reactivación contextual sin presionar al cliente."
-                }
-            ]
+        crudo = json.dumps(plantillas, ensure_ascii=False)
+        crudo = crudo.replace('{{ALIAS}}', c_alias).replace('{{EMPRESA}}', c_name)
+        return json.loads(crudo)
 
     def export_report_markdown(self, analysis_result):
         meta = analysis_result["meta"]
@@ -2074,261 +1349,17 @@ class ActuenAnalyzer:
 
 
     def _get_rubro_gap_categories(self, rubro_key):
-        if rubro_key == 'salud_obra_social':
-            return [
-                {
-                    "key": "autorizaciones_ordenes",
-                    "title": "Autorizaciones Médicas, Órdenes y Prácticas",
-                    "icon": "🩺",
-                    "regex": re.compile(r'autoriz|orden|pr[aá]ctica|estudio|estudios|ginec[oó]log|m[eé]dico|pediatra|auditor[ií]a|aprobaci[oó]n|derivaci[oó]n|interconsulta|tomograf|resonanc|laboratorio|analisis|an[aá]lisis|ecograf', re.IGNORECASE),
-                    "feasibility": "Alta (Inmediata)",
-                    "solution_type": "Triaje Clínico Spoter",
-                    "solution_action": "Recolectar foto de orden médica con diagnóstico, credencial y lugar de atención en el mensaje inicial para ingresar a auditoría médica en 1 solo paso.",
-                    "template_target_id": "autorizaciones"
-                },
-                {
-                    "key": "copagos_reintegros",
-                    "title": "Copagos, Reintegros y Facturación Médica",
-                    "icon": "💳",
-                    "regex": re.compile(r'copago|reintegro|factura|facturaci[oó]n|arancel|pago|pagar|cuota|cbu|alias|transferencia|ticket|comprobante|recibo|debito|d[eé]bito', re.IGNORECASE),
-                    "feasibility": "Alta (Inmediata)",
-                    "solution_type": "Atajo de Cobranzas / Trámites",
-                    "solution_action": "Vincular link directo de autogestión de copagos y recepción automática de comprobante con DNI en un mensaje.",
-                    "template_target_id": "reintegros"
-                },
-                {
-                    "key": "turnos_cartilla",
-                    "title": "Turnos, Especialidades y Cartilla Médica",
-                    "icon": "📅",
-                    "regex": re.compile(r'turno|turnos|cartilla|profesional|cl[ií]nica|sanatorio|especialidad|consultorio|d[ií]a|horario|atenci[oó]n|atender|doctor|doctora', re.IGNORECASE),
-                    "feasibility": "Media (Integración)",
-                    "solution_type": "Buscador de Cartilla RAG",
-                    "solution_action": "Conectar cartilla médica en Spoter para informar prestadores por zona y derivar a reserva en 1 turno.",
-                    "template_target_id": "turnos"
-                },
-                {
-                    "key": "recetas_farmacia",
-                    "title": "Recetas Electrónicas y Cobertura de Farmacia",
-                    "icon": "💊",
-                    "regex": re.compile(r'receta|recetas|remedio|remedios|farmacia|medicamento|medicamentos|dosis|droga|cobertura farmacia|vadem[eé]cum|prescripci[oó]n', re.IGNORECASE),
-                    "feasibility": "Alta (Inmediata)",
-                    "solution_type": "Validador de Recetas Spoter",
-                    "solution_action": "Solicitar prescripción digital y credencial en mensaje estructurado para validar cobertura sin derivar.",
-                    "template_target_id": "recetas_farmacia"
-                },
-                {
-                    "key": "credencial_afiliacion",
-                    "title": "Credencial Digital y Estado de Afiliación",
-                    "icon": "📱",
-                    "regex": re.compile(r'credencial|carnet|carn[eé]|afiliad|afiliaci[oó]n|padr[oó]n|alta|baja|familiar|incorporar|titular', re.IGNORECASE),
-                    "feasibility": "Alta (Inmediata)",
-                    "solution_type": "Autogestión de Credencial",
-                    "solution_action": "Disparar instructivo de acceso al portal y credencial digital en el acto sin intervención del asesor.",
-                    "template_target_id": "credencial_digital"
-                },
-                {
-                    "key": "frustracion_demoras",
-                    "title": "Demoras en Atención y Solicitud de Operador",
-                    "icon": "⚠️",
-                    "regex": re.compile(r'no me contestan|demora|tardanza|urgente|hablar con|operador|asesor|humano|persona|alguien|ayuda|no entiendo|otra cosa', re.IGNORECASE),
-                    "feasibility": "Alta (Conversacional)",
-                    "solution_type": "Priorización HITL Spoter",
-                    "solution_action": "Triaje automático por severidad y asignación balanceada al asesor con contexto pre-cargado.",
-                    "template_target_id": "cierre_fcr"
-                }
-            ]
-
-        elif rubro_key == 'comercio_retail':
-            return [
-                {
-                    "key": "precios_catalogo_stock",
-                    "title": "Catálogo, Precios, Stock y Talles",
-                    "icon": "🛍️",
-                    "regex": re.compile(r'precio|cuanto sale|cuánto sale|cuanto esta|cuánto está|lista|catalogo|catálogo|valor|stock|talle|talles|color|remera|pantalon|prenda|modelo|disponible', re.IGNORECASE),
-                    "feasibility": "Alta (Inmediata)",
-                    "solution_type": "Base de Conocimiento RAG",
-                    "solution_action": "Sincronizar catálogo y variantes para responder talle, precio y descuento contado en 1 bloque.",
-                    "template_target_id": "producto_retail"
-                },
-                {
-                    "key": "envios_despacho",
-                    "title": "Envíos, Fletes y Tiempos de Entrega",
-                    "icon": "🚚",
-                    "regex": re.compile(r'envio|envío|flete|despacho|entrega|costo de envio|cuanto sale el envio|tiempo de entrega|cuando llega|cuándo llega|codigo postal|código postal|cp', re.IGNORECASE),
-                    "feasibility": "Alta (Inmediata)",
-                    "solution_type": "Matriz de Zonas Spoter",
-                    "solution_action": "Solicitar Código Postal en el primer mensaje y confirmar tarifa y fecha estimada de entrega.",
-                    "template_target_id": "envios_retail"
-                },
-                {
-                    "key": "pagos_cuotas",
-                    "title": "Medios de Pago, Cuotas y Facturación",
-                    "icon": "💳",
-                    "regex": re.compile(r'pago|factura|tarjeta|cuota|cuotas|transferencia|efectivo|debito|débito|mercadopago|alias|cbu|descuento efectivo|link de pago', re.IGNORECASE),
-                    "feasibility": "Alta (Inmediata)",
-                    "solution_type": "Atajo Maestro Inmediato",
-                    "solution_action": "Enviar opciones de pago, cuotas sin interés y datos bancarios oficiales en un solo bloque con descuento.",
-                    "template_target_id": "pago_retail"
-                },
-                {
-                    "key": "cambios_devoluciones",
-                    "title": "Cambios, Devoluciones y Postventa",
-                    "icon": "🔄",
-                    "regex": re.compile(r'cambio|cambiar|devolucion|devolución|falla|garantia|garantía|vino roto|no me queda|talle chico|talle grande', re.IGNORECASE),
-                    "feasibility": "Alta (Inmediata)",
-                    "solution_type": "Protocolo Postventa Cero Vueltas",
-                    "solution_action": "Recolectar número de pedido, motivo de cambio y nuevo talle en mensaje inicial sin derivaciones.",
-                    "template_target_id": "cambios_retail"
-                },
-                {
-                    "key": "locales_horarios",
-                    "title": "Locales, Retiro en Tienda y Horarios",
-                    "icon": "📍",
-                    "regex": re.compile(r'local|sucursal|donde estan|dónde están|direccion|dirección|horario|abierto|retirar hoy|pick up|mapa|hasta que hora', re.IGNORECASE),
-                    "feasibility": "Alta (Inmediata)",
-                    "solution_type": "Ficha Comercial en Bienvenida",
-                    "solution_action": "Incluir sucursales, mapa y horarios de atención en la bienvenida.",
-                    "template_target_id": "producto_retail"
-                },
-                {
-                    "key": "frustracion_asesor",
-                    "title": "Solicitud de Asesor Humano",
-                    "icon": "⚠️",
-                    "regex": re.compile(r'asesor|operador|humano|persona|alguien|ayuda|no me sirve|no entiendo|otra cosa|hablar con', re.IGNORECASE),
-                    "feasibility": "Alta (Conversacional)",
-                    "solution_type": "IA Conversacional Spoter",
-                    "solution_action": "Eliminar menús rígidos y permitir atención fluida en lenguaje natural.",
-                    "template_target_id": "rescate_carrito"
-                }
-            ]
-
-        elif rubro_key == 'construccion_corralon':
-            return [
-                {
-                    "key": "precios_materiales",
-                    "title": "Cotizaciones de Materiales y Áridos",
-                    "icon": "📋",
-                    "regex": re.compile(r'precio|cuanto sale|cuánto sale|cuanto esta|cuánto está|lista|catalogo|catálogo|valor|cotizacion|cotización|presupuesto|costo|bolsa|cemento|hierro|chapa|ladrillo|metro|arena|aridos|vigueta', re.IGNORECASE),
-                    "feasibility": "Alta (Inmediata)",
-                    "solution_type": "Base de Conocimiento RAG",
-                    "solution_action": "Sincronizar lista de precios de materiales para cotizaciones instantáneas en un solo bloque estructurado.",
-                    "template_target_id": "presupuesto_corralon"
-                },
-                {
-                    "key": "fletes_logistica",
-                    "title": "Envíos, Fletes y Descarga en Obra",
-                    "icon": "🚚",
-                    "regex": re.compile(r'envio|envío|flete|despacho|entrega|zona|domicilio|llegan a|pilar|lujan|luján|capital|costo de envio|cuanto sale el envio|flete a|traer|camion|camión|volcador|hidrogrua|hidrogrúa|reparto', re.IGNORECASE),
-                    "feasibility": "Alta (Inmediata)",
-                    "solution_type": "Matriz de Zonas Spoter",
-                    "solution_action": "Cargar radios de entrega, tarifas de flete y requisitos de acceso de camión en la Base de Conocimiento.",
-                    "template_target_id": "flete_corralon"
-                },
-                {
-                    "key": "pagos_facturacion",
-                    "title": "Pagos, Alias, CBU y Facturación A / B",
-                    "icon": "💳",
-                    "regex": re.compile(r'pago|factura|factura a|tarjeta|cuota|transferencia|efectivo|debito|débito|mercadopago|alias|cbu|iva|afip|fiscal|descuento efectivo|forma de pago|medios de pago', re.IGNORECASE),
-                    "feasibility": "Alta (Inmediata)",
-                    "solution_type": "Atajo Maestro Inmediato",
-                    "solution_action": "Configurar atajo de medios de pago y recolección automática de CUIT/Razón Social en mensaje cero.",
-                    "template_target_id": "cierre_corralon"
-                },
-                {
-                    "key": "stock_retiro",
-                    "title": "Stock, Carga en Depósito y Horarios",
-                    "icon": "📦",
-                    "regex": re.compile(r'stock|tienen|hay|disponible|disponibilidad|para retirar|queda|retirar hoy|entrega inmediata|conseguir|medida|horario de carga|sucursal', re.IGNORECASE),
-                    "feasibility": "Media (Integración)",
-                    "solution_type": "Consulta de Inventario Spoter",
-                    "solution_action": "Vincular stock mínimo y condiciones de retiro para responder sin consultar al depósito.",
-                    "template_target_id": "hierros_mallas"
-                },
-                {
-                    "key": "acopio_obras",
-                    "title": "Venta Mayorista, Acopio y Grandes Obras",
-                    "icon": "🤝",
-                    "regex": re.compile(r'constructora|obra grande|cuenta corriente|licitacion|licitación|acopio|volumen|distribuidor|arquitecto|presupuesto formal', re.IGNORECASE),
-                    "feasibility": "Consultiva (Humano)",
-                    "solution_type": "Copiloto HITL Spoter",
-                    "solution_action": "Derivación guiada con ficha de intencionalidad comercial y volumen para el asesor comercial.",
-                    "template_target_id": "rescate_corralon"
-                },
-                {
-                    "key": "frustracion_asesor",
-                    "title": "Solicitud de Asesor o Atención Humana",
-                    "icon": "⚠️",
-                    "regex": re.compile(r'no me sirve|no entiendo|otra cosa|no es lo que pregunte|mala atencion|hablar con|asesor|humano|persona|alguien|operador', re.IGNORECASE),
-                    "feasibility": "Alta (Conversacional)",
-                    "solution_type": "IA Conversacional Spoter",
-                    "solution_action": "Eliminar menús rígidos y permitir atención fluida en lenguaje natural.",
-                    "template_target_id": "presupuesto_corralon"
-                }
-            ]
-
-        # Categorías generales para otros rubros
-        return [
-            {
-                "key": "presupuesto_alcance",
-                "title": "Presupuestos, Tarifas y Alcance del Servicio",
-                "icon": "📋",
-                "regex": re.compile(r'precio|cuanto sale|cuánto sale|tarifa|costo|presupuesto|cotizacion|cotización|planes|honorarios|valor|servicio|alcance', re.IGNORECASE),
-                "feasibility": "Alta (Inmediata)",
-                "solution_type": "Base de Conocimiento RAG",
-                "solution_action": "Cargar tarifas base y propuesta comercial en Spoter para responder en 1 bloque estructurado.",
-                "template_target_id": "presupuesto_comercial"
-            },
-            {
-                "key": "pagos_facturacion_gral",
-                "title": "Medios de Pago, Alias y Facturación",
-                "icon": "💳",
-                "regex": re.compile(r'pago|factura|factura a|tarjeta|cuota|transferencia|efectivo|debito|débito|alias|cbu|mercadopago|iva|cuit', re.IGNORECASE),
-                "feasibility": "Alta (Inmediata)",
-                "solution_type": "Atajo Maestro Inmediato",
-                "solution_action": "Configurar atajo de cobro y solicitud de datos fiscales en un solo paso.",
-                "template_target_id": "medios_pago_gral"
-            },
-            {
-                "key": "turnos_agenda",
-                "title": "Turnos, Citas y Coordinación de Agenda",
-                "icon": "📅",
-                "regex": re.compile(r'turno|cita|reunion|reunión|agenda|horario|cuando nos vemos|coordinar|entrevista|visita', re.IGNORECASE),
-                "feasibility": "Alta (Inmediata)",
-                "solution_type": "Agenda Digital Spoter",
-                "solution_action": "Conectar link de calendario o capturar día y rango horario preferido en 1 solo mensaje.",
-                "template_target_id": "triaje_soporte_gral"
-            },
-            {
-                "key": "requisitos_documentacion",
-                "title": "Requisitos Previos y Envío de Documentación",
-                "icon": "📝",
-                "regex": re.compile(r'requisito|requisitos|documentacion|documentación|papeles|dni|constancia|formulario|que necesito|qué necesito|adjunto', re.IGNORECASE),
-                "feasibility": "Alta (Inmediata)",
-                "solution_type": "Checklist Previo Automatizado",
-                "solution_action": "Detallar los requisitos y solicitar la documentación en 1 solo envío sin idas y vueltas.",
-                "template_target_id": "triaje_soporte_gral"
-            },
-            {
-                "key": "seguimiento_estado",
-                "title": "Seguimiento y Estado de Gestión",
-                "icon": "🔄",
-                "regex": re.compile(r'estado|como va|cómo va|novedades|cuando esta|cuándo está|demora|finalizado|listo|seguimiento', re.IGNORECASE),
-                "feasibility": "Media (Integración)",
-                "solution_type": "Notificaciones de Estado Spoter",
-                "solution_action": "Informar estado actual de la gestión e inyectar oxígeno conversacional para evitar la repregunta.",
-                "template_target_id": "cierre_fcr_gral"
-            },
-            {
-                "key": "frustracion_asesor",
-                "title": "Solicitud de Asesor Personalizado",
-                "icon": "⚠️",
-                "regex": re.compile(r'asesor|operador|humano|persona|alguien|ayuda|no entiendo|otra cosa|hablar con', re.IGNORECASE),
-                "feasibility": "Alta (Conversacional)",
-                "solution_type": "IA Conversacional Spoter",
-                "solution_action": "Atención fluida sin fricción de menús numéricos rígidos.",
-                "template_target_id": "rescate_comercial_gral"
-            }
-        ]
+        """Categorías de brechas de handoff del rubro, desde rubros.json."""
+        cats = CATALOGO['categorias_gap'].get(rubro_key) or CATALOGO['categorias_gap']['servicios_generales']
+        salida = []
+        for c in cats:
+            d = dict(c)
+            patron = d.pop('regex', None)
+            flags = d.pop('regex_flags', '')
+            if patron is not None:
+                d['regex'] = re.compile(patron, re.I if 'i' in flags else 0)
+            salida.append(d)
+        return salida
 
     def _compute_handoff_gap_analysis(self, client_conversations, operator_counts, rubro_key='construccion_corralon'):
         is_bot_re = re.compile(r'bot|sistema|auto|automatiz', re.IGNORECASE)
@@ -2386,7 +1417,7 @@ class ActuenAnalyzer:
                     matched_cat_key = categories_def[0]["key"]
 
             human_msgs_count = sum(1 for m in msgs if is_propio(m) and not is_bot_re.search(m.get('Nombre Operador', '')))
-            est_hours = (human_msgs_count * 0.75) / 60.0
+            est_hours = (human_msgs_count * SUPUESTOS['minutos_por_mensaje']) / 60.0
 
             category_counts[matched_cat_key] += 1
             category_hours[matched_cat_key] += est_hours

@@ -341,6 +341,115 @@
     "explanation": "Cada caso promedia 24.6 mensajes (10.9 del cliente + 13.7 del operador) frente al estándar calibrado para Construcción / Corralón / Materiales (6.5 mensajes totales: 3.5 cliente + 3.0 operador).",
     "industry_benchmark_note": "Estándar de industria (Construcción / Corralón / Materiales): 6.5 msgs"
   },
+  "demanda_presencial": {
+    "conversaciones_con_señal": 112,
+    "porcentaje": 8.4,
+    "señales": [
+      {
+        "clave": "ubicacion",
+        "titulo": "Ubicación / cómo llegar",
+        "conversaciones": 54,
+        "porcentaje": 4.0,
+        "citas": [
+          "me confirmaste el stock. Vine hoy a la sucursal de perdriel.. pero hay mucha gente.  Tengo",
+          "construccion la compra la hariamos a la sucursal de Perdriel si me puedes enviar el presupues",
+          "ez vereda sur. Manzana 8 Lote 25. Mando ubicación. Arena de Anchoris y cemento Avellaneda. -32"
+        ]
+      },
+      {
+        "clave": "horario",
+        "titulo": "Horario de atención",
+        "conversaciones": 21,
+        "porcentaje": 1.6,
+        "citas": [
+          "ahora, por favor mañana apenas inicien horario de atención.. Mil gracias. Saludos Cliente Tomás BRUNO .",
+          "Hola Hasta que hora tienen abierto?",
+          "10cm)×2,20m Hola, muchas gracias Mañana a qué hora abren?"
+        ]
+      },
+      {
+        "clave": "retiro",
+        "titulo": "Retiro en el local",
+        "conversaciones": 37,
+        "porcentaje": 2.8,
+        "citas": [
+          "pasas canal de  pago y transfiero, . 2) Paso por aquí comprobante de pago y me confirmas  tod",
+          "- Me haces una factura a. Y ya pasan a retirar por fa",
+          "GE] [IMAGE] Te lo puedo transferir Bien voy a buscar la plata y paso"
+        ]
+      },
+      {
+        "clave": "stock_presencial",
+        "titulo": "Stock para ir a verlo",
+        "conversaciones": 13,
+        "porcentaje": 1.0,
+        "citas": [
+          "achimbre? Buen día! Me podrían decir si tienen stock de machimbre de 3/4? Me confirman si tienen",
+          "de largo De 3 a 5 Perfecto! Actualmente hay stock? Hola cómo estás? [DOCUMENT] Quería avanzar",
+          "ales? Necesito 3 de 1, 70 de largo Y si tienen en stock con aislante también Hola buen día que preci"
+        ]
+      },
+      {
+        "clave": "friccion_local",
+        "titulo": "Fricción reportada del local",
+        "conversaciones": 1,
+        "porcentaje": 0.1,
+        "citas": [
+          "semana 5 Ayer me confirmaste el stock. Vine hoy a la sucursal de perdriel.. pero hay mucha gen"
+        ]
+      }
+    ],
+    "nota_metodologica": "Estas son conversaciones donde el propio cliente menciona el local: ubicación, horario, retiro o una demora que vivió ahí. Es demanda presencial medida en el chat, no una estimación de lo que pasa en el mostrador. El chat no observa el local, así que el analizador no proyecta nada sobre él."
+  },
+  "impacto_economico": {
+    "bloque_ingreso": {
+      "titulo": "Ingreso que no se gana",
+      "naturaleza": "Proyección sobre el ciclo de vida del cliente",
+      "temporalidad": "acumulado",
+      "moneda": "USD",
+      "total": 3641080,
+      "total_ars": 4551350000,
+      "componentes": [
+        {
+          "concepto": "Ingreso proyectado que no se gana",
+          "formula": "802 leads en riesgo × $6,800 × 65%",
+          "detalle": "Valor de vida completo ($6,800 USD)",
+          "monto_usd": 3544840
+        },
+        {
+          "concepto": "Costo de adquisición desperdiciado",
+          "formula": "802 leads × $120 de CAC",
+          "detalle": "Lo que costó traer a un lead que después se pierde",
+          "monto_usd": 96240
+        }
+      ],
+      "supuesto_clave": "Asume que el 65% de los 802 leads mal atendidos no se recupera. El cliente compara y compra donde le respondan. Una demora en zona fría lo manda al competidor, así que se arriesga el valor de vida completo del cliente más el costo de haberlo traído."
+    },
+    "bloque_costo": {
+      "titulo": "Costo que ya se está pagando",
+      "naturaleza": "Gasto operativo real, medido sobre los mensajes del período",
+      "temporalidad": "mensual",
+      "moneda": "ARS",
+      "total": 1244510,
+      "total_usd": 995.61,
+      "componentes": [
+        {
+          "concepto": "Horas de asesores en mensajes evitables",
+          "formula": "11,578 mensajes × 0.75 min ÷ 60 × $5,000/hora",
+          "detalle": "144.7 horas al mes que hoy se van en fragmentación y repreguntas",
+          "monto_ars": 723500
+        },
+        {
+          "concepto": "Costo de mensajería",
+          "formula": "11,578 mensajes × $45",
+          "detalle": "Mensajes que no harían falta con respuesta en bloque único",
+          "monto_ars": 521010
+        }
+      ],
+      "supuesto_clave": "Toma como evitables los mensajes por encima del estándar de 5.0 por cliente del rubro. No asume que el cliente se pierda: es tiempo de gente que ya se está pagando."
+    },
+    "nota_metodologica": "Los dos bloques no se suman en una sola cifra a propósito: el primero es ingreso futuro que puede no llegar y el segundo es costo que ya se paga todos los meses. Mezclarlos da un número más grande y más fácil de discutir."
+  },
   "topics": [
     {
       "category": "Presupuesto General / Lista de Materiales",
@@ -617,7 +726,28 @@
     "projected_recovered_ltv_usd": 2730810,
     "exchange_rate_ars": 1250,
     "total_economic_risk_ars": 4551350000,
-    "projected_recovered_ltv_ars": 3413512500
+    "projected_recovered_ltv_ars": 3413512500,
+    "tipo_cliente": "transaccional",
+    "modelo_titulo": "Cliente transaccional",
+    "modelo_explicacion": "El cliente compara y compra donde le respondan. Una demora en zona fría lo manda al competidor, así que se arriesga el valor de vida completo del cliente más el costo de haberlo traído.",
+    "conversion_loss_rate": 0.65,
+    "valor_ciclo_renovacion_usd": 3400,
+    "base_calculo_usd": 6800,
+    "base_calculo_etiqueta": "Valor de vida completo ($6,800 USD)",
+    "composicion": [
+      {
+        "concepto": "Ingreso proyectado que no se gana",
+        "formula": "802 leads en riesgo × $6,800 × 65%",
+        "detalle": "Valor de vida completo ($6,800 USD)",
+        "monto_usd": 3544840
+      },
+      {
+        "concepto": "Costo de adquisición desperdiciado",
+        "formula": "802 leads × $120 de CAC",
+        "detalle": "Lo que costó traer a un lead que después se pierde",
+        "monto_usd": 96240
+      }
+    ]
   },
   "prioritization_audit": {
     "avg_ic_score": 54.9,

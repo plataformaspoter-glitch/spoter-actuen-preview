@@ -902,10 +902,23 @@ function computePrioritizationAndLtv(clientConvs, infoRubro, sla, focus) {
     else { rescate++; if (icScore >= 40) rescatables++; }
   }
 
-  const perdida = S.tasa_caida_conversion;
+  // Modelo de pérdida según el tipo de cliente: en un rubro cautivo una mala
+  // atención no produce baja inmediata, así que se arriesga un ciclo de
+  // renovación y no el valor de vida completo, y el CAC no se desperdicia.
+  const tipoCliente = infoRubro.tipo_cliente || 'transaccional';
+  const modelo = CATALOGO.modelo_perdida[tipoCliente];
+  const perdida = infoRubro.tasa_caida != null ? infoRubro.tasa_caida : S.tasa_caida_conversion;
+
+  const valorCicloRenovacion = Math.round(avgTicket * freq);
+  const usaCiclo = modelo.base === 'ciclo_renovacion';
+  const baseUnitaria = usaCiclo ? valorCicloRenovacion : ltvVal;
+  const baseEtiqueta = usaCiclo
+    ? `Ciclo de renovación ($${valorCicloRenovacion.toLocaleString('en-US')} USD/año)`
+    : `Valor de vida completo ($${ltvVal.toLocaleString('en-US')} USD)`;
+
   const immediateLost = Math.round(leadsAtRisk * avgTicket * perdida);
-  const ltvCapitalLost = Math.round(leadsAtRisk * ltvVal * perdida);
-  const cacWasted = Math.round(leadsAtRisk * cac);
+  const ltvCapitalLost = Math.round(leadsAtRisk * baseUnitaria * perdida);
+  const cacWasted = modelo.incluye_cac ? Math.round(leadsAtRisk * cac) : 0;
   const totalRisk = ltvCapitalLost + cacWasted;
   const recovered = Math.round(totalRisk * S.tasa_recuperacion_spoter);
   const fx = S.tipo_cambio_ars;
@@ -932,7 +945,33 @@ function computePrioritizationAndLtv(clientConvs, infoRubro, sla, focus) {
     projected_recovered_ltv_usd: recovered,
     exchange_rate_ars: fx,
     total_economic_risk_ars: totalRisk * fx,
-    projected_recovered_ltv_ars: recovered * fx
+    projected_recovered_ltv_ars: recovered * fx,
+
+    tipo_cliente: tipoCliente,
+    modelo_titulo: modelo.titulo,
+    modelo_explicacion: modelo.explicacion,
+    conversion_loss_rate: perdida,
+    valor_ciclo_renovacion_usd: valorCicloRenovacion,
+    base_calculo_usd: baseUnitaria,
+    base_calculo_etiqueta: baseEtiqueta,
+    composicion: [
+      {
+        concepto: 'Ingreso proyectado que no se gana',
+        formula: `${leadsAtRisk.toLocaleString('en-US')} leads en riesgo × $${baseUnitaria.toLocaleString('en-US')} × ${Math.round(perdida * 100)}%`,
+        detalle: baseEtiqueta,
+        monto_usd: ltvCapitalLost
+      },
+      {
+        concepto: 'Costo de adquisición desperdiciado',
+        formula: modelo.incluye_cac
+          ? `${leadsAtRisk.toLocaleString('en-US')} leads × $${cac.toLocaleString('en-US')} de CAC`
+          : 'No aplica: el cliente cautivo no se da de baja en el acto',
+        detalle: modelo.incluye_cac
+          ? 'Lo que costó traer a un lead que después se pierde'
+          : 'El CAC ya está amortizado y el cliente sigue siendo cliente',
+        monto_usd: cacWasted
+      }
+    ]
   };
 
   const prioritization_audit = {
@@ -1071,6 +1110,45 @@ function computeClosings(clientConvs) {
   return {
     passive_closing_rate: round1((pasivos / (evaluables || 1)) * 100),
     evaluables, activos, pasivos, no_evaluables: noEvaluables
+  };
+}
+
+/** Demanda presencial declarada: qué dice el cliente sobre el local.
+ *  Se cuenta, no se extrapola — el chat no observa el mostrador. */
+function computeDemandaPresencial(clientConvs, uniqueClients) {
+  const cfg = CATALOGO['señales_presenciales'];
+  const claves = Object.keys(cfg);
+  const regex = {}, conteo = {}, citas = {};
+  claves.forEach(k => { regex[k] = new RegExp(cfg[k].regex, 'i'); conteo[k] = 0; citas[k] = []; });
+  const conSeñal = new Set();
+
+  for (const cid of Object.keys(clientConvs)) {
+    const texto = clientConvs[cid].filter(m => !isPropio(m))
+      .map(m => m['Mensaje'] || '').join(' ');
+    for (const k of claves) {
+      const m = regex[k].exec(texto);
+      if (!m) continue;
+      conteo[k]++;
+      conSeñal.add(cid);
+      if (citas[k].length < 3) {
+        const i = Math.max(0, m.index - 40);
+        const cita = texto.slice(i, m.index + m[0].length + 45).replace(/\n/g, ' ').trim();
+        if (cita.length > 12) citas[k].push(cita);
+      }
+    }
+  }
+
+  return {
+    conversaciones_con_señal: conSeñal.size,
+    porcentaje: round1((conSeñal.size / (uniqueClients || 1)) * 100),
+    señales: claves.filter(k => conteo[k] > 0).map(k => ({
+      clave: k,
+      titulo: cfg[k].titulo,
+      conversaciones: conteo[k],
+      porcentaje: round1((conteo[k] / (uniqueClients || 1)) * 100),
+      citas: citas[k]
+    })),
+    nota_metodologica: 'Estas son conversaciones donde el propio cliente menciona el local: ubicación, horario, retiro o una demora que vivió ahí. Es demanda presencial medida en el chat, no una estimación de lo que pasa en el mostrador. El chat no observa el local, así que el analizador no proyecta nada sobre él.'
   };
 }
 
@@ -1435,6 +1513,7 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
   const topQuestions = Object.entries(preguntasEmpresa)
     .sort((a, b) => b[1] - a[1]).slice(0, 5);
   const cierres = computeClosings(clientConvs);
+  const demandaPresencial = computeDemandaPresencial(clientConvs, uniqueClients);
 
   // Ping-pong contra el estándar calibrado del rubro, no contra un ideal fijo.
   const [idealCli, idealOp] = CATALOGO.pingpong_por_rubro[rubroKey] || [3.5, 3.0];
@@ -1687,6 +1766,46 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
       in_conversation: inConvStats
     },
     ping_pong: pingPongStats,
+    demanda_presencial: demandaPresencial,
+
+    // Los dos tipos de plata, separados: uno es ingreso futuro que puede no
+    // llegar, el otro es costo que ya se paga todos los meses.
+    impacto_economico: {
+      bloque_ingreso: {
+        titulo: 'Ingreso que no se gana',
+        naturaleza: 'Proyección sobre el ciclo de vida del cliente',
+        temporalidad: 'acumulado',
+        moneda: 'USD',
+        total: ltv_economics.total_economic_risk_usd,
+        total_ars: ltv_economics.total_economic_risk_ars,
+        componentes: ltv_economics.composicion,
+        supuesto_clave: `Asume que el ${Math.round(ltv_economics.conversion_loss_rate * 100)}% de los ${ltv_economics.leads_at_risk_count.toLocaleString('en-US')} leads mal atendidos no se recupera. ${ltv_economics.modelo_explicacion}`
+      },
+      bloque_costo: {
+        titulo: 'Costo que ya se está pagando',
+        naturaleza: 'Gasto operativo real, medido sobre los mensajes del período',
+        temporalidad: 'mensual',
+        moneda: 'ARS',
+        total: Math.round(totalArs),
+        total_usd: parseFloat(totalUsd),
+        componentes: [
+          {
+            concepto: 'Horas de asesores en mensajes evitables',
+            formula: `${savedMsgs.toLocaleString('en-US')} mensajes × ${S.minutos_por_mensaje} min ÷ 60 × $${S.costo_hora_asesor_ars.toLocaleString('en-US')}/hora`,
+            detalle: `${savedHours} horas al mes que hoy se van en fragmentación y repreguntas`,
+            monto_ars: Math.round(laborArs)
+          },
+          {
+            concepto: 'Costo de mensajería',
+            formula: `${savedMsgs.toLocaleString('en-US')} mensajes × $${S.costo_mensaje_api_ars}`,
+            detalle: 'Mensajes que no harían falta con respuesta en bloque único',
+            monto_ars: Math.round(apiArs)
+          }
+        ],
+        supuesto_clave: `Toma como evitables los mensajes por encima del estándar de ${fmt1(targetMsgs)} por cliente del rubro. No asume que el cliente se pierda: es tiempo de gente que ya se está pagando.`
+      },
+      nota_metodologica: 'Los dos bloques no se suman en una sola cifra a propósito: el primero es ingreso futuro que puede no llegar y el segundo es costo que ya se paga todos los meses. Mezclarlos da un número más grande y más fácil de discutir.'
+    },
     topics: topicsStats,
     operators: operatorList,
     prioritization_audit: prioritization_audit,
@@ -3274,10 +3393,131 @@ function clearEngineNotices() {
 let currentLtvCurrency = 'USD';
 // El tipo de cambio sale del catálogo (supuestos_economicos.tipo_cambio_ars).
 
+/** Explica cómo se compone el impacto económico: dos bloques, cada componente
+ *  con su fórmula, y una barra proporcional para que se lea de un vistazo. */
+function renderComposicionEconomica(data) {
+  const ie = data.impacto_economico;
+  const tab = document.getElementById('tabLtvTriage');
+  if (!ie || !tab) return;
+
+  let cont = document.getElementById('composicionEconomica');
+  if (!cont) {
+    cont = document.createElement('div');
+    cont.id = 'composicionEconomica';
+    tab.insertBefore(cont, tab.firstChild);
+  }
+
+  const ltv = data.ltv_economics || {};
+  const esCautivo = ltv.tipo_cliente === 'cautivo';
+  const money = (n, m) => m === 'USD'
+    ? `$${Number(n).toLocaleString('en-US')}`
+    : `$${Number(n).toLocaleString('es-AR')}`;
+
+  const bloque = (b, clase) => {
+    const max = Math.max(...b.componentes.map(c => Math.abs(c.monto_usd != null ? c.monto_usd : c.monto_ars)), 1);
+    const filas = b.componentes.map(c => {
+      const monto = c.monto_usd != null ? c.monto_usd : c.monto_ars;
+      const pct = Math.max(2, Math.round((Math.abs(monto) / max) * 100));
+      const apagado = monto === 0 ? ' comp-cero' : '';
+      return `
+        <div class="comp-fila${apagado}">
+          <div class="comp-encabezado">
+            <span class="comp-concepto">${escapeHtml(c.concepto)}</span>
+            <span class="comp-monto">${money(monto, b.moneda)}</span>
+          </div>
+          <div class="comp-barra"><span style="width:${pct}%"></span></div>
+          <div class="comp-formula"><code>${escapeHtml(c.formula)}</code></div>
+          <div class="comp-detalle">${escapeHtml(c.detalle)}</div>
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="comp-bloque ${clase}">
+        <div class="comp-bloque-cab">
+          <h4>${escapeHtml(b.titulo)}</h4>
+          <span class="comp-chip">${b.temporalidad === 'mensual' ? 'por mes' : 'acumulado'} · ${escapeHtml(b.moneda)}</span>
+        </div>
+        <p class="comp-naturaleza">${escapeHtml(b.naturaleza)}</p>
+        ${filas}
+        <div class="comp-total">
+          <span>Total</span>
+          <strong>${money(b.total, b.moneda)}${b.moneda === 'ARS' && b.total_usd ? ` <em>(~$${Number(b.total_usd).toLocaleString('en-US')} USD)</em>` : ''}</strong>
+        </div>
+        <p class="comp-supuesto"><strong>Supuesto:</strong> ${escapeHtml(b.supuesto_clave)}</p>
+      </div>`;
+  };
+
+  cont.innerHTML = `
+    <section class="comp-seccion">
+      <div class="comp-titulo-fila">
+        <h3>💰 Cómo se compone el impacto económico</h3>
+        <span class="comp-tipo ${esCautivo ? 'tipo-cautivo' : 'tipo-transaccional'}">
+          ${esCautivo ? '🔒' : '🔄'} ${escapeHtml(ltv.modelo_titulo || '')}
+        </span>
+      </div>
+      <p class="comp-intro">${escapeHtml(ltv.modelo_explicacion || '')}</p>
+      <div class="comp-grilla">
+        ${bloque(ie.bloque_ingreso, 'bloque-ingreso')}
+        ${bloque(ie.bloque_costo, 'bloque-costo')}
+      </div>
+      <p class="comp-nota">${escapeHtml(ie.nota_metodologica)}</p>
+    </section>`;
+}
+
+/** Demanda presencial declarada por los propios clientes en el chat. */
+function renderDemandaPresencial(data) {
+  const dp = data.demanda_presencial;
+  const tab = document.getElementById('tabLtvTriage');
+  if (!dp || !tab) return;
+
+  let cont = document.getElementById('demandaPresencial');
+  if (!cont) {
+    cont = document.createElement('div');
+    cont.id = 'demandaPresencial';
+    const comp = document.getElementById('composicionEconomica');
+    if (comp && comp.nextSibling) tab.insertBefore(cont, comp.nextSibling);
+    else tab.insertBefore(cont, tab.firstChild);
+  }
+
+  if (!dp.señales.length) {
+    cont.innerHTML = `
+      <section class="comp-seccion">
+        <h3>🏬 Demanda presencial declarada</h3>
+        <p class="comp-nota">No se detectaron menciones al local en estas conversaciones.</p>
+      </section>`;
+    return;
+  }
+
+  const max = Math.max(...dp.señales.map(x => x.conversaciones), 1);
+  const filas = dp.señales.map(x => `
+    <div class="pres-fila">
+      <div class="pres-cab">
+        <span>${escapeHtml(x.titulo)}</span>
+        <strong>${x.conversaciones} <em>(${x.porcentaje}%)</em></strong>
+      </div>
+      <div class="comp-barra"><span style="width:${Math.max(3, Math.round((x.conversaciones / max) * 100))}%"></span></div>
+      ${x.citas.length ? `<div class="pres-citas">${x.citas.map(c => `<span>“${escapeHtml(c)}”</span>`).join('')}</div>` : ''}
+    </div>`).join('');
+
+  cont.innerHTML = `
+    <section class="comp-seccion">
+      <div class="comp-titulo-fila">
+        <h3>🏬 Demanda presencial declarada</h3>
+        <span class="comp-chip">${dp.conversaciones_con_señal} conversaciones · ${dp.porcentaje}%</span>
+      </div>
+      <p class="comp-intro">Conversaciones donde el cliente habla del local: dónde queda, hasta qué hora abren, si pasa a retirar, o una demora que vivió ahí.</p>
+      ${filas}
+      <p class="comp-nota">${escapeHtml(dp.nota_metodologica)}</p>
+    </section>`;
+}
+
 function renderLtvAndPrioritization(data) {
   const ltv = data.ltv_economics;
   const prio = data.prioritization_audit;
   const lite = data.spoter_lite;
+
+  renderComposicionEconomica(data);
+  renderDemandaPresencial(data);
 
   // Sin motor no hay IC/IU ni matemática del LTV: se avisa, no se simula.
   if (!ltv || !prio || !lite) {

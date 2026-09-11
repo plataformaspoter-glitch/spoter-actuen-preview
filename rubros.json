@@ -85,6 +85,42 @@
     "objetivo_msgs_soporte": 4.0,
     "_nota": "El tipo de cambio y los costos envejecen rápido. Se imprimen al pie del informe para que cualquier número sea auditable."
   },
+  "modelo_perdida": {
+    "transaccional": {
+      "base": "ltv_completo",
+      "incluye_cac": true,
+      "titulo": "Cliente transaccional",
+      "explicacion": "El cliente compara y compra donde le respondan. Una demora en zona fría lo manda al competidor, así que se arriesga el valor de vida completo del cliente más el costo de haberlo traído."
+    },
+    "cautivo": {
+      "base": "ciclo_renovacion",
+      "incluye_cac": false,
+      "titulo": "Cliente cautivo",
+      "explicacion": "Hay contrato, carencias o ciclo lectivo: una mala atención no produce una baja inmediata. Lo que se arriesga es un ciclo de renovación, no el valor de vida completo, y el CAC no se desperdicia porque el cliente sigue."
+    }
+  },
+  "señales_presenciales": {
+    "ubicacion": {
+      "titulo": "Ubicación / cómo llegar",
+      "regex": "(ubicaci[oó]n|d[oó]nde (est[aá]n|quedan|los encuentro)|direcci[oó]n del (local|dep[oó]sito)|c[oó]mo llego|mapa|sucursal)"
+    },
+    "horario": {
+      "titulo": "Horario de atención",
+      "regex": "(a qu[eé] hora (abren|cierran)|hasta qu[eé] hora|est[aá]n abiertos?|horario de atenci[oó]n|abren (hoy|ma[ñn]ana)|atienden hoy)"
+    },
+    "retiro": {
+      "titulo": "Retiro en el local",
+      "regex": "(paso a retirar|retiro en|lo retiro|voy a buscar|paso por|me acerco|voy para all[aá]|retirar por)"
+    },
+    "stock_presencial": {
+      "titulo": "Stock para ir a verlo",
+      "regex": "(tienen (en )?stock|hay (stock|disponible)|lo tienen ah[ií]|est[aá] en el dep[oó]sito)"
+    },
+    "friccion_local": {
+      "titulo": "Fricción reportada del local",
+      "regex": "(hay mucha gente|mucha cola|estaba lleno|no me atendi[oó] nadie|esper[eé] (mucho|un montón)|vine (hoy|ayer) (a|al)|fui (hoy|ayer) (a|al))"
+    }
+  },
   "deteccion_cierre": {
     "umbral_difusion_conversaciones": 5,
     "regex_automatico": "(te damos la bienvenida|gracias por comunicarte|bienvenid|nos encontramos \\*?cerrad|ser[aá]s atendid|horario de atenci[oó]n)",
@@ -141,6 +177,8 @@
   "rubros": {
     "salud_obra_social": {
       "icon": "🏥",
+      "tipo_cliente": "cautivo",
+      "tasa_caida": 0.18,
       "name": "Salud / Obra Social / Medicina Prepaga",
       "description": "Gestión de autorizaciones, turnos médicos, cartilla, recetas y reintegros.",
       "keywords": [
@@ -249,6 +287,8 @@
     },
     "construccion_corralon": {
       "icon": "🧱",
+      "tipo_cliente": "transaccional",
+      "tasa_caida": 0.65,
       "name": "Construcción / Corralón / Materiales",
       "description": "Venta de materiales gruesos, áridos, hierros, terminaciones y logística en obra.",
       "keywords": [
@@ -370,6 +410,8 @@
     },
     "automotor_concesionaria": {
       "icon": "🚗",
+      "tipo_cliente": "transaccional",
+      "tasa_caida": 0.65,
       "name": "Automotor / Concesionaria / Repuestos",
       "description": "Venta de vehículos 0km, usados, planes de ahorro, service y repuestos.",
       "keywords": [
@@ -455,6 +497,8 @@
     },
     "inmobiliaria_desarrollos": {
       "icon": "🏢",
+      "tipo_cliente": "transaccional",
+      "tasa_caida": 0.65,
       "name": "Inmobiliaria / Desarrollos / Alquileres",
       "description": "Alquileres, venta de propiedades, lotes, tasaciones y desarrollos de pozo.",
       "keywords": [
@@ -536,6 +580,8 @@
     },
     "seguros_fintech": {
       "icon": "💳",
+      "tipo_cliente": "cautivo",
+      "tasa_caida": 0.18,
       "name": "Seguros / Fintech / Finanzas",
       "description": "Pólizas de seguro, denuncias de siniestros, créditos, tarjetas y transferencias.",
       "keywords": [
@@ -619,6 +665,8 @@
     },
     "educacion_institutos": {
       "icon": "🎓",
+      "tipo_cliente": "cautivo",
+      "tasa_caida": 0.18,
       "name": "Educación / Universidades / Cursos",
       "description": "Inscripciones a carreras, diplomaturas, fechas de examen, aranceles y títulos.",
       "keywords": [
@@ -702,6 +750,8 @@
     },
     "comercio_retail": {
       "icon": "🛍️",
+      "tipo_cliente": "transaccional",
+      "tasa_caida": 0.65,
       "name": "Comercio / Retail / E-Commerce / Moda",
       "description": "Venta minorista, indumentaria, calzado, tecnología, catálogo y envíos.",
       "keywords": [
@@ -788,6 +838,8 @@
     },
     "turismo_hoteleria": {
       "icon": "✈️",
+      "tipo_cliente": "transaccional",
+      "tasa_caida": 0.65,
       "name": "Turismo / Hotelería / Alquiler Temporario",
       "description": "Reservas de hoteles, cabañas, paquetes de viaje, excursiones y vuelos.",
       "keywords": [
@@ -868,6 +920,8 @@
     },
     "gastronomia_delivery": {
       "icon": "🍕",
+      "tipo_cliente": "transaccional",
+      "tasa_caida": 0.65,
       "name": "Gastronomía / Restaurantes / Delivery",
       "description": "Pedidos de comida, reservas de mesa, menús diarios y delivery.",
       "keywords": [
@@ -949,6 +1003,8 @@
     },
     "saas_b2b_tecnologia": {
       "icon": "💻",
+      "tipo_cliente": "cautivo",
+      "tasa_caida": 0.18,
       "name": "Tecnología / SaaS / Servicios B2B",
       "description": "Software, demos comerciales, soporte técnico, integraciones y licencias.",
       "keywords": [
@@ -1032,6 +1088,8 @@
     },
     "servicios_generales": {
       "icon": "⚙️",
+      "tipo_cliente": "transaccional",
+      "tasa_caida": 0.65,
       "name": "Servicios Profesionales / Atención General",
       "description": "Atención al cliente, trámites, presupuestos y soporte general multirubro.",
       "keywords": [

@@ -2750,3 +2750,176 @@ input[type="range"] {
   background: var(--success-bg, rgba(16, 185, 129, 0.12));
   border-color: var(--success, #10b981);
 }
+
+/* ==========================================================================
+   COMPOSICIÓN DEL IMPACTO ECONÓMICO Y DEMANDA PRESENCIAL
+   ========================================================================== */
+
+.comp-seccion {
+  padding: 22px 24px;
+  margin-bottom: 22px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+}
+
+.comp-titulo-fila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.comp-titulo-fila h3 { margin: 0; font-size: 16px; color: var(--text-primary); }
+
+.comp-tipo {
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.comp-tipo.tipo-cautivo      { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
+.comp-tipo.tipo-transaccional { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+
+.comp-intro {
+  margin: 0 0 18px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.comp-grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+}
+
+.comp-bloque {
+  padding: 18px;
+  border: 1px solid var(--border-color);
+  border-left-width: 4px;
+  border-radius: 11px;
+}
+.comp-bloque.bloque-ingreso { border-left-color: #f59e0b; }
+.comp-bloque.bloque-costo   { border-left-color: #3b82f6; }
+
+.comp-bloque-cab {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.comp-bloque-cab h4 { margin: 0; font-size: 14.5px; color: var(--text-primary); }
+
+.comp-chip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(127, 127, 127, 0.15);
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.comp-naturaleza {
+  margin: 6px 0 16px;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-secondary);
+}
+
+.comp-fila { margin-bottom: 16px; }
+.comp-fila.comp-cero { opacity: 0.5; }
+
+.comp-encabezado {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.comp-concepto { font-size: 13px; color: var(--text-primary); }
+.comp-monto { font-size: 14px; font-weight: 700; color: var(--text-primary); white-space: nowrap; }
+
+.comp-barra {
+  height: 7px;
+  margin: 7px 0;
+  background: rgba(127, 127, 127, 0.16);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.comp-barra span {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: currentColor;
+  opacity: 0.75;
+}
+.bloque-ingreso .comp-barra span { background: #f59e0b; }
+.bloque-costo   .comp-barra span { background: #3b82f6; }
+.pres-fila      .comp-barra span { background: #10b981; }
+
+.comp-formula code {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 5px;
+  background: rgba(127, 127, 127, 0.13);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.comp-detalle {
+  margin-top: 5px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.comp-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-top: 12px;
+  margin-top: 4px;
+  border-top: 1px solid var(--border-color);
+  font-size: 14px;
+}
+.comp-total strong { font-size: 17px; color: var(--text-primary); }
+.comp-total em { font-size: 12px; font-weight: 500; font-style: normal; color: var(--text-secondary); }
+
+.comp-supuesto,
+.comp-nota {
+  margin: 14px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+.comp-nota {
+  padding-top: 14px;
+  border-top: 1px dashed var(--border-color);
+}
+
+.pres-fila { margin-bottom: 16px; }
+.pres-cab {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+.pres-cab em { font-size: 12px; font-weight: 500; font-style: normal; color: var(--text-secondary); }
+
+.pres-citas { display: flex; flex-direction: column; gap: 5px; margin-top: 7px; }
+.pres-citas span {
+  padding: 6px 11px;
+  border-left: 3px solid rgba(16, 185, 129, 0.5);
+  background: rgba(127, 127, 127, 0.07);
+  border-radius: 0 6px 6px 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}

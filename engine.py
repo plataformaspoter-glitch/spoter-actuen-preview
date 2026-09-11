@@ -664,6 +664,53 @@ class ActuenAnalyzer:
         _evaluables = cierres_activos + cierres_pasivos
         passive_closing_rate = round((cierres_pasivos / (_evaluables or 1)) * 100, 1)
 
+        # Demanda presencial declarada. Se CUENTA lo que el cliente dice sobre el
+        # local (ubicación, horario, retiro, stock, fricción vivida). No se
+        # extrapola nada: el CSV no observa el mostrador, así que cualquier
+        # multiplicador sobre lo presencial sería un supuesto, no una medición.
+        señales_cfg = CATALOGO['señales_presenciales']
+        señales_re = {k: re.compile(v['regex'], re.I) for k, v in señales_cfg.items()}
+        señal_conteo = {k: 0 for k in señales_cfg}
+        señal_citas = {k: [] for k in señales_cfg}
+        convs_presenciales = set()
+
+        for _cid, _msgs in client_conversations.items():
+            _texto = " ".join((m.get('Mensaje') or '') for m in _msgs if not is_propio(m))
+            for _k, _rx in señales_re.items():
+                _m = _rx.search(_texto)
+                if not _m:
+                    continue
+                señal_conteo[_k] += 1
+                convs_presenciales.add(_cid)
+                if len(señal_citas[_k]) < 3:
+                    _i = max(0, _m.start() - 40)
+                    _cita = _texto[_i:_m.end() + 45].replace('\n', ' ').strip()
+                    if len(_cita) > 12:
+                        señal_citas[_k].append(_cita)
+
+        _n_pres = len(convs_presenciales)
+        demanda_presencial = {
+            "conversaciones_con_señal": _n_pres,
+            "porcentaje": round((_n_pres / (unique_clients or 1)) * 100, 1),
+            "señales": [
+                {
+                    "clave": k,
+                    "titulo": señales_cfg[k]['titulo'],
+                    "conversaciones": señal_conteo[k],
+                    "porcentaje": round((señal_conteo[k] / (unique_clients or 1)) * 100, 1),
+                    "citas": señal_citas[k],
+                }
+                for k in señales_cfg
+                if señal_conteo[k] > 0
+            ],
+            "nota_metodologica": (
+                "Estas son conversaciones donde el propio cliente menciona el local: ubicación, "
+                "horario, retiro o una demora que vivió ahí. Es demanda presencial medida en el "
+                "chat, no una estimación de lo que pasa en el mostrador. El chat no observa el "
+                "local, así que el analizador no proyecta nada sobre él."
+            ),
+        }
+
         actuen_scorecard = self._evaluate_actuen_dynamic(
             focus=final_focus,
             rubro_name=rubro_info['name'],
@@ -764,6 +811,60 @@ class ActuenAnalyzer:
                 "in_conversation": in_conv_stats
             },
             "ping_pong": ping_pong_benchmark,
+            "demanda_presencial": demanda_presencial,
+
+            # Los dos tipos de plata, separados a propósito. Uno es ingreso
+            # futuro que puede no llegar (proyección, acumulada); el otro es
+            # costo que ya se está pagando todos los meses. Sumarlos en una sola
+            # cifra pega más fuerte pero es más fácil de refutar.
+            "impacto_economico": {
+                "bloque_ingreso": {
+                    "titulo": "Ingreso que no se gana",
+                    "naturaleza": "Proyección sobre el ciclo de vida del cliente",
+                    "temporalidad": "acumulado",
+                    "moneda": "USD",
+                    "total": ltv_econ['total_economic_risk_usd'],
+                    "total_ars": ltv_econ['total_economic_risk_ars'],
+                    "componentes": ltv_econ['composicion'],
+                    "supuesto_clave": (
+                        f"Asume que el {int(ltv_econ['conversion_loss_rate'] * 100)}% de los "
+                        f"{ltv_econ['leads_at_risk_count']:,} leads mal atendidos no se recupera. "
+                        f"{ltv_econ['modelo_explicacion']}"
+                    ),
+                },
+                "bloque_costo": {
+                    "titulo": "Costo que ya se está pagando",
+                    "naturaleza": "Gasto operativo real, medido sobre los mensajes del período",
+                    "temporalidad": "mensual",
+                    "moneda": "ARS",
+                    "total": round(total_financial_benefit_ars),
+                    "total_usd": total_financial_benefit_usd,
+                    "componentes": [
+                        {
+                            "concepto": "Horas de asesores en mensajes evitables",
+                            "formula": f"{saved_messages:,} mensajes × {SUPUESTOS['minutos_por_mensaje']} min ÷ 60 × ${hourly_rate_ars:,}/hora",
+                            "detalle": f"{saved_hours} horas al mes que hoy se van en fragmentación y repreguntas",
+                            "monto_ars": round(labor_savings_ars),
+                        },
+                        {
+                            "concepto": "Costo de mensajería",
+                            "formula": f"{saved_messages:,} mensajes × ${msg_cost_ars}",
+                            "detalle": "Mensajes que no harían falta con respuesta en bloque único",
+                            "monto_ars": round(api_savings_ars),
+                        },
+                    ],
+                    "supuesto_clave": (
+                        f"Toma como evitables los mensajes por encima del estándar de "
+                        f"{target_msgs_per_client} por cliente del rubro. No asume que el cliente se pierda: "
+                        "es tiempo de gente que ya se está pagando."
+                    ),
+                },
+                "nota_metodologica": (
+                    "Los dos bloques no se suman en una sola cifra a propósito: el primero es ingreso "
+                    "futuro que puede no llegar y el segundo es costo que ya se paga todos los meses. "
+                    "Mezclarlos da un número más grande y más fácil de discutir."
+                ),
+            },
             "topics": topic_data,
             "operators": operator_list,
             "actuen_scorecard": actuen_scorecard,
@@ -934,10 +1035,26 @@ class ActuenAnalyzer:
                 if ic_score >= 40:
                     leads_rescatables += 1
 
-        conversion_loss_rate = SUPUESTOS['tasa_caida_conversion']
+        # Modelo de pérdida según el tipo de cliente. En un rubro cautivo (obra
+        # social, seguro, instituto, SaaS con contrato) una mala atención no
+        # produce una baja inmediata: hay contrato o ciclo lectivo de por medio.
+        # Ahí se arriesga un ciclo de renovación, no el valor de vida completo, y
+        # el CAC no se desperdicia porque el cliente sigue siendo cliente.
+        tipo_cliente = rubro_info.get('tipo_cliente', 'transaccional')
+        modelo = CATALOGO['modelo_perdida'][tipo_cliente]
+        conversion_loss_rate = rubro_info.get('tasa_caida', SUPUESTOS['tasa_caida_conversion'])
+
+        valor_ciclo_renovacion = round(avg_ticket * freq)
+        if modelo['base'] == 'ciclo_renovacion':
+            base_unitaria = valor_ciclo_renovacion
+            base_etiqueta = f"Ciclo de renovación (${valor_ciclo_renovacion:,} USD/año)"
+        else:
+            base_unitaria = ltv_val
+            base_etiqueta = f"Valor de vida completo (${ltv_val:,} USD)"
+
         immediate_lost_usd = round(leads_at_risk_count * avg_ticket * conversion_loss_rate)
-        ltv_capital_lost_usd = round(leads_at_risk_count * ltv_val * conversion_loss_rate)
-        cac_wasted_usd = round(leads_at_risk_count * cac)
+        ltv_capital_lost_usd = round(leads_at_risk_count * base_unitaria * conversion_loss_rate)
+        cac_wasted_usd = round(leads_at_risk_count * cac) if modelo['incluye_cac'] else 0
         total_economic_risk_usd = ltv_capital_lost_usd + cac_wasted_usd
 
         projected_recovered_usd = round(total_economic_risk_usd * SUPUESTOS['tasa_recuperacion_spoter'])
@@ -969,7 +1086,34 @@ class ActuenAnalyzer:
             "projected_recovered_ltv_usd": projected_recovered_usd,
             "exchange_rate_ars": exchange_rate_ars,
             "total_economic_risk_ars": total_economic_risk_ars,
-            "projected_recovered_ltv_ars": projected_recovered_ars
+            "projected_recovered_ltv_ars": projected_recovered_ars,
+
+            # Cómo se compone el número, para poder mostrarlo y auditarlo.
+            "tipo_cliente": tipo_cliente,
+            "modelo_titulo": modelo['titulo'],
+            "modelo_explicacion": modelo['explicacion'],
+            "conversion_loss_rate": conversion_loss_rate,
+            "valor_ciclo_renovacion_usd": valor_ciclo_renovacion,
+            "base_calculo_usd": base_unitaria,
+            "base_calculo_etiqueta": base_etiqueta,
+            "composicion": [
+                {
+                    "concepto": "Ingreso proyectado que no se gana",
+                    "formula": f"{leads_at_risk_count:,} leads en riesgo × ${base_unitaria:,} × {round(conversion_loss_rate*100)}%",
+                    "detalle": base_etiqueta,
+                    "monto_usd": ltv_capital_lost_usd,
+                },
+                {
+                    "concepto": "Costo de adquisición desperdiciado",
+                    "formula": (f"{leads_at_risk_count:,} leads × ${cac:,} de CAC"
+                                if modelo['incluye_cac']
+                                else "No aplica: el cliente cautivo no se da de baja en el acto"),
+                    "detalle": ("Lo que costó traer a un lead que después se pierde"
+                                if modelo['incluye_cac']
+                                else "El CAC ya está amortizado y el cliente sigue siendo cliente"),
+                    "monto_usd": cac_wasted_usd,
+                },
+            ]
         }
 
         prioritization_audit = {

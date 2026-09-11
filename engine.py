@@ -1,5 +1,5 @@
 """
-Motor Analítico Conversacional Multirubro - Método ACTÚEN+ V2.5
+Motor Analítico Conversacional Multirubro - Método ACTÚEN+ V2.6
 Novedades V2.5 (Algoritmos de Priorización IU/IC, Fugas FIFO, LTV Económico y Motor Lite):
 1. Algoritmos de Priorización Quirúrgica: Índice de Conversión (IC 0-100) e Índice de Urgencia (IU 0-100).
 2. Detección de Cuello de Botella FIFO: Identifica leads calientes de alto IC demorados por atención secuencial indiscriminada.
@@ -687,7 +687,8 @@ class ActuenAnalyzer:
         # 11. Proyección de Ahorro y Beneficio Económico Fundamentado
         # Línea de base real actual
         baseline_company_msgs_per_client = round(company_msgs_count / (unique_clients or 1), 1)
-        target_msgs_per_client = 5.0 if final_focus == 'ventas' else 4.0
+        target_msgs_per_client = (SUPUESTOS['objetivo_msgs_ventas']
+                                  if final_focus == 'ventas' else SUPUESTOS['objetivo_msgs_soporte'])
         
         # Objetivo metodológico
         estimated_opt_company_msgs = int(unique_clients * target_msgs_per_client)

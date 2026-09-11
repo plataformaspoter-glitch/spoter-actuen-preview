@@ -482,7 +482,10 @@ let CATALOGO = null;
 
 async function cargarCatalogo() {
   if (CATALOGO) return CATALOGO;
-  const res = await fetch('rubros.json');
+  // no-cache fuerza una revalidación condicional: si el catálogo cambió en un
+  // deploy, el navegador no sigue sirviendo el viejo desde su caché. Cuando no
+  // cambió el servidor responde 304 y no se transfiere nada.
+  const res = await fetch('rubros.json', { cache: 'no-cache' });
   if (!res.ok) throw new Error(`No se pudo cargar rubros.json (HTTP ${res.status})`);
   CATALOGO = await res.json();
   return CATALOGO;
@@ -803,6 +806,7 @@ function splitWaitTimes(clientConvs) {
 // Portado de _compute_prioritization_and_ltv y _evaluate_actuen_dynamic. Los
 // umbrales, pesos y regex replican el motor para que ambos den el mismo número.
 
+const ES_BOT = /bot|sistema|auto|automatiz/i;
 const RE_INTENT_HIGH = /(precio|cuanto sale|cuánto sale|costo|cotiz|comprar|pedir|tarjeta|cuota|transferencia|alias|cbu|pago|turno|reserv|disponib|env[ií]o|flete|descuento|promo)/i;
 const RE_CLOSING = /(ya transfer[ií]|comprobante|pasame el alias|pasame el link|cbu|confirmar|donde firmo|lo llevo|quiero comprar|reservalo|reservámelo)/i;
 const RE_ENABLERS = /(dni|calle|direcci[oó]n|localidad|provincia|mail|correo|orden|patente|modelo|a[ñn]o)/i;
@@ -1369,7 +1373,7 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
 
   Object.keys(opCounts).forEach(op => {
     const count = opCounts[op];
-    if (/bot|sistema|auto/i.test(op)) {
+    if (ES_BOT.test(op)) {
       botMsgs += count;
     } else {
       humanMsgs += count;
@@ -1394,16 +1398,22 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
     top_human_operator: topHumanName,
     top_human_messages: topHumanMsgs,
     top_human_percentage_of_human: topHumanPct,
-    top_human_percentage_of_total: Math.round((topHumanMsgs / totalComp) * 1000) / 10,
-    has_bottleneck: topHumanPct > 55,
-    is_balanced: topHumanPct <= 55,
-    operator_distribution: Object.keys(opCounts).map(op => ({
-      name: op,
-      count: opCounts[op],
-      percentage: Math.round((opCounts[op] / totalComp) * 1000) / 10,
-      is_bot: /bot|sistema|auto/i.test(op)
-    }))
+    top_human_percentage_of_total: round1((topHumanMsgs / totalComp) * 100),
+    is_bot_dominant: botShare > 50
   };
+
+  // Lista de operadores con la misma forma que emite el motor. Antes usaba
+  // 'name'/'count' mientras el render lee 'operator'/'messages', así que el
+  // gráfico de carga mostraba etiquetas undefined en modo navegador.
+  const operatorList = Object.keys(opCounts)
+    .sort((a, b) => opCounts[b] - opCounts[a])
+    .map(op => ({
+      operator: op,
+      is_bot: ES_BOT.test(op),
+      messages: opCounts[op],
+      percentage: round1((opCounts[op] / (totalComp || 1)) * 100),
+      est_hours_spent: round1((opCounts[op] * supuestos().minutos_por_mensaje) / 60)
+    }));
 
   // SLA calibrado del rubro detectado, no un valor fijo para todos.
   const sla = infoRubro.sla;
@@ -1452,12 +1462,13 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
   const baselineMsgs = (companyMsgs / (uniqueClients || 1)).toFixed(1);
   const S = supuestos();
   const targetMsgs = isSales ? S.objetivo_msgs_ventas : S.objetivo_msgs_soporte;
-  const savedMsgs = Math.max(0, companyMsgs - Math.round(uniqueClients * targetMsgs));
+  const savedMsgs = Math.max(0, companyMsgs - Math.floor(uniqueClients * targetMsgs));
   const savedHours = ((savedMsgs * S.minutos_por_mensaje) / 60).toFixed(1);
+  const reduccionPct = round1((savedMsgs / (companyMsgs || 1)) * 100);
   const laborArs = Math.round(parseFloat(savedHours) * S.costo_hora_asesor_ars);
   const apiArs = savedMsgs * S.costo_mensaje_api_ars;
   const totalArs = laborArs + apiArs;
-  const totalUsd = (totalArs / S.tipo_cambio_ars).toFixed(2);
+  const totalUsd = String(Math.round((totalArs / S.tipo_cambio_ars) * 100) / 100);
 
   // --- CÁLCULO CLIENT-SIDE DE BRECHAS DE HANDOFF POR RUBRO Y RESPUESTAS DEL OPERADOR ---
   const catDefs = getRubroGapCategories(rubroKey);
@@ -1677,7 +1688,7 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
     },
     ping_pong: pingPongStats,
     topics: topicsStats,
-    operators: handoffData.operator_distribution,
+    operators: operatorList,
     prioritization_audit: prioritization_audit,
     ltv_economics: ltv_economics,
     spoter_lite: spoter_lite,
@@ -1695,13 +1706,13 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
     }),
     savings: {
       current_company_messages: companyMsgs,
-      optimized_target_messages: Math.round(uniqueClients * targetMsgs),
+      optimized_target_messages: Math.floor(uniqueClients * targetMsgs),
       baseline_msgs_per_client: parseFloat(baselineMsgs),
       target_msgs_per_client: targetMsgs,
       messages_saved: savedMsgs,
-      reduction_percentage: ((savedMsgs / (companyMsgs || 1)) * 100).toFixed(1),
+      reduction_percentage: fmt1(reduccionPct),
       hours_saved_monthly: savedHours,
-      optimization_rationale: `Línea de base actual: tu empresa envía hoy ${baselineMsgs} mensajes por cliente. El estándar ACTÚEN+ en un solo bloque requiere ${targetMsgs} mensajes empresa para cerrar o resolver. El objetivo representa la eliminación de ${savedMsgs.toLocaleString()} mensajes fragmentados innecesarios.`,
+      optimization_rationale: `Línea de base actual: tu empresa envía hoy ${baselineMsgs} mensajes por cliente. El estándar metodológico ACTÚEN+ en un solo bloque requiere ${fmt1(targetMsgs)} mensajes empresa para cerrar o resolver. El ${reduccionPct}% de optimización representa la eliminación de ${savedMsgs.toLocaleString('en-US')} mensajes fragmentados innecesarios.`,
       economic_benefit: {
         total_ars: totalArs,
         total_usd: totalUsd,
@@ -2120,7 +2131,7 @@ function renderQualificationPanel(data) {
     `Clasificado como <strong>${isSales ? 'Ventas / Comercial' : 'Soporte / Asistencial'}</strong> con un <strong>${data.meta.sales_affinity_percentage}%</strong> de afinidad comercial (precios, pedidos, cotizaciones) frente a consultas de reclamo o trámite.`;
 
   document.getElementById('txtHandoffQual').innerHTML = 
-    `Bajo política <strong>${data.meta.handoff_policy.toUpperCase()}</strong>: el Bot resolvió el <strong>${h.bot_share_percentage}%</strong> y se derivó el <strong>${h.human_share_percentage}%</strong> a personas reales (asesor más cargado: ${h.top_human_operator} con ${h.top_human_percentage_of_human}% de la carga derivada).`;
+    `Bajo política <strong>${data.meta.handoff_policy.toUpperCase()}</strong>: el Bot resolvió el <strong>${h.bot_share_percentage}%</strong> y se derivó el <strong>${h.human_share_percentage}%</strong> a personas reales (asesor más cargado: ${escapeHtml(h.top_human_operator)} con ${h.top_human_percentage_of_human}% de la carga derivada).`;
 
   document.getElementById('txtSlaQual').innerHTML = 
     `Calibrado para ${data.meta.detected_rubro}: SLA óptimo &lt; <strong>${sla.ideal_immediate} min</strong> y alerta &gt; <strong>${sla.warning} min</strong>. Tu canal promedió <strong>${data.wait_times.average_minutes} min</strong> con <strong>${data.wait_times.over_warning_percentage}%</strong> en Zona Fría.`;

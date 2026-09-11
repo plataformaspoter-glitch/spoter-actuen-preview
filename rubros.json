@@ -81,7 +81,7 @@
     "costo_hora_asesor_ars": 5000,
     "costo_mensaje_api_ars": 45,
     "minutos_por_mensaje": 0.75,
-    "objetivo_msgs_ventas": 5.5,
+    "objetivo_msgs_ventas": 5.0,
     "objetivo_msgs_soporte": 4.0,
     "_nota": "El tipo de cambio y los costos envejecen rápido. Se imprimen al pie del informe para que cualquier número sea auditable."
   },

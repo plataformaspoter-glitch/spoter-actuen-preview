@@ -584,7 +584,8 @@ function processFilesClientSide(files, forcedFocus = null, handoffPolicy = null,
         allRows = allRows.concat(results.data);
         loaded++;
         if (loaded === files.length) {
-          runClientSideAnalysis(allRows, forcedFocus, handoffPolicy, files.length, forcedRubro);
+          runClientSideAnalysis(allRows, forcedFocus, handoffPolicy, files.length, forcedRubro,
+                                Array.from(files).map(f => f.name));
         }
       }
     });
@@ -628,7 +629,12 @@ function percentileAt(sortedList, q) {
   return sortedList[idx];
 }
 
-function round1(n) { return Math.round(n * 10) / 10; }
+function round1(n) {
+  // toFixed opera sobre el double exacto, igual que el round(x, 1) de Python.
+  // Math.round(n*10)/10 falla en casos como 5.35, donde la multiplicación por 10
+  // redondea a 53.5 y termina en 5.4 mientras Python da 5.3.
+  return Number(Number(n).toFixed(1));
+}
 
 /** Renderiza con un decimal fijo, como el round(x, 1) de Python al interpolar. */
 function fmt1(n) { return Number(n).toFixed(1); }
@@ -807,6 +813,20 @@ function splitWaitTimes(clientConvs) {
 // umbrales, pesos y regex replican el motor para que ambos den el mismo número.
 
 const ES_BOT = /bot|sistema|auto|automatiz/i;
+
+/** True si el mensaje no es atribuible a una persona con nombre.
+ *  Espejo de es_bot() en engine.py. Un operador vacío es automatización: si se
+ *  pasa el nombre crudo a la regex, un string vacío no matchea y los menús del
+ *  bot terminan contados como intervención humana. */
+function esBot(operador) {
+  const nombre = String(operador == null ? '' : operador).trim();
+  if (!nombre) return true;
+  return ES_BOT.test(nombre);
+}
+
+function esMensajeDeBot(m) {
+  return esBot(m && m['Nombre Operador']);
+}
 const RE_INTENT_HIGH = /(precio|cuanto sale|cuánto sale|costo|cotiz|comprar|pedir|tarjeta|cuota|transferencia|alias|cbu|pago|turno|reserv|disponib|env[ií]o|flete|descuento|promo)/i;
 const RE_CLOSING = /(ya transfer[ií]|comprobante|pasame el alias|pasame el link|cbu|confirmar|donde firmo|lo llevo|quiero comprar|reservalo|reservámelo)/i;
 const RE_ENABLERS = /(dni|calle|direcci[oó]n|localidad|provincia|mail|correo|orden|patente|modelo|a[ñn]o)/i;
@@ -1322,7 +1342,7 @@ function parseDate(value) {
   return null;
 }
 
-function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, filesCount = 1, forcedRubro = null) {
+function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, filesCount = 1, forcedRubro = null, fileNames = []) {
   // Normalizar encabezados de columnas (minúsculas, guiones, variaciones)
   rows = (rows || []).map(raw => {
     const clean = {};
@@ -1422,6 +1442,18 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
       }
     }
   });
+  // Número de la empresa: el más frecuente entre los mensajes propios, igual
+  // que en el motor.
+  const numCounts = {};
+  rows.forEach(r => {
+    if (isPropio(r)) {
+      const n = (r['Número'] || '').trim();
+      if (n) numCounts[n] = (numCounts[n] || 0) + 1;
+    }
+  });
+  const detectedCompanyNumber =
+    Object.keys(numCounts).sort((a, b) => numCounts[b] - numCounts[a])[0] || 'Empresa';
+
   let detectedCompanyName = Object.keys(destCounts).sort((a,b) => destCounts[b] - destCounts[a])[0] || "Nuestra Empresa";
   if (detectedCompanyName === "Nuestra Empresa") {
     const rWithEmpresa = rows.find(r => r['Empresa'] || r['Company'] || r['Cuenta']);
@@ -1438,8 +1470,25 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
   const infoRubro = CATALOGO.rubros[rubroKey];
   const rubro = infoRubro.name;
 
-  // El foco por defecto sale del catálogo, no de una lista de claves en el código.
-  const activeFocus = forcedFocus || infoRubro.default_focus || 'ventas';
+  // Foco detectado de lo que escriben los clientes, igual que el motor: antes el
+  // navegador usaba siempre el default del rubro e ignoraba los datos.
+  const focoCfg = CATALOGO.deteccion_foco;
+  const contar = terminos => terminos.reduce((acc, p) => {
+    const m = fullText.match(new RegExp(p, 'gi'));
+    return acc + (m ? m.length : 0);
+  }, 0);
+  const hitsVentas = contar(focoCfg.terminos_ventas);
+  const hitsSoporte = contar(focoCfg.terminos_soporte);
+  const totalHits = (hitsVentas + hitsSoporte) || 1;
+  const pctVentas = round1((hitsVentas / totalHits) * 100);
+  const pctSoporte = round1((hitsSoporte / totalHits) * 100);
+
+  let focoDetectado;
+  if (pctVentas >= focoCfg.umbral_pct) focoDetectado = 'ventas';
+  else if (pctSoporte >= focoCfg.umbral_pct) focoDetectado = 'soporte';
+  else focoDetectado = infoRubro.default_focus || 'ventas';
+
+  const activeFocus = forcedFocus || focoDetectado;
   const isSales = (activeFocus === 'ventas');
   const policy = handoffPolicy || localStorage.getItem('spoter_handoff_policy') || 'hybrid';
 
@@ -1451,7 +1500,7 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
 
   Object.keys(opCounts).forEach(op => {
     const count = opCounts[op];
-    if (ES_BOT.test(op)) {
+    if (esBot(op)) {
       botMsgs += count;
     } else {
       humanMsgs += count;
@@ -1487,7 +1536,7 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
     .sort((a, b) => opCounts[b] - opCounts[a])
     .map(op => ({
       operator: op,
-      is_bot: ES_BOT.test(op),
+      is_bot: esBot(op),
       messages: opCounts[op],
       percentage: round1((opCounts[op] / (totalComp || 1)) * 100),
       est_hours_spent: round1((opCounts[op] * supuestos().minutos_por_mensaje) / 60)
@@ -1530,8 +1579,8 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
     ideal_total_avg: idealTot,
     excess_factor: round1(avgTot / idealTot),
     excess_percentage: round1(((avgTot - idealTot) / idealTot) * 100),
-    explanation: `Cada caso promedia ${avgTot} mensajes (${fmt1(avgCli)} del cliente + ${fmt1(avgOp)} del operador) frente al estándar calibrado para ${rubro} (${idealTot} mensajes totales: ${fmt1(idealCli)} cliente + ${fmt1(idealOp)} operador).`,
-    industry_benchmark_note: `Estándar de industria (${rubro}): ${idealTot} msgs`
+    explanation: `Cada caso promedia ${fmt1(avgTot)} mensajes (${fmt1(avgCli)} del cliente + ${fmt1(avgOp)} del operador) frente al estándar calibrado para ${rubro} (${fmt1(idealTot)} mensajes totales: ${fmt1(idealCli)} cliente + ${fmt1(idealOp)} operador).`,
+    industry_benchmark_note: `Estándar de industria (${rubro}): ${fmt1(idealTot)} msgs`
   };
   const scheduleStats = computeSchedule(clientConvs, uniqueClients);
   const { initial: initialWaits, inConv: inConvWaits } = splitWaitTimes(clientConvs);
@@ -1563,6 +1612,51 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
     catOperatorSamples[c.key] = [];
   });
 
+  // Un texto que un operador repite en muchas conversaciones es plantilla, no su
+  // patrón manual. Espejo de plantillas_operador en el motor.
+  const umbralPlantilla = CATALOGO.deteccion_cierre.umbral_difusion_conversaciones;
+  const aparOp = {};
+  for (const cid of Object.keys(clientConvs)) {
+    const vistos = new Set();
+    for (const m of clientConvs[cid]) {
+      if (isPropio(m) && !esMensajeDeBot(m)) {
+        const t = (m['Mensaje'] || '').trim();
+        if (t) vistos.add(t);
+      }
+    }
+    vistos.forEach(t => { aparOp[t] = (aparOp[t] || 0) + 1; });
+  }
+  // Firma que sobrevive a la personalización: 'Javier. Gracias por...' y
+  // 'Eric. Gracias por...' son la misma plantilla y el dedup literal no las une.
+  const firmaDe = t => {
+    const n = String(t || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    return n.length > 60 ? n.slice(-60) : n;
+  };
+  const aparFirma = {};
+  for (const cid of Object.keys(clientConvs)) {
+    const vistos = new Set();
+    for (const m of clientConvs[cid]) {
+      if (isPropio(m) && !esMensajeDeBot(m)) {
+        const t = (m['Mensaje'] || '').trim();
+        if (t) vistos.add(t);
+      }
+    }
+    new Set([...vistos].map(firmaDe)).forEach(f => { aparFirma[f] = (aparFirma[f] || 0) + 1; });
+  }
+  const firmasPlantilla = new Set(Object.keys(aparFirma).filter(f => aparFirma[f] >= umbralPlantilla));
+  const plantillasOperador = new Set(Object.keys(aparOp).filter(t => aparOp[t] >= umbralPlantilla));
+  const esPlantilla = t => plantillasOperador.has(t) || firmasPlantilla.has(firmaDe(t));
+
+  // Un "Gracias" o un "Buenas noches" no ilustran nada en el informe.
+  const mf = CATALOGO.muestra_frases;
+  const reDescartar = new RegExp(mf.regex_descartar, 'i');
+  const fraseUtil = t => {
+    const x = String(t || '').replace(/\n/g, ' ').trim();
+    if (x.length < mf.min_largo || x.length > mf.max_largo) return false;
+    const m = reDescartar.exec(x);
+    return !(m && m.index === 0);
+  };
+
   let totalHumanConvs = 0;
   Object.keys(clientConvs).forEach(cid => {
     const msgs = clientConvs[cid];
@@ -1571,7 +1665,7 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
       const m = msgs[idx];
       if (isPropio(m)) {
         const opName = (m['Nombre Operador'] || '').trim();
-        if (!/bot|sistema|auto/i.test(opName)) {
+        if (!esBot(opName)) {
           firstHumanIdx = idx;
           break;
         }
@@ -1603,32 +1697,32 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
       if (!matchedKey) matchedKey = catDefs[0].key;
 
       catCounts[matchedKey]++;
-      const humanMsgsInConv = msgs.filter(m => isPropio(m) && !/bot|sistema|auto/i.test(m['Nombre Operador'] || '')).length;
-      catHours[matchedKey] += (humanMsgsInConv * 2.5) / 60;
+      const humanMsgsInConv = msgs.filter(m => isPropio(m) && !esMensajeDeBot(m)).length;
+      catHours[matchedKey] += (humanMsgsInConv * supuestos().minutos_por_mensaje) / 60;
 
-      // 1. Extraer frases reales del cliente
-      for (let txt of clientTextsBefore) {
-        if (txt.length >= 6 && txt.length <= 140 && !txt.startsWith('.') && catSamples[matchedKey].length < 3) {
-          if (!catSamples[matchedKey].includes(txt)) {
-            catSamples[matchedKey].push(txt);
-          }
-        }
+      // 1. Frase del cliente: la más larga que pase el filtro, que es la que
+      //    muestra de verdad qué vino a pedir.
+      const candidatas = clientTextsBefore.filter(fraseUtil);
+      if (candidatas.length && catSamples[matchedKey].length < 3) {
+        const elegida = candidatas.reduce((a, b) => (b.length > a.length ? b : a))
+          .replace(/\n/g, ' ').trim();
+        if (!catSamples[matchedKey].includes(elegida)) catSamples[matchedKey].push(elegida);
       }
 
-      // 2. Extraer frases reales de respuesta del operador humano
+      // 2. Respuesta del operador: se descartan plantillas y frases vacías, y
+      //    se elige la más larga. Espejo del motor.
+      const opMsgs = [];
       for (let idx = firstHumanIdx; idx < msgs.length; idx++) {
         const m = msgs[idx];
-        if (isPropio(m)) {
-          const opName = (m['Nombre Operador'] || '').trim();
-          if (!/bot|sistema|auto/i.test(opName)) {
-            const txt = (m['Mensaje'] || '').trim();
-            if (txt && !['[AUDIO]', '[IMAGEN]'].includes(txt) && txt.length > 8 && !/^gracias|^ok$/i.test(txt) && catOperatorSamples[matchedKey].length < 3) {
-              const cleanOp = txt.replace(/\r?\n+/g, ' ').trim();
-              if (!catOperatorSamples[matchedKey].includes(cleanOp)) {
-                catOperatorSamples[matchedKey].push(cleanOp);
-              }
-            }
-          }
+        if (!isPropio(m) || esMensajeDeBot(m)) continue;
+        const txt = (m['Mensaje'] || '').trim();
+        if (txt && !esPlantilla(txt) && fraseUtil(txt)) opMsgs.push(txt);
+      }
+      if (opMsgs.length && catOperatorSamples[matchedKey].length < 3) {
+        const elegida = opMsgs.reduce((a, b) => (b.length > a.length ? b : a))
+          .replace(/\n/g, ' ').trim();
+        if (!catOperatorSamples[matchedKey].includes(elegida)) {
+          catOperatorSamples[matchedKey].push(elegida);
         }
       }
     }
@@ -1636,7 +1730,12 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
 
   if (totalHumanConvs === 0) totalHumanConvs = Math.max(1, Math.round(uniqueClients * 0.7));
 
-  const avoidableKeys = ["precios_catalogo", "pagos_facturacion", "envios_logistica", "stock_disponibilidad", "ubicacion_horarios", "estado_pedido", "frustracion_menu"];
+  // Evitable = todo lo que no está marcado como consultivo en la definición del
+  // rubro. Antes era una lista fija de claves que solo existían en corralón y
+  // retail, así que en salud o en SaaS daba cero evitables.
+  const avoidableKeys = catDefs
+    .filter(c => c.feasibility !== 'Consultiva (Humano)')
+    .map(c => c.key);
   let avoidableCount = 0;
   let avoidableHours = 0;
   avoidableKeys.forEach(k => {
@@ -1734,8 +1833,11 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
       business_focus: activeFocus,
       handoff_policy: policy,
       files_count: filesCount,
-      sales_affinity_percentage: isSales ? 85.0 : 25.0,
-      support_affinity_percentage: isSales ? 15.0 : 75.0,
+      company_number: detectedCompanyNumber,
+      is_forced_focus: !!forcedFocus,
+      file_names: fileNames,
+      sales_affinity_percentage: pctVentas,
+      support_affinity_percentage: pctSoporte,
       total_rows: rows.length,
       unique_clients: uniqueClients,
       company_messages: companyMsgs,

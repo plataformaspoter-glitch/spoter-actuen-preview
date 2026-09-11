@@ -109,7 +109,7 @@
     "avoidable_handoffs_percentage": 99.9,
     "consultative_handoffs_count": 1,
     "consultative_handoffs_percentage": 0.1,
-    "recoverable_hours_month": 227.0,
+    "recoverable_hours_month": 186.9,
     "top_triggers": [
       {
         "category_key": "precios_materiales",
@@ -117,20 +117,20 @@
         "icon": "📋",
         "count": 1170,
         "percentage": 90.1,
-        "human_hours_spent": 206.2,
+        "human_hours_spent": 170.1,
         "is_avoidable": true,
         "automation_feasibility": "Alta (Inmediata)",
         "solution_type": "Base de Conocimiento RAG",
         "solution_action": "Sincronizar lista de precios de materiales para cotizaciones instantáneas en un solo bloque estructurado.",
         "sample_client_phrases": [
-          "Si estaban cerrados deberían haber avisado, el contenedor nos hace correr multa en el barrio desde hoy.",
+          "Si están cerrado, cuando vean, deberían haber avisado eso, a partir de hoy nos corre multa en el barrio por tenerlo.",
           "Buenas! Me podrías pasar un presupuesto de esto por favor . . 10 caños 60x40 1,6m . 2 kg de electrodos punta azul 2 1/2",
-          "Hola buenos días"
+          "2 Caño 60/40 1,6  . 1 caño 40/40 1,6. 5 caño 40/40 1,2. 6 caño 40/20 1,2. 12 chapas cal.20 2x1"
         ],
         "sample_operator_responses": [
-          "Buenos dias",
-          "Buen día! Ya te paso la cotización",
-          "Buenos dias, tela media sombra al 90%??"
+          "asi se lo pasamos al chofer para retirar",
+          "si querees te puedo pasar el contacto de una fletera y que coordines con ella el envio",
+          "y vemos por que nosotros tenemos envio para el viernes si no es mcho te lo puedo enviar con un flete externo mañana"
         ],
         "template_target_id": "presupuesto_corralon"
       },
@@ -140,7 +140,7 @@
         "icon": "📦",
         "count": 65,
         "percentage": 5.0,
-        "human_hours_spent": 8.4,
+        "human_hours_spent": 6.8,
         "is_avoidable": true,
         "automation_feasibility": "Media (Integración)",
         "solution_type": "Consulta de Inventario Spoter",
@@ -148,12 +148,12 @@
         "sample_client_phrases": [
           "Hasta que hora tienen abierto?",
           "Buen dia.. tienen tela olímpica y rollizos para cierre de terreno?",
-          "Por mlineal?"
+          "Tienen goteros galvanizados?"
         ],
         "sample_operator_responses": [
-          "rollizos trabajamos de 2,5",
-          "Buenas tardes!",
-          "Buenos dias!"
+          "viene de 1,5 1,8 o 2mts de altura, varia despues el rombo 50 o 63",
+          "si, vienen por 2 mtsa",
+          "viene de 1.5 1.8 y 2mts de altura"
         ],
         "template_target_id": "hierros_mallas"
       },
@@ -163,20 +163,20 @@
         "icon": "🚚",
         "count": 42,
         "percentage": 3.2,
-        "human_hours_spent": 8.2,
+        "human_hours_spent": 6.4,
         "is_avoidable": true,
         "automation_feasibility": "Alta (Inmediata)",
         "solution_type": "Matriz de Zonas Spoter",
         "solution_action": "Cargar radios de entrega, tarifas de flete y requisitos de acceso de camión en la Base de Conocimiento.",
         "sample_client_phrases": [
           "Hola tengo un envío programado para mañana y quería agregar un producto mas",
-          "Cotizar por separado",
-          "Buenas tardes"
+          "Cliente por favor cotizar los materiales que envio a continuacion.. A nombre de Musa, Armando",
+          "Buenas tardes, quería confirmar para el martes próximo lo presupuestado, menos el contenedor y el flete del mismo."
         ],
         "sample_operator_responses": [
-          "Buenas tardes, no puedo agregar material para mañana",
-          "Buenas tardes!",
-          "Buenas tardes"
+          "Enviamos valor de lo solicitado con el descuento del -7 en la membrana por pago contado, debito o transferencia",
+          "pintura con caucho no trabajamos, diluyente cotizamos thinner o aguarras?",
+          "80X20 no trabajamos, lo mas cercano es 80x40 TE SIRVE?"
         ],
         "template_target_id": "flete_corralon"
       },
@@ -186,20 +186,20 @@
         "icon": "💳",
         "count": 16,
         "percentage": 1.2,
-        "human_hours_spent": 2.7,
+        "human_hours_spent": 2.2,
         "is_avoidable": true,
         "automation_feasibility": "Alta (Inmediata)",
         "solution_type": "Atajo Maestro Inmediato",
         "solution_action": "Configurar atajo de medios de pago y recolección automática de CUIT/Razón Social en mensaje cero.",
         "sample_client_phrases": [
           "sabes que , necesito por favor la factura de la 2da OC que te pase .",
-          "Pago con transferencia",
-          "[IMAGE]"
+          "Disco de corte para metal, de 4.5",
+          "acá te paso una captura que me pasaron cuando se entregó el pedido. Figura el número de factura  A0001100011525"
         ],
         "sample_operator_responses": [
-          "Buenos días! Enseguida te la emito",
-          "Buenos dias!",
-          "Buenas tardes!"
+          "si lo aboans hoy, envio dia Martes, recorda Lunes es feriado",
+          "Si me traigo esa cotizacion saco las bisagras que sobran y queda en $367.0178,18",
+          "si, ahora te paso el valor de lo solicitado"
         ],
         "template_target_id": "cierre_corralon"
       },
@@ -209,20 +209,20 @@
         "icon": "⚠️",
         "count": 5,
         "percentage": 0.4,
-        "human_hours_spent": 1.5,
+        "human_hours_spent": 1.4,
         "is_avoidable": true,
         "automation_feasibility": "Alta (Conversacional)",
         "solution_type": "IA Conversacional Spoter",
         "solution_action": "Eliminar menús rígidos y permitir atención fluida en lenguaje natural.",
         "sample_client_phrases": [
           "Hola, alguien me puede atender por favor",
-          "Necesito hablar con un asesor",
-          "Buenas tardes una consulta ustedes necesitan para atención al público?"
+          "hola! buenos dias!",
+          "Necesito hablar con Cliente"
         ],
         "sample_operator_responses": [
-          "Buenos dias",
-          "Buenos dias!",
-          "Buenos dias como estas?"
+          "big bag son los bolsones donde van los aridos, una vez que te los dejan en obra tenes 10 dias para traerlos y te reintegramos el dinero",
+          "te paso la pagina para que subas el cv",
+          "Te puedo psar el contacto de un fletero y coordinan con el la entrega y le abonan el flete a el directamente"
         ],
         "template_target_id": "presupuesto_corralon"
       },
@@ -232,16 +232,16 @@
         "icon": "🤝",
         "count": 1,
         "percentage": 0.1,
-        "human_hours_spent": 0.4,
+        "human_hours_spent": 0.3,
         "is_avoidable": false,
         "automation_feasibility": "Consultiva (Humano)",
         "solution_type": "Copiloto HITL Spoter",
         "solution_action": "Derivación guiada con ficha de intencionalidad comercial y volumen para el asesor comercial.",
         "sample_client_phrases": [
-          "Tengo cuenta corriente a nombre de la constructora, necesito pedir estos materiales por favor"
+          "Tengo cuenta corriente a nombre de Cliente, necesito pedir estos materiales por favor"
         ],
         "sample_operator_responses": [
-          "Buenas tardes!"
+          "Gomez Oscar no tiene cuenta, la factura que se realizo es la anterior que el pago se realizo a travez de pisper"
         ],
         "template_target_id": "rescate_corralon"
       }

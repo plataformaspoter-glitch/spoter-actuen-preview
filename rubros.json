@@ -121,6 +121,50 @@
       "regex": "(hay mucha gente|mucha cola|estaba lleno|no me atendi[oó] nadie|esper[eé] (mucho|un montón)|vine (hoy|ayer) (a|al)|fui (hoy|ayer) (a|al))"
     }
   },
+  "deteccion_foco": {
+    "umbral_pct": 58,
+    "terminos_ventas": [
+      "\\bprecio\\b",
+      "\\bcuanto sale\\b",
+      "\\bcuánto sale\\b",
+      "\\bcotiz",
+      "\\bpresupuesto\\b",
+      "\\bcomprar\\b",
+      "\\bstock\\b",
+      "\\bdisponible\\b",
+      "\\bcatálogo\\b",
+      "\\bcatalogo\\b",
+      "\\bcuota\\b",
+      "\\bdescuento\\b",
+      "\\bcosto\\b",
+      "\\bvalor\\b",
+      "\\btarjeta\\b",
+      "\\befectivo\\b"
+    ],
+    "terminos_soporte": [
+      "\\breclamo\\b",
+      "\\bqueja\\b",
+      "\\bno funciona\\b",
+      "\\bdemora\\b",
+      "\\berror\\b",
+      "\\bproblema\\b",
+      "\\bayuda\\b",
+      "\\bgarant[ií]a\\b",
+      "\\bdevoluc",
+      "\\bcambio\\b",
+      "\\bturno\\b",
+      "\\bautoriz",
+      "\\breintegro\\b",
+      "\\btrámite\\b",
+      "\\bcuando llega\\b",
+      "\\bquién me atiende\\b"
+    ]
+  },
+  "muestra_frases": {
+    "min_largo": 14,
+    "max_largo": 140,
+    "regex_descartar": "^(hola|buenas|buen[ao]s?( d[ií]as?| tardes?| noches?)?|hola buen[ao]s?( d[ií]as?| tardes?| noches?)?|gracias|ok|dale|listo|perfecto|s[ií]|no|mendoza|\\[image\\]|\\[audio\\]|\\[imagen\\]|\\[document\\][^\\n]*)[\\s.!¡?¿]*$"
+  },
   "deteccion_cierre": {
     "umbral_difusion_conversaciones": 5,
     "regex_automatico": "(te damos la bienvenida|gracias por comunicarte|bienvenid|nos encontramos \\*?cerrad|ser[aá]s atendid|horario de atenci[oó]n)",

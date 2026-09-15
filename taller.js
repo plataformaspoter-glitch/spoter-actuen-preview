@@ -541,7 +541,11 @@ function evaluar(entrada, catalogo, rubroKey) {
   const piezas = desarmar(texto);
   const cuenta = t => piezas.filter(p => p.tipo === t).length;
   const intencionesCliente = detectarIntenciones(cliente, 'cliente');
-  const intenciones = intencionesCliente.length ? intencionesCliente : detectarIntenciones(texto, 'respuesta');
+  // Sin contexto, la intención sale de la respuesta, pero no de las opciones de
+  // un menú: un menú que lista "Envíos" no está hablando de un envío.
+  const textoSinMenu = piezas.filter(p => !['opcion', 'instruccion_menu'].includes(p.tipo))
+    .map(p => p.original || p.texto || '').join('\n');
+  const intenciones = intencionesCliente.length ? intencionesCliente : detectarIntenciones(textoSinMenu, 'respuesta');
   const intencionCliente = intencionesCliente[0] || null;
   const intencion = intenciones[0] || null;
   const base = `${cliente}\n${texto}`;

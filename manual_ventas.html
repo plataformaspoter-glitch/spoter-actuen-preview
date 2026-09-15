@@ -22,88 +22,6 @@
         for (const name of names) caches.delete(name);
       });
     }
-
-    // LTV Calculator Interactive Logic
-    let manualCurrency = 'USD';
-    const FX_RATE_MANUAL = 1250;
-
-    const inTicket = document.getElementById('manInputTicket');
-    const inFreq = document.getElementById('manInputFreq');
-    const inYears = document.getElementById('manInputYears');
-    const inLeads = document.getElementById('manInputLeads');
-    const inCac = document.getElementById('manInputCac');
-
-    const lblManTicket = document.getElementById('lblManTicket');
-    const lblManCac = document.getElementById('lblManCac');
-
-    const outLtvUnit = document.getElementById('manResLtvUnit');
-    const outCapitalDestroyed = document.getElementById('manResCapitalDestroyed');
-    const outCacLost = document.getElementById('manResCacLost');
-    const outRecovered = document.getElementById('manResRecovered');
-
-    const btnManUsd = document.getElementById('btnManualUsd');
-    const btnManArs = document.getElementById('btnManualArs');
-
-    function formatManualMoney(amount) {
-      if (manualCurrency === 'ARS') {
-        return '$' + Math.round(amount).toLocaleString('es-AR') + ' ARS';
-      }
-      return '$' + Math.round(amount).toLocaleString('en-US') + ' USD';
-    }
-
-    function calculateManualLtv() {
-      if (!inTicket || !inFreq || !inYears || !inLeads || !inCac) return;
-      const ticket = parseFloat(inTicket.value) || 0;
-      const freq = parseFloat(inFreq.value) || 0;
-      const years = parseFloat(inYears.value) || 0;
-      const leads = parseFloat(inLeads.value) || 0;
-      const cac = parseFloat(inCac.value) || 0;
-
-      const ltvUnit = ticket * freq * years;
-      const lostImmediate = leads * ticket * 0.65;
-      const lostLtvTotal = leads * ltvUnit * 0.65;
-      const lostCacTotal = leads * cac;
-      const totalDestroyed = lostLtvTotal + lostCacTotal;
-      const potentialRecovered = totalDestroyed * 0.75;
-
-      outLtvUnit.textContent = formatManualMoney(ltvUnit);
-      outCapitalDestroyed.textContent = formatManualMoney(totalDestroyed);
-      outCacLost.textContent = formatManualMoney(lostCacTotal);
-      outRecovered.textContent = formatManualMoney(potentialRecovered);
-    }
-
-    if (inTicket) {
-      [inTicket, inFreq, inYears, inLeads, inCac].forEach(inp => {
-        inp.addEventListener('input', calculateManualLtv);
-      });
-    }
-
-    if (btnManUsd && btnManArs) {
-      btnManUsd.onclick = () => {
-        if (manualCurrency === 'USD') return;
-        manualCurrency = 'USD';
-        btnManUsd.classList.add('active');
-        btnManArs.classList.remove('active');
-        lblManTicket.textContent = 'Ticket Promedio ($ USD):';
-        lblManCac.textContent = 'CAC Estimado Pauta ($ USD):';
-        inTicket.value = Math.round((parseFloat(inTicket.value) || 1062500) / FX_RATE_MANUAL);
-        inCac.value = Math.round((parseFloat(inCac.value) || 150000) / FX_RATE_MANUAL);
-        calculateManualLtv();
-      };
-
-      btnManArs.onclick = () => {
-        if (manualCurrency === 'ARS') return;
-        manualCurrency = 'ARS';
-        btnManArs.classList.add('active');
-        btnManUsd.classList.remove('active');
-        lblManTicket.textContent = 'Ticket Promedio ($ ARS):';
-        lblManCac.textContent = 'CAC Estimado Pauta ($ ARS):';
-        inTicket.value = Math.round((parseFloat(inTicket.value) || 850) * FX_RATE_MANUAL);
-        inCac.value = Math.round((parseFloat(inCac.value) || 120) * FX_RATE_MANUAL);
-        calculateManualLtv();
-      };
-    }
-
   </script>
 
   <style>
@@ -928,6 +846,12 @@
       border-color: var(--spoter-pink);
       box-shadow: 0 0 0 3px var(--spoter-pink-light);
     }
+    .ltv-sub { font-size: 11.5px; color: var(--text-muted); }
+    .ltv-modelo { font-size: 13px; color: var(--text-secondary); margin-top: 12px; line-height: 1.5; }
+    .ltv-tipo { display: inline-block; margin-top: 4px; font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: 999px; }
+    .ltv-tipo--transaccional { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
+    .ltv-tipo--cautivo { background: rgba(6, 182, 212, 0.12); color: #06b6d4; }
+    #manSelectRubro { width: 100%; max-width: 420px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); font-family: inherit; }
     .ltv-result-banner {
       background: var(--spoter-pink-light);
       border: 1px solid var(--spoter-pink);
@@ -1217,6 +1141,11 @@
             </div>
           </div>
 
+          <div class="ltv-input-group" style="margin-bottom: 12px;">
+            <label for="manSelectRubro">Rubro del prospecto (carga sus valores de referencia):</label>
+            <select id="manSelectRubro"></select>
+          </div>
+
           <div class="ltv-grid-inputs">
             <div class="ltv-input-group">
               <label for="manInputTicket" id="lblManTicket">Ticket Promedio ($ USD):</label>
@@ -1247,7 +1176,7 @@
             </div>
             <div class="ltv-metric-item">
               <div class="val" style="color:#ef4444;" id="manResCapitalDestroyed">$113,500 USD</div>
-              <div class="lbl">Capital LTV Destruido / mes</div>
+              <div class="lbl">Capital en Riesgo / mes</div>
             </div>
             <div class="ltv-metric-item">
               <div class="val" id="manResCacLost">$3,000 USD</div>
@@ -1255,82 +1184,31 @@
             </div>
             <div class="ltv-metric-item">
               <div class="val" style="color:#10b981;" id="manResRecovered">$85,125 USD</div>
-              <div class="lbl">Capital Protegido con Spoter (75%)</div>
+              <div class="lbl" id="lblManRecovered">Recuperable con Spoter</div>
             </div>
           </div>
+          <p class="ltv-modelo" id="manModelo"></p>
+          <p class="ltv-sub" id="fxNota"></p>
         </div>
 
         <!-- Tabla de Referencia de LTV por Industria -->
         <h4 style="font-size: 15px; margin: 24px 0 12px 0; font-weight: 700;">Tabla de Referencia del Impacto en LTV por Industria</h4>
+        <p class="ltv-sub" style="margin-bottom: 10px;">Valores de <code>rubros.json</code>, con el mismo modelo que usa el Analizador. En un rubro <strong>cautivo</strong> (contrato, plan o ciclo lectivo) una mala atención no produce una baja inmediata: se arriesga un ciclo de renovación y no se desperdicia CAC.</p>
         <div class="table-container">
           <table>
             <thead>
               <tr>
                 <th>Sector / Rubro</th>
-                <th>Ticket Inicial Promedio</th>
+                <th>Ticket Promedio</th>
                 <th>Frecuencia Anual</th>
                 <th>Años Retención</th>
-                <th>LTV Unitario Estimado</th>
-                <th>Impacto por Cada 10 Leads Perdidos</th>
+                <th>LTV Unitario</th>
+                <th>Qué se Arriesga</th>
+                <th>Por Cada 10 Leads Perdidos</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td><strong>🧱 Construcción y Corralones</strong></td>
-                <td>$850 USD</td>
-                <td>4.0 compras/año</td>
-                <td>2.0 años</td>
-                <td class="text-good"><strong>$6,800 USD</strong></td>
-                <td class="text-bad"><strong>$44,200 USD</strong> destruidos</td>
-              </tr>
-              <tr>
-                <td><strong>🚗 Concesionarias y Talleres</strong></td>
-                <td>$12,000 USD</td>
-                <td>Compra + Services</td>
-                <td>3.0 años</td>
-                <td class="text-good"><strong>$36,000 USD</strong></td>
-                <td class="text-bad"><strong>$234,000 USD</strong> destruidos</td>
-              </tr>
-              <tr>
-                <td><strong>🏢 Inmobiliarias y Desarrollos</strong></td>
-                <td>$3,500 USD</td>
-                <td>Compra / Alquiler</td>
-                <td>3.5 años</td>
-                <td class="text-good"><strong>$45,000 USD</strong></td>
-                <td class="text-bad"><strong>$292,500 USD</strong> destruidos</td>
-              </tr>
-              <tr>
-                <td><strong>🏥 Salud, Obras Sociales y Prepagas</strong></td>
-                <td>$70 USD / mes</td>
-                <td>12 meses</td>
-                <td>3.5 años</td>
-                <td class="text-good"><strong>$2,940 USD</strong></td>
-                <td class="text-bad"><strong>$19,110 USD</strong> destruidos</td>
-              </tr>
-              <tr>
-                <td><strong>💳 Seguros y Finanzas / Fintech</strong></td>
-                <td>$50 USD / mes</td>
-                <td>12 meses</td>
-                <td>4.0 años</td>
-                <td class="text-good"><strong>$2,400 USD</strong></td>
-                <td class="text-bad"><strong>$15,600 USD</strong> destruidos</td>
-              </tr>
-              <tr>
-                <td><strong>🛍️ Comercio y Retail / E-commerce</strong></td>
-                <td>$50 USD</td>
-                <td>4.5 compras/año</td>
-                <td>2.0 años</td>
-                <td class="text-good"><strong>$450 USD</strong></td>
-                <td class="text-bad"><strong>$2,925 USD</strong> destruidos</td>
-              </tr>
-              <tr>
-                <td><strong>💻 Software, SaaS y Servicios B2B</strong></td>
-                <td>$280 USD / mes</td>
-                <td>12 meses</td>
-                <td>3.0 años</td>
-                <td class="text-good"><strong>$10,080 USD</strong></td>
-                <td class="text-bad"><strong>$65,520 USD</strong> destruidos</td>
-              </tr>
+            <tbody id="tablaLtvCuerpo">
+              <tr><td colspan="7">Cargando el catálogo de rubros…</td></tr>
             </tbody>
           </table>
         </div>
@@ -1952,161 +1830,6 @@
   <!-- Toast Notification -->
   <div class="toast-msg" id="toastMsg">✅ Texto copiado al portapapeles</div>
 
-  <script>
-    // Theme Toggle
-    const btnTheme = document.getElementById('btnThemeToggle');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const savedTheme = localStorage.getItem('spoter_manual_theme') || (prefersDark ? 'dark' : 'light');
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    btnTheme.textContent = savedTheme === 'dark' ? '🌙' : '☀️';
-
-    btnTheme.addEventListener('click', () => {
-      const current = document.documentElement.getAttribute('data-theme');
-      const next = current === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', next);
-      localStorage.setItem('spoter_manual_theme', next);
-      btnTheme.textContent = next === 'dark' ? '🌙' : '☀️';
-    });
-
-    // SPIN Tabs
-    const spinBtns = document.querySelectorAll('.spin-btn');
-    spinBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        spinBtns.forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.spin-content-panel').forEach(p => p.classList.remove('active'));
-        btn.classList.add('active');
-        const target = document.getElementById(btn.getAttribute('data-target'));
-        if (target) target.classList.add('active');
-      });
-    });
-
-    // Objections Accordion
-    const objectionHeaders = document.querySelectorAll('.objection-header');
-    objectionHeaders.forEach(header => {
-      header.addEventListener('click', () => {
-        const card = header.parentElement;
-        card.classList.toggle('open');
-      });
-    });
-
-    // Copy Buttons with Toast
-    const toast = document.getElementById('toastMsg');
-    const copyBtns = document.querySelectorAll('.btn-copy-mini');
-    copyBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const text = btn.getAttribute('data-copy');
-        if (text) {
-          navigator.clipboard.writeText(text).then(() => {
-            toast.textContent = "📋 Copiado al portapapeles";
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 2500);
-          });
-        }
-      });
-    });
-
-    // Sidebar active link spy on scroll
-    const sections = document.querySelectorAll('.playbook-section');
-    const navLinks = document.querySelectorAll('.sidebar-link');
-
-    window.addEventListener('scroll', () => {
-      let current = '';
-      sections.forEach(section => {
-        const sectionTop = section.offsetTop - 100;
-        if (pageYOffset >= sectionTop) {
-          current = section.getAttribute('id');
-        }
-      });
-
-      navLinks.forEach(link => {
-        link.classList.remove('active');
-        if (link.getAttribute('href') === `#${current}`) {
-          link.classList.add('active');
-        }
-      });
-    });
-
-    // LTV Calculator Interactive Logic
-    let manualCurrency = 'USD';
-    const FX_RATE_MANUAL = 1250;
-
-    const inTicket = document.getElementById('manInputTicket');
-    const inFreq = document.getElementById('manInputFreq');
-    const inYears = document.getElementById('manInputYears');
-    const inLeads = document.getElementById('manInputLeads');
-    const inCac = document.getElementById('manInputCac');
-
-    const lblManTicket = document.getElementById('lblManTicket');
-    const lblManCac = document.getElementById('lblManCac');
-
-    const outLtvUnit = document.getElementById('manResLtvUnit');
-    const outCapitalDestroyed = document.getElementById('manResCapitalDestroyed');
-    const outCacLost = document.getElementById('manResCacLost');
-    const outRecovered = document.getElementById('manResRecovered');
-
-    const btnManUsd = document.getElementById('btnManualUsd');
-    const btnManArs = document.getElementById('btnManualArs');
-
-    function formatManualMoney(amount) {
-      if (manualCurrency === 'ARS') {
-        return '$' + Math.round(amount).toLocaleString('es-AR') + ' ARS';
-      }
-      return '$' + Math.round(amount).toLocaleString('en-US') + ' USD';
-    }
-
-    function calculateManualLtv() {
-      if (!inTicket || !inFreq || !inYears || !inLeads || !inCac) return;
-      const ticket = parseFloat(inTicket.value) || 0;
-      const freq = parseFloat(inFreq.value) || 0;
-      const years = parseFloat(inYears.value) || 0;
-      const leads = parseFloat(inLeads.value) || 0;
-      const cac = parseFloat(inCac.value) || 0;
-
-      const ltvUnit = ticket * freq * years;
-      const lostImmediate = leads * ticket * 0.65;
-      const lostLtvTotal = leads * ltvUnit * 0.65;
-      const lostCacTotal = leads * cac;
-      const totalDestroyed = lostLtvTotal + lostCacTotal;
-      const potentialRecovered = totalDestroyed * 0.75;
-
-      outLtvUnit.textContent = formatManualMoney(ltvUnit);
-      outCapitalDestroyed.textContent = formatManualMoney(totalDestroyed);
-      outCacLost.textContent = formatManualMoney(lostCacTotal);
-      outRecovered.textContent = formatManualMoney(potentialRecovered);
-    }
-
-    if (inTicket) {
-      [inTicket, inFreq, inYears, inLeads, inCac].forEach(inp => {
-        inp.addEventListener('input', calculateManualLtv);
-      });
-    }
-
-    if (btnManUsd && btnManArs) {
-      btnManUsd.onclick = () => {
-        if (manualCurrency === 'USD') return;
-        manualCurrency = 'USD';
-        btnManUsd.classList.add('active');
-        btnManArs.classList.remove('active');
-        lblManTicket.textContent = 'Ticket Promedio ($ USD):';
-        lblManCac.textContent = 'CAC Estimado Pauta ($ USD):';
-        inTicket.value = Math.round((parseFloat(inTicket.value) || 1062500) / FX_RATE_MANUAL);
-        inCac.value = Math.round((parseFloat(inCac.value) || 150000) / FX_RATE_MANUAL);
-        calculateManualLtv();
-      };
-
-      btnManArs.onclick = () => {
-        if (manualCurrency === 'ARS') return;
-        manualCurrency = 'ARS';
-        btnManArs.classList.add('active');
-        btnManUsd.classList.remove('active');
-        lblManTicket.textContent = 'Ticket Promedio ($ ARS):';
-        lblManCac.textContent = 'CAC Estimado Pauta ($ ARS):';
-        inTicket.value = Math.round((parseFloat(inTicket.value) || 850) * FX_RATE_MANUAL);
-        inCac.value = Math.round((parseFloat(inCac.value) || 120) * FX_RATE_MANUAL);
-        calculateManualLtv();
-      };
-    }
-
-  </script>
+  <script src="manual_ventas.js"></script>
 </body>
 </html>

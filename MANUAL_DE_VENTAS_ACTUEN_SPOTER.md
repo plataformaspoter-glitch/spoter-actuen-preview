@@ -51,23 +51,38 @@ La mayoría de los dueños de negocios, gerentes comerciales y directores de mar
 El error contable más común de los empresarios es pensar: *"Bueno, el cliente no esperó y no compró hoy; perdimos una venta de $50 USD"*. 
 **Ese cálculo es falso.** En cualquier empresa seria, el valor de un cliente no es su primera transacción: es su **Lifetime Value (LTV)** acumulado a lo largo del tiempo.
 
-### 3.1. Fórmulas Matemáticas Formales del Impacto Patrimonial:
+<!-- tabla-ltv:inicio -->
+<!-- Generado desde rubros.json con tools/generar_tabla_ltv.py. No editar a mano. -->
 
-$$\text{LTV} = \text{Ticket Promedio} \times \text{Frecuencia de Compra Anual} \times \text{Años de Retención}$$
+### 3.1. Fórmulas del Impacto Patrimonial:
 
-$$\text{Capital Real Destruido} = \text{Leads Desatendidos} \times \text{Tasa de Conversión Potencial (65\%)} \times \text{LTV} + \text{CAC Desperdiciado en Pauta}$$
+$$\text{LTV} = \text{Ticket Promedio} \times \text{Frecuencia Anual} \times \text{Años de Retención}$$
+
+El capital en riesgo **depende del tipo de cliente**:
+
+* **Transaccional** (compara y compra donde le respondan): se arriesga el valor de vida completo y se desperdicia el CAC.
+  $$\text{Capital en riesgo} = \text{Leads perdidos} \times \text{LTV} \times \text{Tasa de caída} + \text{Leads perdidos} \times \text{CAC}$$
+* **Cautivo** (contrato, plan o ciclo lectivo): una mala atención no produce una baja inmediata. Se arriesga un ciclo de renovación y el CAC no se desperdicia.
+  $$\text{Capital en riesgo} = \text{Leads perdidos} \times (\text{Ticket} \times \text{Frecuencia anual}) \times \text{Tasa de caída}$$
+
+Spoter proyecta recuperar el 75% de ese capital. Tipo de cambio de referencia: $1,250 ARS por USD.
 
 ### 3.2. Tabla de Referencia del Impacto en LTV por Industria:
 
-| Sector / Rubro | Ticket Inicial Promedio | Frecuencia Anual | Años Retención | LTV Unitario Estimado | Impacto por Cada 10 Leads Perdidos |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Construcción y Corralones** | $850 USD | 4.0 compras/año | 2.0 años | **$6,800 USD** | **$44,200 USD** destruidos |
-| **Concesionarias y Talleres** | $12,000 USD | Compra + Services | 3.0 años | **$36,000 USD** | **$234,000 USD** destruidos |
-| **Inmobiliarias y Desarrollos** | $3,500 USD | Compra / Alquiler | 3.5 años | **$45,000 USD** | **$292,500 USD** destruidos |
-| **Salud, Obras Sociales y Prepagas** | $70 USD / mes | 12 meses | 3.5 años | **$2,940 USD** | **$19,110 USD** destruidos |
-| **Seguros y Finanzas / Fintech** | $50 USD / mes | 12 meses | 4.0 años | **$2,400 USD** | **$15,600 USD** destruidos |
-| **Comercio y Retail / E-commerce** | $50 USD | 4.5 compras/año | 2.0 años | **$450 USD** | **$2,925 USD** destruidos |
-| **Software, SaaS y Servicios B2B** | $280 USD / mes | 12 meses | 3.0 años | **$10,080 USD** | **$65,520 USD** destruidos |
+| Sector / Rubro | Tipo de cliente | Ticket Promedio | Frecuencia | Retención | LTV Unitario | Qué se arriesga | Por cada 10 leads perdidos |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **🏥 Salud / Obra Social / Medicina Prepaga** | Cautivo | $70 USD (Cuota / Copago Mensual) | 12 / año | 3,5 años | **$2,940 USD** | Un ciclo ($840 USD) · caída 18% · sin CAC | **$1,512 USD** en riesgo |
+| **🧱 Construcción / Corralón / Materiales** | Transaccional | $850 USD (Presupuesto de Materiales) | 4 / año | 2 años | **$6,800 USD** | LTV completo · caída 65% · + CAC $120 USD | **$45,400 USD** en riesgo |
+| **🚗 Automotor / Concesionaria / Repuestos** | Transaccional | $18,000 USD (Vehículo / Plan de Ahorro) | 0,4 / año | 5 años | **$36,000 USD** | LTV completo · caída 65% · + CAC $450 USD | **$238,500 USD** en riesgo |
+| **🏢 Inmobiliaria / Desarrollos / Alquileres** | Transaccional | $45,000 USD (Propiedad / Alquiler Anual) | 0,25 / año | 4 años | **$45,000 USD** | LTV completo · caída 65% · + CAC $600 USD | **$298,500 USD** en riesgo |
+| **💳 Seguros / Fintech / Finanzas** | Cautivo | $45 USD (Póliza Mensual / Préstamo) | 12 / año | 3 años | **$1,620 USD** | Un ciclo ($540 USD) · caída 18% · sin CAC | **$972 USD** en riesgo |
+| **🎓 Educación / Universidades / Cursos** | Cautivo | $130 USD (Matrícula y Cuota Mensual) | 10 / año | 2,5 años | **$3,250 USD** | Un ciclo ($1,300 USD) · caída 18% · sin CAC | **$2,340 USD** en riesgo |
+| **🛍️ Comercio / Retail / E-Commerce / Moda** | Transaccional | $50 USD (Ticket Promedio de Compra) | 4,5 / año | 2 años | **$450 USD** | LTV completo · caída 65% · + CAC $28 USD | **$3,205 USD** en riesgo |
+| **✈️ Turismo / Hotelería / Alquiler Temporario** | Transaccional | $380 USD (Estadía / Paquete Turístico) | 1,8 / año | 3 años | **$2,052 USD** | LTV completo · caída 65% · + CAC $75 USD | **$14,088 USD** en riesgo |
+| **🍕 Gastronomía / Restaurantes / Delivery** | Transaccional | $22 USD (Pedido / Mesa de Restaurante) | 18 / año | 1,5 años | **$594 USD** | LTV completo · caída 65% · + CAC $15 USD | **$4,011 USD** en riesgo |
+| **💻 Tecnología / SaaS / Servicios B2B** | Cautivo | $280 USD (Suscripción Mensual B2B) | 12 / año | 3 años | **$10,080 USD** | Un ciclo ($3,360 USD) · caída 18% · sin CAC | **$6,048 USD** en riesgo |
+| **⚙️ Servicios Profesionales / Atención General** | Transaccional | $120 USD (Servicio / Honorario Base) | 4 / año | 2 años | **$960 USD** | LTV completo · caída 65% · + CAC $60 USD | **$6,840 USD** en riesgo |
+<!-- tabla-ltv:fin -->
 
 ### 3.3. La Destrucción del CAC en Pauta Publicitaria (Meta Ads / Google Ads):
 Cuando un lead ingresa por un anuncio pagado, la empresa ya pagó su Costo de Adquisición (CAC) a Meta o Google. Si el lead cae en la "Zona Fría" (> 15 min), el dinero invertido se pierde sin retorno. Además, Meta detecta una baja tasa de conversión por evento y penaliza la cuenta encareciendo el CPM (Costo por Mil Impresiones).

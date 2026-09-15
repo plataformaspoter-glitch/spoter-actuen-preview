@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="app.css?v=20260915b">
   <style>
     .tl-metodo { margin-bottom: 30px; }
     .tl-intro { max-width: 860px; margin-bottom: 22px; }
@@ -51,6 +51,36 @@
     .tl-ej--bien span { color: var(--success); }
     .tl-letra { flex: none; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; background: var(--spoter-pink-light); color: var(--spoter-pink); }
     .tl-pilares--chats .tl-pilar { background: transparent; border-style: dashed; }
+    .tl-pilar { cursor: pointer; transition: var(--transition); }
+    .tl-pilar:hover { border-color: var(--spoter-pink-border); transform: translateY(-2px); }
+    .tl-pilar-mas { margin-top: auto; align-self: flex-start; background: none; border: none; padding: 4px 0 0; color: var(--spoter-pink); font: 700 12.5px var(--font-main); cursor: pointer; }
+    .tl-pilar-mas:hover { text-decoration: underline; }
+    .tl-pilar-mas:focus-visible { outline: 2px solid var(--spoter-pink); outline-offset: 2px; border-radius: 4px; }
+
+    /* margin: auto devuelve el centrado nativo del <dialog>, que el reset de app.css anula. */
+    .tl-dialogo { margin: auto; width: min(760px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 0; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-secondary); color: var(--text-primary); overflow: auto; }
+    .tl-dialogo::backdrop { background: rgba(3, 6, 15, 0.7); backdrop-filter: blur(2px); }
+    .tl-dialogo-cuerpo { padding: 24px 26px 22px; position: relative; }
+    .tl-dlg-cerrar { position: sticky; top: 0; float: right; margin: -8px -10px 0 0; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); font-size: 18px; cursor: pointer; z-index: 1; }
+    .tl-dlg-head { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 18px; padding-right: 30px; }
+    .tl-letra--grande { width: 48px; height: 48px; font-size: 22px; }
+    .tl-dlg-sub { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); }
+    .tl-dlg-head h3 { font-size: 22px; line-height: 1.2; margin: 2px 0 4px; }
+    .tl-dlg-pregunta { font-size: 15px; color: var(--text-secondary); }
+    .tl-dialogo section { margin-top: 18px; }
+    .tl-dialogo h4 { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--spoter-pink); margin-bottom: 8px; }
+    .tl-dialogo section > p { font-size: 14.5px; line-height: 1.6; color: var(--text-secondary); }
+    .tl-dialogo ul { padding-left: 20px; display: grid; gap: 6px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); }
+    .tl-dlg-nota { font-size: 13px !important; margin-top: 10px; }
+    .tl-dlg-nota a { color: var(--spoter-pink); font-weight: 700; }
+    .tl-dlg-ab { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    @media (max-width: 640px) { .tl-dlg-ab { grid-template-columns: 1fr; } .tl-dialogo-cuerpo { padding: 20px 16px; } }
+    .tl-dlg-ab pre { white-space: pre-wrap; word-break: break-word; font: 13px/1.5 var(--font-main); padding: 12px; border-radius: var(--radius-sm); background: var(--bg-card); border: 1px solid var(--border-color); margin-top: 6px; }
+    .tl-dlg-tag { font-size: 11.5px; font-weight: 800; }
+    .tl-dlg-tag--mal { color: var(--danger); }
+    .tl-dlg-tag--bien { color: var(--success); }
+    .tl-dlg-nav { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--border-color); }
+    .tl-dlg-nav .btn { font-size: 12.5px; }
     .tl-chats-nota { font-size: 13px; color: var(--text-secondary); margin: -4px 0 12px; }
     .tl-chats-nota a { color: var(--spoter-pink); font-weight: 700; }
 
@@ -115,6 +145,34 @@
     .tl-bloque--precios .tl-bloque-texto { font-variant-numeric: tabular-nums; }
     .tl-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
     .tl-prompt-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; border: 1px solid var(--spoter-pink-border); background: var(--spoter-pink-light); border-radius: var(--radius-lg); padding: 14px 18px; margin-bottom: 18px; }
+    .tl-exportar { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding-top: 12px; border-top: 1px solid var(--spoter-pink-border); }
+    .tl-aviso { padding: 12px 16px; margin-bottom: 16px; border-radius: var(--radius-md); border-left: 4px solid var(--info); background: rgba(6, 182, 212, 0.1); font-size: 13.5px; color: var(--text-secondary); }
+    .tl-ayuda a { color: var(--spoter-pink); font-weight: 700; }
+    .tl-atajo { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; color: var(--text-muted); margin-left: auto; margin-right: 10px; }
+    .tl-atajo-input { width: 130px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font: 600 12.5px ui-monospace, Menlo, monospace; }
+    .tl-resumen { border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-card); padding: 18px 20px; margin-bottom: 18px; }
+    .tl-res-head { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; align-items: baseline; margin-bottom: 8px; }
+    .tl-res-head h3 { font-size: 17px; }
+    .tl-res-prioridad { font-size: 14px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.5; }
+    .tl-res-prioridad strong { color: var(--text-primary); }
+    .tl-link { background: none; border: none; color: var(--spoter-pink); font: 700 13px var(--font-main); cursor: pointer; padding: 0; }
+    .tl-link:hover { text-decoration: underline; }
+    .tl-res-barras { display: grid; gap: 8px; }
+    .tl-res-fila { display: grid; grid-template-columns: 30px minmax(120px, 190px) 1fr minmax(140px, auto); gap: 10px; align-items: center; font-size: 13px; }
+    @media (max-width: 640px) { .tl-res-fila { grid-template-columns: 30px 1fr; } .tl-res-barra, .tl-res-cuenta { grid-column: 2; } }
+    .tl-res-letra { width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--spoter-pink-light); color: var(--spoter-pink); font-weight: 800; cursor: pointer; }
+    .tl-res-nombre { color: var(--text-primary); font-weight: 600; }
+    .tl-res-barra { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: var(--bg-secondary); }
+    .tl-res-barra i { display: block; height: 100%; }
+    .tl-res-falta { background: var(--danger); }
+    .tl-res-mejorable { background: var(--warning); }
+    .tl-res-ok { background: var(--success); }
+    .tl-res-cuenta { color: var(--text-secondary); font-size: 12.5px; }
+    .t-falta { color: var(--danger); } .t-mejorable { color: var(--warning); } .t-ok { color: var(--success); }
+    .tl-res-hallazgos-titulo { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); margin: 14px 0 6px; }
+    .tl-res-hallazgos { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+    .tl-res-hallazgos li { font-size: 12.5px; padding: 4px 10px; border-radius: 999px; background: var(--bg-secondary); color: var(--text-secondary); }
+    .tl-res-hallazgos b { color: var(--text-primary); }
     .tl-prompt-bar p { font-size: 12.5px; color: var(--text-secondary); max-width: 560px; }
     .tl-prompt-bar strong { color: var(--text-primary); }
     .tl-prompt-bar label { font-size: 12px; display: inline-flex; gap: 6px; align-items: center; }
@@ -177,7 +235,7 @@
         </ul>
       </div>
 
-      <h3 class="tl-bloque-titulo">Los 5 pilares que se revisan en el texto <span>— son los que evalúa el taller</span></h3>
+      <h3 class="tl-bloque-titulo">Los 5 pilares que se revisan en el texto <span>— tocá una tarjeta para ver por qué importa y cómo mejorarlo</span></h3>
       <div class="tl-pilares" id="pilaresMetodo"></div>
 
       <h3 class="tl-bloque-titulo">Los 2 que se miden en tus chats</h3>
@@ -200,6 +258,7 @@
           <span id="rubroDetectado"></span>
           <select id="rubro" aria-label="Rubro"></select>
           <button class="btn btn-secondary" id="btnEjemplo">Probar con un ejemplo</button>
+          <button class="btn btn-secondary" id="btnVaciar" title="Borra el texto pegado">Vaciar</button>
         </div>
       </div>
       <textarea id="entrada" spellcheck="false" placeholder="Hola! te paso el presupuesto en pdf. Cualquier consulta avisame.
@@ -209,9 +268,18 @@ Buenos dias!
 si, tenemos. a que zona lo necesitas?"></textarea>
       <p class="tl-ayuda">Separá cada respuesta con una línea en blanco. Si alguna tiene párrafos, separalas con una línea
         <code>---</code>. Si tus asesores mandan varios mensajes seguidos, pegalos juntos como una sola respuesta.</p>
+      <p class="tl-ayuda">Lo que pegás se guarda solo en este navegador, para que no se pierda si recargás la página.
+        ¿Ya analizaste tus chats? Desde el <a href="index.html">Analizador</a>, en "Respuestas Maestras", podés traer acá las respuestas que más repiten tus asesores.</p>
       <p class="tl-ayuda">Para un análisis más fino, agregá arriba lo que escribió el cliente con <code>Cliente:</code> al
         principio de la línea. Así el taller revisa si la respuesta contesta lo que preguntó y no vuelve a pedir datos que ya dio.</p>
     </section>
+
+    <div class="tl-aviso" id="avisoImportacion" hidden role="status">
+      <span id="avisoImportacionTexto"></span>
+      Revisalas antes de compartir: pueden incluir datos personales.
+    </div>
+
+    <section class="tl-resumen" id="resumenLote" hidden aria-live="polite"></section>
 
     <section class="tl-prompt-bar" id="barraPrompt" hidden>
       <p><strong>¿Querés que lo redacte una IA?</strong> Exportá un prompt con el método, tu rubro, el diagnóstico y el
@@ -220,6 +288,14 @@ si, tenemos. a que zona lo necesitas?"></textarea>
       <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center">
         <label><input type="checkbox" id="ocultarDatos" checked> Ocultar datos personales</label>
         <button class="btn btn-primary" id="btnPromptBiblioteca">🤖 Prompt para armar la biblioteca</button>
+      </div>
+      <div class="tl-exportar">
+        <p><strong>¿Listas para usar?</strong> Descargá las respuestas acomodadas como atajos, con el nombre que les pongas en
+          cada tarjeta y respetando las sugerencias que apagaste.</p>
+        <div style="display:flex; gap:8px; flex-wrap:wrap">
+          <button class="btn btn-secondary" id="btnAtajosJson">⬇️ Atajos .json</button>
+          <button class="btn btn-secondary" id="btnAtajosCsv">⬇️ Atajos .csv</button>
+        </div>
       </div>
     </section>
 
@@ -235,12 +311,20 @@ si, tenemos. a que zona lo necesitas?"></textarea>
 
     <div id="resultados"></div>
 
+    <dialog class="tl-dialogo" id="pilarDialogo" aria-labelledby="pilarDialogoTitulo">
+      <div class="tl-dialogo-cuerpo">
+        <button type="button" class="tl-dlg-cerrar" id="pilarDialogoCerrar" aria-label="Cerrar">×</button>
+        <div id="pilarDialogoContenido"></div>
+      </div>
+    </dialog>
+
     <p class="tl-limites"><strong>Qué hace y qué no.</strong> El taller ordena tus frases en la estructura del método,
       convierte menús en ejemplos, arma listas de precios, corrige tildes sin ambigüedad y reemplaza un puñado de fórmulas
       burocráticas fijas. Si le das el mensaje del cliente, detecta qué pidió y qué datos ya dio. No redacta frases nuevas: los
       datos a pedir, los marcadores como <code>{PRECIO}</code> y el cierre que agrega salen de las plantillas de tu rubro o
       del método, y quedan marcados como sugerencia para que decidas si aplican. Para una redacción de verdad, usá el prompt. T (tiempos) y + (reparto bot/asesores) se miden en tus chats con el Analizador, no en un texto.</p>
   </div>
-  <script src="taller.js"></script>
+  <script src="atajos.js?v=20260915b"></script>
+  <script src="taller.js?v=20260915b"></script>
 </body>
 </html>

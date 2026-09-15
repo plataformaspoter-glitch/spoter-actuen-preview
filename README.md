@@ -61,6 +61,21 @@ teléfonos, emails, CBU, direcciones, nombres y firmas.
 
 T y + no se puntúan: se miden en los chats.
 
+**Para trabajar con el equipo:**
+
+* **Explicación del método** con una respuesta modelo anotada parte por parte y
+  un panel por pilar (por qué importa, qué revisa, cómo mejorarlo, antes y
+  después, y un botón para probar el ejemplo en vivo).
+* **Resumen del lote:** cuántas respuestas fallan cada pilar, por cuál conviene
+  empezar y qué problemas se repiten.
+* **Desde el Analizador:** en "Respuestas Maestras", *Llevar las respuestas de
+  mis asesores al taller* abre el taller con las respuestas que más repite el
+  equipo, cada una con un mensaje real de cliente. Necesita CSV propios (el lote
+  de prueba no trae mensajes).
+* **Atajos exportables** en JSON o CSV, con el nombre editable en cada tarjeta.
+  Mismo formato que exporta el Analizador (`atajos.js`).
+* Lo pegado **se guarda en el navegador** para no perderlo al recargar.
+
 ### Opción B — Con el motor Python local
 
 Sirve para procesar lotes desde disco, exportar informes por línea de comandos o
@@ -119,6 +134,7 @@ Analizador ACTUEN/
 ├── api_server.py                 # Servidor HTTP local. NO se publica: es herramienta de escritorio
 ├── index.html                    # Aplicación principal
 ├── taller.html / taller.js       # Taller ACTÚEN+: evalúa y reacomoda respuestas rápidas
+├── atajos.js                     # Formato de atajos (JSON/CSV) compartido por Analizador y Taller
 ├── app.js                        # Motor del navegador + interfaz. Paridad con engine.py
 ├── app.css                       # Sistema de diseño (variables, modo claro/oscuro, responsive)
 ├── sample_data.json              # Lote de prueba anonimizado para la demo
@@ -131,8 +147,8 @@ Analizador ACTUEN/
 ├── tests/
 │   ├── test_engine.py            # 24 tests de regresión (stdlib)
 │   ├── test_paridad.py / paridad.js  # 7 escenarios de paridad navegador ↔ Python
-│   ├── test_taller.js            # 51 tests del Taller ACTÚEN+
-│   ├── test_manual.py            # 8 tests: manual de ventas = catálogo = motor
+│   ├── test_taller.js            # 60 tests del Taller ACTÚEN+
+│   ├── test_manual.py            # 9 tests: manual = catálogo = motor; versión de scripts
 │   ├── correr_todo.sh            # Corre las cuatro suites
 │   └── fixture_demo.csv          # Fixture anonimizado
 ├── tools/
@@ -140,6 +156,11 @@ Analizador ACTUEN/
 │   └── generar_tabla_ltv.py      # Regenera la tabla de LTV del manual .md
 └── PLAN.md                       # Estado del trabajo y decisiones tomadas
 ```
+
+**Versión de scripts:** los HTML cargan `app.js?v=…`, `taller.js?v=…`, etc. Al
+desplegar cambios de JS o CSS, subí ese valor en las tres páginas (hay un test
+que exige que coincidan): si no, un navegador puede combinar el HTML nuevo con un
+JS viejo en caché y dejar botones sin respuesta.
 
 **No se publican** `api_server.py`, `PLAN.md`, `tools/` ni `tests/`: el repo es
 público y son herramientas locales.
@@ -217,7 +238,7 @@ columna revisar, en vez de producir un informe vacío pero verosímil.
 ## ✅ 5. Verificación
 
 ```bash
-./tests/correr_todo.sh           # motor (24) + paridad (7) + taller (51) + manual (8)
+./tests/correr_todo.sh           # motor (24) + paridad (7) + taller (60) + manual (9)
 ```
 
 Cubren normalización de valores y fechas, paridad entre formatos de CSV, error

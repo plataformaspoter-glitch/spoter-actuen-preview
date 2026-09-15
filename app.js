@@ -573,6 +573,107 @@ function processFilesClientSide(files, forcedFocus = null, handoffPolicy = null,
   }
 }
 
+// ==========================================================================
+// PUENTE AL TALLER Y EXPORTACIÓN DE ATAJOS
+// ==========================================================================
+
+const RE_ADJUNTO_SOLO = /^\[(image|imagen|audio|document|documento|video|sticker)\]/i;
+
+/**
+ * Las respuestas de asesores que más se repiten, cada una con un mensaje del
+ * cliente que la originó. Las que se repiten son, en la práctica, las
+ * respuestas rápidas del equipo: justo lo que conviene pasar por el taller.
+ * Solo respuestas humanas: las del bot no las escribe el equipo.
+ */
+function respuestasParaTaller(filas, maximo = 15) {
+  const numCounts = {};
+  filas.forEach(r => {
+    if (isPropio(r)) { const n = (r['Número'] || '').trim(); if (n) numCounts[n] = (numCounts[n] || 0) + 1; }
+  });
+  const numeroEmpresa = Object.keys(numCounts).sort((a, b) => numCounts[b] - numCounts[a])[0];
+
+  const porCliente = {};
+  filas.forEach(r => {
+    const id = ((isPropio(r) ? r['Destinatario'] : r['Número']) || '').trim();
+    if (!id || id === numeroEmpresa) return;
+    (porCliente[id] = porCliente[id] || []).push(r);
+  });
+
+  const conteo = new Map();
+  Object.values(porCliente).forEach(conv => {
+    let ultimoCliente = '';
+    conv.forEach(r => {
+      const msg = (r['Mensaje'] || '').trim();
+      if (!isPropio(r)) {
+        if (msg && !RE_ADJUNTO_SOLO.test(msg)) ultimoCliente = msg;
+        return;
+      }
+      if (esBot(r['Nombre Operador']) || largo(msg) < 12 || RE_ADJUNTO_SOLO.test(msg)) return;
+      // La firma del operador ("^Laura M.") no hace distinta a una respuesta.
+      const clave = msg.replace(/\s*\^[^\n^]{1,30}$/, '').toLowerCase().replace(/\s+/g, ' ');
+      const e = conteo.get(clave) || { respuesta: msg, cliente: '', veces: 0 };
+      e.veces++;
+      // De todas las veces que se usó, el mensaje del cliente más informativo
+      // ("Genial" o "👌" no dan contexto; uno larguísimo tampoco se lee).
+      if (ultimoCliente && largo(ultimoCliente) <= 220 && largo(ultimoCliente) > largo(e.cliente)) e.cliente = ultimoCliente;
+      conteo.set(clave, e);
+      ultimoCliente = '';
+    });
+  });
+
+  const todas = [...conteo.values()];
+  const repetidas = todas.filter(e => e.veces >= 2).sort((a, b) => b.veces - a.veces);
+  if (repetidas.length >= maximo) return repetidas.slice(0, maximo);
+  // Pocas repetidas: se completa con las más largas, que suelen ser explicaciones armadas.
+  const resto = todas.filter(e => e.veces < 2).sort((a, b) => largo(b.respuesta) - largo(a.respuesta));
+  return [...repetidas, ...resto].slice(0, maximo);
+}
+
+/** Texto para pegar en el taller: una respuesta por bloque, con su contexto. */
+function textoParaTaller(respuestas) {
+  return respuestas.map(e =>
+    (e.cliente ? `Cliente: ${e.cliente.replace(/\s*\n+\s*/g, ' ')}\n` : '') + e.respuesta
+  ).join('\n---\n');
+}
+
+function leerFilasCsv(files) {
+  return Promise.all(Array.from(files).map(file => new Promise(resolve => {
+    Papa.parse(file, { header: true, skipEmptyLines: true, encoding: 'utf-8', complete: res => resolve(res.data) });
+  }))).then(partes => [].concat(...partes));
+}
+
+async function llevarRespuestasAlTaller() {
+  if (!currentFiles || !currentFiles.length) {
+    showToast('ℹ️ Disponible cuando analizás tus propios CSV (el lote de prueba no trae los mensajes).');
+    return;
+  }
+  // La pestaña se abre antes de leer los archivos: si se abre después de un
+  // await, el navegador la bloquea como ventana emergente.
+  const ventana = window.open('', '_blank');
+  const filas = (await leerFilasCsv(currentFiles)).map(normalizarFila);
+  const respuestas = respuestasParaTaller(filas);
+  if (!respuestas.length) {
+    if (ventana) ventana.close();
+    showToast('⚠️ No encontré respuestas de asesores para llevar al taller.');
+    return;
+  }
+  try {
+    localStorage.setItem('spoter_taller_importacion', JSON.stringify({
+      texto: textoParaTaller(respuestas),
+      cantidad: respuestas.length,
+      rubro: currentData && currentData.meta ? currentData.meta.detected_rubro_key : null,
+    }));
+  } catch (e) {
+    if (ventana) ventana.close();
+    showToast('⚠️ El navegador no permite guardar datos locales: no se pudo pasar al taller.');
+    return;
+  }
+  if (ventana) ventana.location.href = 'taller.html?desde=analizador';
+  else window.location.href = 'taller.html?desde=analizador';
+}
+
+// construirAtajos() y atajosACsv() viven en atajos.js, compartido con el Taller.
+
 /** Muestra un error de interpretación del CSV en lugar de un informe vacío. */
 function showParseError(motivos, columnas, filas) {
   const panel = document.getElementById('dropzonePanel');
@@ -1370,27 +1471,30 @@ function parseDate(value) {
   return null;
 }
 
+/** Unifica los nombres de columna de distintas plataformas a los del export de Spoter. */
+function normalizarFila(raw) {
+  const clean = {};
+  for (const [k, v] of Object.entries(raw || {})) {
+    if (!k) continue;
+    const ck = k.trim().replace(/"/g, '');
+    const cv = (v !== null && v !== undefined) ? String(v).trim() : '';
+    clean[ck] = cv;
+    const kLow = ck.toLowerCase().replace(/[\s-]/g, '_');
+    if (['mensaje', 'message', 'text', 'body'].includes(kLow)) clean['Mensaje'] = cv;
+    else if (['numero', 'número', 'phone', 'telefono', 'teléfono', 'from', 'remitente'].includes(kLow)) clean['Número'] = cv;
+    else if (['destinatario', 'to', 'recipient'].includes(kLow)) clean['Destinatario'] = cv;
+    else if (['propio', 'is_from_me', 'from_me', 'saliente'].includes(kLow)) clean['Propio'] = cv;
+    else if (['tiempo_espera', 'tiempo_de_espera', 'espera', 'wait_time'].includes(kLow)) clean['Tiempo Espera'] = cv;
+    else if (['nombre_operador', 'operador', 'agent', 'asesor'].includes(kLow)) clean['Nombre Operador'] = cv;
+    else if (['fecha_hora', 'fecha', 'timestamp', 'datetime', 'date'].includes(kLow)) clean['Fecha_Hora'] = cv;
+    else if (['nombre', 'name', 'client_name', 'contacto'].includes(kLow)) clean['Nombre'] = cv;
+  }
+  return clean;
+}
+
 function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, filesCount = 1, forcedRubro = null, fileNames = []) {
   // Normalizar encabezados de columnas (minúsculas, guiones, variaciones)
-  rows = (rows || []).map(raw => {
-    const clean = {};
-    for (const [k, v] of Object.entries(raw || {})) {
-      if (!k) continue;
-      const ck = k.trim().replace(/"/g, '');
-      const cv = (v !== null && v !== undefined) ? String(v).trim() : '';
-      clean[ck] = cv;
-      const kLow = ck.toLowerCase().replace(/[\s-]/g, '_');
-      if (['mensaje', 'message', 'text', 'body'].includes(kLow)) clean['Mensaje'] = cv;
-      else if (['numero', 'número', 'phone', 'telefono', 'teléfono', 'from', 'remitente'].includes(kLow)) clean['Número'] = cv;
-      else if (['destinatario', 'to', 'recipient'].includes(kLow)) clean['Destinatario'] = cv;
-      else if (['propio', 'is_from_me', 'from_me', 'saliente'].includes(kLow)) clean['Propio'] = cv;
-      else if (['tiempo_espera', 'tiempo_de_espera', 'espera', 'wait_time'].includes(kLow)) clean['Tiempo Espera'] = cv;
-      else if (['nombre_operador', 'operador', 'agent', 'asesor'].includes(kLow)) clean['Nombre Operador'] = cv;
-      else if (['fecha_hora', 'fecha', 'timestamp', 'datetime', 'date'].includes(kLow)) clean['Fecha_Hora'] = cv;
-      else if (['nombre', 'name', 'client_name', 'contacto'].includes(kLow)) clean['Nombre'] = cv;
-    }
-    return clean;
-  });
+  rows = (rows || []).map(normalizarFila);
 
   let companyMsgs = 0;
   let clientMsgs = 0;
@@ -3350,15 +3454,26 @@ function initSimulator() {
     });
   }
 
+  const btnTaller = document.getElementById('btnLlevarAlTaller');
+  if (btnTaller) btnTaller.addEventListener('click', llevarRespuestasAlTaller);
+
   const btnExpCanned = document.getElementById('btnExportCanned');
   if (btnExpCanned) {
     btnExpCanned.addEventListener('click', () => {
-      if (currentData && currentData.master_responses) {
-        downloadBlob(JSON.stringify(currentData.master_responses, null, 2), `atajos_spoter_${(currentData.meta.company_name||'crm').toLowerCase()}.json`, 'application/json');
-        showToast("💾 Atajos exportados en JSON");
-      } else {
-        window.location.href = '/api/export/canned';
+      // Antes leía currentData.master_responses, una clave que no existe: en
+      // GitHub Pages redirigía a /api/export/canned, que solo existe con el
+      // servidor local, y daba 404.
+      const plantillas = currentData && currentData.master_templates;
+      if (!plantillas || !plantillas.length) {
+        showToast('⚠️ Primero corré un análisis para tener atajos que exportar.');
+        return;
       }
+      const paquete = construirAtajos(plantillas.map(t => ({
+        atajo: t.shortcut, titulo: t.title, categoria: t.category, texto: t.after,
+      })), { origen: 'analizador', empresa: currentData.meta.company_name, rubro: currentData.meta.detected_rubro_key });
+      const nombre = (currentData.meta.company_name || 'crm').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+      downloadBlob(JSON.stringify(paquete, null, 2), `atajos_spoter_${nombre}.json`, 'application/json');
+      showToast('💾 Atajos exportados en JSON');
     });
   }
 }

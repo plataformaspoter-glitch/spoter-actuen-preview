@@ -29,7 +29,7 @@
       });
     }
   </script>
-  <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="app.css?v=20260915b">
 </head>
 <body>
 
@@ -857,7 +857,8 @@
             </p>
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <a href="taller.html" target="_blank" class="btn btn-primary" style="text-decoration: none;">🛠️ Acomodar mis propias respuestas</a>
+            <button type="button" class="btn btn-primary" id="btnLlevarAlTaller" title="Abre el taller con las respuestas que más repiten tus asesores, cada una con un mensaje de cliente">🛠️ Llevar las respuestas de mis asesores al taller</button>
+            <a href="taller.html" target="_blank" class="btn btn-secondary" style="text-decoration: none;">Taller vacío</a>
             <button class="btn btn-secondary" id="btnToggleMoreTemplates">
               ➕ Ver Más Plantillas del Rubro
             </button>
@@ -991,6 +992,7 @@
   <!-- Notificación Toast Flotante -->
   <div class="toast" id="toastNotification">Mensaje</div>
 
-  <script src="app.js"></script>
+  <script src="atajos.js?v=20260915b"></script>
+  <script src="app.js?v=20260915b"></script>
 </body>
 </html>

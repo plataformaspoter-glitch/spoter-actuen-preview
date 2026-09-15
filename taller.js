@@ -31,37 +31,144 @@ const PILARES = [
     idea: 'El cliente cuenta lo que necesita de entrada, sin navegar un menú de opciones.',
     pregunta: '¿El cliente puede decir lo que necesita apenas escribe?',
     mal: 'Elegí una opción: 1. Ventas 2. Envíos 3. Pagos',
-    bien: '¡Hola! Contame qué necesitás y te ayudo.' },
+    bien: '¡Hola! Contame qué necesitás y te ayudo.',
+    detalle: {
+          porQue: "Cada paso extra antes de poder hablar es una oportunidad de que el cliente se canse y consulte en otro lado. Un menú además lo obliga a adivinar en qué categoría cae su consulta, y muchas no entran en ninguna.",
+          revisa: [
+                "Listas numeradas acompañadas de “elegí una opción” o “respondé con el número”.",
+                "Menús escritos en una sola línea.",
+                "Pedidos de escribir una palabra clave, como “MENÚ” o “INICIO”, para seguir."
+          ],
+          arreglo: [
+                "Invitá a escribir libremente: “Contame qué necesitás”.",
+                "Si querés orientar, mostrá las opciones como ejemplos, sin números.",
+                "Que clasifique el bot o el asesor, no el cliente."
+          ],
+          antes: "Gracias por comunicarte. Elegí una opción:\n1. Ventas\n2. Envíos\n3. Pagos\nRespondé con el número.",
+          despues: "👋 ¡Hola! Gracias por comunicarte.\n💬 Contame en un solo mensaje qué necesitás. Por ejemplo:\n• Precios y presupuestos\n• Envíos\n• Pagos\n👉 ¿En qué te ayudo?"
+    } },
   { letra: 'C', nombre: 'Cero vueltas', evaluable: true,
     idea: 'Todo lo necesario en un solo bloque: información, datos a pedir y acción. Nada de ráfagas ni un dato por turno.',
     pregunta: '¿Resuelve todo en un solo mensaje, o hay que ir y volver?',
     mal: '"Buenos días!" · "sale $6.260" · "¿a qué dirección?" (tres mensajes sueltos)',
-    bien: 'Precio, datos que faltan y próximo paso, juntos en un mensaje.' },
+    bien: 'Precio, datos que faltan y próximo paso, juntos en un mensaje.',
+    detalle: {
+          porQue: "Cada vez que el cliente tiene que contestar algo que se le podría haber preguntado antes, la conversación suma un turno de espera. Y con varios mensajes sueltos lo importante se pierde: el cliente responde a medias.",
+          revisa: [
+                "Un saludo suelto que ocupa un mensaje entero.",
+                "Varias líneas cortas que se leen como una ráfaga de mensajes.",
+                "Pedir un solo dato cuando la consulta necesita varios.",
+                "Mandar un PDF sin escribir el número clave en el chat.",
+                "Tres o más preguntas sueltas dentro del texto.",
+                "Volver a preguntar algo que el cliente ya dijo."
+          ],
+          arreglo: [
+                "Juntá saludo, respuesta y pedido de datos en un mismo mensaje.",
+                "Pedí todos los datos que faltan en una lista numerada.",
+                "Si mandás un PDF, escribí el total y la validez en el chat.",
+                "Si necesitás dos burbujas, usá la marca [---saltomensaje---]."
+          ],
+          antes: "Buenos dias!\ncemento avellaneda $6260 holcim $6500\na que direccion lo necesitas?",
+          despues: "👋 ¡Buenos días!\n• Cemento Avellaneda: $6.260\n• Holcim: $6.500\n📋 Para cotizarte el envío, pasame:\n1. Cantidad de bolsas\n2. Dirección de entrega\n[---saltomensaje---]\n👉 ¿Te lo reservo para esta semana?"
+    } },
   { letra: 'T', nombre: 'Tiempos aceitados', evaluable: false,
     idea: 'Responder dentro del SLA del rubro. Se mide en tus chats, no en un texto.',
     pregunta: '¿Contesta a tiempo?',
     mal: 'Responder a los 40 minutos, cuando ya consultó en otro lado.',
-    bien: 'Responder dentro del tiempo ideal de tu rubro.' },
+    bien: 'Responder dentro del tiempo ideal de tu rubro.',
+    detalle: {
+          porQue: "Mientras espera, el cliente sigue buscando. En los rubros donde se compara precio, una demora larga suele significar que ya compró en otro lado.",
+          mide: [
+                "El tiempo que tarda la primera respuesta en tus chats reales.",
+                "Cómo se compara con el tiempo ideal de tu rubro.",
+                "Qué consultas con intención de compra quedaron esperando detrás de otras."
+          ],
+          arreglo: [
+                "Tené respuestas rápidas listas para lo más consultado.",
+                "Que el bot dé un primer mensaje útil mientras llega el asesor.",
+                "Atendé primero a quien está por comprar, no solo por orden de llegada."
+          ]
+    } },
   { letra: 'U', nombre: 'Ubicar la intención', evaluable: true,
     idea: 'Responder lo que el cliente preguntó y pedir en el mismo turno los datos que dicen qué tan cerca de comprar está.',
     pregunta: '¿Contesta lo que preguntó y pide lo que falta para avanzar?',
     mal: 'Cliente: "¿Cuánto sale el cemento?" → "¿Para qué obra es?"',
-    bien: '"Está $6.260. ¿Cuántas bolsas y a qué zona lo mandamos?"' },
+    bien: '"Está $6.260. ¿Cuántas bolsas y a qué zona lo mandamos?"',
+    detalle: {
+          porQue: "El cliente escribe con una intención concreta. Si la respuesta no la atiende, siente que no lo leyeron. Y sin los datos que faltan (qué, cuánto, dónde, cuándo) no se puede cotizar ni saber qué tan cerca está de comprar.",
+          revisa: [
+                "Si el cliente preguntó precio, stock, envío, turno, pago u horario y la respuesta no lo contesta. Para esto hace falta pegar su mensaje con “Cliente:”.",
+                "Cuántos datos pide la respuesta en el mismo turno.",
+                "Si pregunta algo que el cliente ya dio: dirección, cantidad, producto, DNI, día o forma de pago."
+          ],
+          arreglo: [
+                "Contestá primero lo que preguntó.",
+                "Pedí juntos los datos que definen la venta: qué, cuánto, dónde y cuándo.",
+                "Si ya dio un dato, confirmalo en vez de volver a preguntarlo."
+          ],
+          antes: "Cliente: ¿Cuánto sale el cemento?\n¿Para qué obra es?",
+          despues: "Cliente: ¿Cuánto sale el cemento?\nEstá $6.260 la bolsa. ¿Cuántas bolsas necesitás y a qué zona lo mandamos?"
+    } },
   { letra: 'E', nombre: 'Experiencia personalizada', evaluable: true,
     idea: 'Hablarle a una persona, no a un expediente. Sin fórmulas de mesa de entradas.',
     pregunta: '¿Suena a una persona o a un expediente?',
     mal: '"Estimado cliente, su consulta ha sido recibida."',
-    bien: '"¡Hola Juan! Ya lo reviso."' },
+    bien: '"¡Hola Juan! Ya lo reviso."',
+    detalle: {
+          porQue: "Las fórmulas de oficina marcan distancia y suenan a respuesta automática. En WhatsApp el cliente espera hablar con alguien, y lo nota enseguida.",
+          revisa: [
+                "Fórmulas de mesa de entradas: “estimado cliente”, “su solicitud ha sido recibida”, “a la brevedad”.",
+                "Mensajes escritos en mayúsculas sostenidas.",
+                "Mezclar “usted” y “vos” en la misma respuesta.",
+                "Contestar un reclamo sin reconocer el problema. Esto también necesita el mensaje del cliente."
+          ],
+          arreglo: [
+                "Escribí como hablarías en el mostrador.",
+                "Elegí un trato, vos o usted, y sostenelo.",
+                "Ante un reclamo, primero reconocé el problema: “Entiendo, ya lo reviso”."
+          ],
+          antes: "Estimado cliente, su consulta ha sido recibida. Nos comunicaremos a la brevedad.",
+          despues: "¡Hola Juan! Recibí tu consulta y ya la estoy revisando. ¿Me pasás el número de pedido así lo busco?"
+    } },
   { letra: 'N', nombre: 'Nutrir y cerrar', evaluable: true,
     idea: 'Cada respuesta termina con una pregunta de avance. Nunca deja la próxima jugada en manos del cliente.',
     pregunta: '¿Termina con un próximo paso concreto?',
     mal: '"Cualquier consulta, avisame."',
-    bien: '"¿Te lo reservo para el jueves?"' },
+    bien: '"¿Te lo reservo para el jueves?"',
+    detalle: {
+          porQue: "Si la respuesta termina informando, la próxima jugada queda en manos del cliente, y muchas veces no la hace. Una pregunta concreta de avance mantiene viva la conversación.",
+          revisa: [
+                "Cierres pasivos: “cualquier consulta avisame”, “quedo a disposición”, “saludos”.",
+                "Respuestas que terminan informando, sin pedir nada.",
+                "Un “no tenemos” sin alternativa.",
+                "Derivar sin decir a quién ni en cuánto tiempo."
+          ],
+          arreglo: [
+                "Terminá con una pregunta que invite a decidir: reservar, confirmar, coordinar.",
+                "Si la respuesta es no, ofrecé una alternativa.",
+                "Si derivás, decí quién responde y cuándo."
+          ],
+          antes: "Te paso el presupuesto en pdf. Cualquier consulta avisame.",
+          despues: "Te paso el presupuesto: total $45.000, válido por 48 hs. ¿Querés que te lo reserve?"
+    } },
   { letra: '+', nombre: 'Optimización continua', evaluable: false,
     idea: 'Reparto de carga entre bot y asesores. Se mide en tus chats, no en un texto.',
     pregunta: '¿El trabajo está bien repartido entre el bot y las personas?',
     mal: 'Una sola asesora atiende 9 de cada 10 chats.',
-    bien: 'El bot resuelve lo repetitivo y deriva lo que necesita criterio.' },
+    bien: 'El bot resuelve lo repetitivo y deriva lo que necesita criterio.',
+    detalle: {
+          porQue: "Si una sola persona concentra la mayoría de los chats, la atención depende de ella: se satura, se equivoca y, si falta un día, las ventas se frenan.",
+          mide: [
+                "Cuánto trabajo resuelve el bot y cuánto cada asesor.",
+                "Por qué motivos se deriva a una persona.",
+                "Cuáles de esas derivaciones se podrían automatizar."
+          ],
+          arreglo: [
+                "Automatizá las consultas repetitivas.",
+                "Derivá a una persona solo lo que necesita criterio.",
+                "Repartí la carga entre asesores."
+          ]
+    } },
 ];
 
 const SALTO = '[---saltomensaje---]';
@@ -1037,8 +1144,73 @@ ${faltantes.map(p => `- ${p.title} (${p.shortcut}): ${p.key_benefit || p.categor
 5. **Tres reglas de uso** para el equipo, en una línea cada una.`;
 }
 
+// --------------------------------------------------------------------------
+// Resumen del lote y atajos
+// --------------------------------------------------------------------------
+
+const ETIQUETA_HALLAZGO = {
+  intencion_ignorada: 'No contesta lo que preguntó el cliente',
+  dato_repetido: 'Pregunta datos que el cliente ya dio',
+  adjunto_mudo: 'Manda PDF sin el número clave en el chat',
+  callejon: 'Dice que no sin ofrecer alternativa',
+  derivacion: 'Deriva sin decir quién ni cuándo',
+  reclamo_frio: 'Contesta reclamos sin reconocer el problema',
+  mayusculas: 'Escribe en mayúsculas sostenidas',
+  usted_vos: 'Mezcla "usted" y "vos"',
+  preguntas_sueltas: 'Hace preguntas sueltas en vez de una lista',
+  menu_palabra: 'Pide escribir una palabra clave para seguir',
+};
+
+/**
+ * Qué pilar conviene trabajar primero con el equipo. Un "falta" pesa el doble
+ * que un "mejorable": es lo que más turnos y ventas cuesta.
+ */
+function resumenLote(respuestas, catalogo, rubroKey) {
+  const evaluables = PILARES.filter(p => p.evaluable).map(p => p.letra);
+  const porPilar = Object.fromEntries(evaluables.map(l => [l, { falta: 0, mejorable: 0, ok: 0 }]));
+  const hallazgos = {};
+  let antes = 0, despues = 0;
+
+  respuestas.forEach(entrada => {
+    const { bloques, evaluacion: ev } = reacomodar(entrada, catalogo, rubroKey);
+    const final = evaluar(conContexto(ev.cliente, componerTexto(bloques)), catalogo, rubroKey);
+    antes += ev.puntaje;
+    despues += final.puntaje;
+    evaluables.forEach(l => { porPilar[l][ev.pilares[l].estado]++; });
+    new Set(ev.hallazgos.map(h => h.id)).forEach(id => { hallazgos[id] = (hallazgos[id] || 0) + 1; });
+  });
+
+  const n = respuestas.length;
+  const peso = l => porPilar[l].falta * 2 + porPilar[l].mejorable;
+  const prioridad = evaluables.slice().sort((a, b) => peso(b) - peso(a))[0];
+  return {
+    n,
+    antes: n ? antes / n : 0,
+    despues: n ? despues / n : 0,
+    porPilar,
+    prioridad: peso(prioridad) > 0 ? prioridad : null,
+    hallazgos: Object.entries(hallazgos).sort((a, b) => b[1] - a[1]).slice(0, 4)
+      .map(([id, veces]) => ({ id, veces, etiqueta: ETIQUETA_HALLAZGO[id] || id })),
+  };
+}
+
+const ATAJO_POR_INTENCION = { precio: '/precio', stock: '/stock', envio: '/envio', pago: '/pago', turno: '/turno',
+  tramite: '/tramite', reclamo: '/reclamo', horario: '/horario', seguimiento: '/seguimiento' };
+
+/** Nombre de atajo propuesto: el de la plantilla del rubro, o el de la intención. */
+function sugerirAtajo(evaluacion, plantilla) {
+  if (plantilla && plantilla.shortcut) return plantilla.shortcut;
+  return ATAJO_POR_INTENCION[evaluacion.intencion] || '/respuesta';
+}
+
+function tituloDeRespuesta(evaluacion) {
+  if (evaluacion.intencion) return INTENCIONES[evaluacion.intencion].etiqueta.replace(/^\S+\s/, '');
+  const t = evaluacion.respuesta.replace(/\s+/g, ' ').trim();
+  return t.length > 48 ? t.slice(0, 47) + '…' : t;
+}
+
 if (typeof module !== 'undefined') {
-  module.exports = { PILARES, INTENCIONES, DATOS, separarRespuestas, separarContexto, conContexto, desarmar, evaluar,
+  module.exports = { PILARES, resumenLote, sugerirAtajo, tituloDeRespuesta, ETIQUETA_HALLAZGO, INTENCIONES, DATOS, separarRespuestas, separarContexto, conContexto, desarmar, evaluar,
     reacomodar, componerTexto, camposDePlantilla, plantillaMasCercana, detectarRubroDeTexto, detectarIntencion, detectarIntenciones,
     datosDelCliente, anonimizar, esCierreActivo, generarPromptRespuesta, generarPromptBiblioteca, extraerPrecios, corregir };
 }
@@ -1066,6 +1238,26 @@ if (typeof document !== 'undefined') {
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   let catalogo = null;
   let estado = { respuestas: [], rubro: null };
+  const CLAVE_BORRADOR = 'spoter_taller_borrador';
+  const CLAVE_IMPORTACION = 'spoter_taller_importacion';
+
+  // El borrador vive solo en este navegador: si no hay almacenamiento
+  // (ventana privada, bloqueo), el taller funciona igual sin guardar.
+  function guardarBorrador() {
+    try { localStorage.setItem(CLAVE_BORRADOR, JSON.stringify({ texto: $('entrada').value, rubro: $('rubro').value })); } catch (e) { /* sin almacenamiento */ }
+  }
+  function leerJson(clave) {
+    try { return JSON.parse(localStorage.getItem(clave) || 'null'); } catch (e) { return null; }
+  }
+
+  function descargar(nombre, contenido, tipo) {
+    const blob = new Blob([contenido], { type: `${tipo};charset=utf-8` });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = nombre;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
 
   function aplicarTema() {
     let tema = null;
@@ -1084,7 +1276,7 @@ if (typeof document !== 'undefined') {
 
   function renderPilares() {
     const tarjeta = p => `
-      <article class="tl-pilar" id="pilar-${p.letra === '+' ? 'mas' : p.letra}">
+      <article class="tl-pilar" id="pilar-${p.letra === '+' ? 'mas' : p.letra}" data-letra="${esc(p.letra)}">
         <header class="tl-pilar-head">
           <span class="tl-letra">${esc(p.letra)}</span>
           <strong>${esc(p.nombre)}</strong>
@@ -1092,9 +1284,94 @@ if (typeof document !== 'undefined') {
         <p class="tl-pilar-pregunta">${esc(p.pregunta)}</p>
         <p class="tl-ej tl-ej--mal"><span aria-label="Mal">✗</span>${esc(p.mal)}</p>
         <p class="tl-ej tl-ej--bien"><span aria-label="Bien">✓</span>${esc(p.bien)}</p>
+        <button type="button" class="tl-pilar-mas" data-letra="${esc(p.letra)}">${p.evaluable ? 'Ver cómo se revisa' : 'Ver cómo se mide'} →</button>
       </article>`;
     $('pilaresMetodo').innerHTML = PILARES.filter(p => p.evaluable).map(tarjeta).join('');
     $('pilaresChats').innerHTML = PILARES.filter(p => !p.evaluable).map(tarjeta).join('');
+  }
+
+  // --- Panel de detalle de cada pilar -------------------------------------
+  let letraAbierta = null;
+
+  function abrirPilar(letra) {
+    const i = PILARES.findIndex(p => p.letra === letra);
+    const p = PILARES[i];
+    const d = p.detalle;
+    letraAbierta = letra;
+    const lista = items => `<ul>${items.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`;
+    const anterior = PILARES[(i + PILARES.length - 1) % PILARES.length];
+    const siguiente = PILARES[(i + 1) % PILARES.length];
+
+    $('pilarDialogoContenido').innerHTML = `
+      <header class="tl-dlg-head">
+        <span class="tl-letra tl-letra--grande">${esc(p.letra)}</span>
+        <div>
+          <p class="tl-dlg-sub">${p.evaluable ? 'Se revisa en el texto' : 'Se mide en tus chats'} · pilar ${i + 1} de ${PILARES.length}</p>
+          <h3 id="pilarDialogoTitulo">${esc(p.nombre)}</h3>
+          <p class="tl-dlg-pregunta">${esc(p.pregunta)}</p>
+        </div>
+      </header>
+      <section><h4>Por qué importa</h4><p>${esc(d.porQue)}</p></section>
+      ${p.evaluable
+        ? `<section><h4>Qué revisa el taller</h4>${lista(d.revisa)}</section>`
+        : `<section><h4>Qué mide el Analizador</h4>${lista(d.mide)}
+             <p class="tl-dlg-nota">No se puede juzgar desde un texto suelto. <a href="index.html">Abrí el Analizador</a> con tus chats exportados.</p></section>`}
+      <section><h4>Cómo mejorarlo</h4>${lista(d.arreglo)}</section>
+      ${d.antes ? `
+      <section><h4>Antes y después</h4>
+        <div class="tl-dlg-ab">
+          <div><span class="tl-dlg-tag tl-dlg-tag--mal">✗ Antes</span><pre>${esc(d.antes)}</pre></div>
+          <div><span class="tl-dlg-tag tl-dlg-tag--bien">✓ Después</span><pre>${esc(d.despues)}</pre></div>
+        </div>
+        <button type="button" class="btn btn-primary tl-dlg-probar" data-letra="${esc(p.letra)}">▶ Probar el “antes” en el taller</button>
+      </section>` : ''}
+      <nav class="tl-dlg-nav">
+        <button type="button" class="btn btn-secondary" data-ir="${esc(anterior.letra)}">← ${esc(anterior.letra)} · ${esc(anterior.nombre)}</button>
+        <button type="button" class="btn btn-secondary" data-ir="${esc(siguiente.letra)}">${esc(siguiente.letra)} · ${esc(siguiente.nombre)} →</button>
+      </nav>`;
+    const dlg = $('pilarDialogo');
+    if (!dlg.open) dlg.showModal();
+    dlg.scrollTop = 0;
+  }
+
+  function probarEjemplo(letra) {
+    const p = PILARES.find(x => x.letra === letra);
+    $('pilarDialogo').close();
+    $('entrada').value = p.detalle.antes;
+    $('rubro').value = 'construccion_corralon';
+    $('avisoImportacion').hidden = true;
+    renderResultados();
+    guardarBorrador();
+    const card = document.querySelector('.tl-card');
+    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function iniciarDialogo() {
+    const dlg = $('pilarDialogo');
+    document.querySelector('.tl-metodo').addEventListener('click', ev => {
+      const card = ev.target.closest('.tl-pilar');
+      if (card && !ev.target.closest('a')) abrirPilar(card.dataset.letra);
+    });
+    dlg.addEventListener('click', ev => {
+      if (ev.target === dlg) { dlg.close(); return; }          // clic en el fondo
+      const ir = ev.target.closest('[data-ir]');
+      if (ir) abrirPilar(ir.dataset.ir);
+      const probar = ev.target.closest('.tl-dlg-probar');
+      if (probar) probarEjemplo(probar.dataset.letra);
+    });
+    $('pilarDialogoCerrar').addEventListener('click', () => dlg.close());
+    dlg.addEventListener('keydown', ev => {
+      if (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft') {
+        const i = PILARES.findIndex(p => p.letra === letraAbierta);
+        const j = (i + (ev.key === 'ArrowRight' ? 1 : PILARES.length - 1)) % PILARES.length;
+        abrirPilar(PILARES[j].letra);
+      }
+    });
+    // La sigla de arriba también abre el panel.
+    document.querySelectorAll('.tl-sigla a').forEach(a => a.addEventListener('click', ev => {
+      ev.preventDefault();
+      abrirPilar(a.querySelector('b').textContent.replace('Ú', 'U'));
+    }));
   }
 
   const ICONO = { ok: '✅', mejorable: '🟡', falta: '🔴', no_aplica: '⚪' };
@@ -1113,6 +1390,7 @@ if (typeof document !== 'undefined') {
     estado = { respuestas, rubro };
     $('barraPrompt').hidden = !respuestas.length;
     $('promptPreview').hidden = true;
+    renderResumen(respuestas, rubro);
 
     if (!respuestas.length) {
       $('resultados').innerHTML = '<p class="tl-vacio">Pegá una o más respuestas rápidas arriba para ver cómo las acomoda el método.</p>';
@@ -1143,6 +1421,9 @@ if (typeof document !== 'undefined') {
       <article class="tl-card" data-resp="${idx}">
         <header class="tl-card-head">
           <h3>Respuesta ${idx + 1}${ev.intencion ? ` <span class="tl-intencion">${esc(INTENCIONES[ev.intencion].etiqueta)}</span>` : ''}</h3>
+          <label class="tl-atajo" title="Nombre del atajo al exportar">Atajo
+            <input type="text" class="tl-atajo-input" value="${esc(sugerirAtajo(ev, plantillaCampos || plantilla))}" spellcheck="false" aria-label="Nombre del atajo de la respuesta ${idx + 1}">
+          </label>
           <span class="tl-score">${fmtPuntaje(ev.puntaje)} → <strong>${fmtPuntaje(final.puntaje)}</strong> / ${ev.maximo} pilares</span>
         </header>
         <div class="tl-grid">
@@ -1175,6 +1456,54 @@ if (typeof document !== 'undefined') {
     $('resultados').querySelectorAll('.tl-card').forEach(card => {
       card._bloques = reacomodar(respuestas[Number(card.dataset.resp)], catalogo, rubro).bloques;
     });
+  }
+
+  function renderResumen(respuestas, rubro) {
+    const caja = $('resumenLote');
+    if (respuestas.length < 2) { caja.hidden = true; caja.innerHTML = ''; return; }
+    const r = resumenLote(respuestas, catalogo, rubro);
+    const barra = l => {
+      const c = r.porPilar[l];
+      const pct = v => (100 * v / r.n).toFixed(1);
+      const p = PILARES.find(x => x.letra === l);
+      return `<div class="tl-res-fila">
+        <button type="button" class="tl-res-letra" data-abrir="${esc(l)}" title="Ver ${esc(p.nombre)}">${esc(l)}</button>
+        <span class="tl-res-nombre">${esc(p.nombre)}</span>
+        <span class="tl-res-barra" role="img" aria-label="${c.falta} faltan, ${c.mejorable} mejorables, ${c.ok} cumplen">
+          <i class="tl-res-falta" style="width:${pct(c.falta)}%"></i><i class="tl-res-mejorable" style="width:${pct(c.mejorable)}%"></i><i class="tl-res-ok" style="width:${pct(c.ok)}%"></i>
+        </span>
+        <span class="tl-res-cuenta">${c.falta ? `<b class="t-falta">${c.falta}</b> faltan` : ''}${c.falta && c.mejorable ? ' · ' : ''}${c.mejorable ? `<b class="t-mejorable">${c.mejorable}</b> mejorables` : ''}${!c.falta && !c.mejorable ? '<b class="t-ok">todas cumplen</b>' : ''}</span>
+      </div>`;
+    };
+    const prio = r.prioridad && PILARES.find(p => p.letra === r.prioridad);
+    const cp = prio && r.porPilar[prio.letra];
+    caja.hidden = false;
+    caja.innerHTML = `
+      <header class="tl-res-head">
+        <h3>Resumen de tus ${r.n} respuestas</h3>
+        <span class="tl-score">Promedio ${fmtPuntaje(Math.round(r.antes * 10) / 10)} → <strong>${fmtPuntaje(Math.round(r.despues * 10) / 10)}</strong> / 5 pilares</span>
+      </header>
+      ${prio ? `<p class="tl-res-prioridad">🎯 <strong>Por dónde empezar: ${esc(prio.letra)} · ${esc(prio.nombre)}.</strong>
+        ${cp.falta ? `Falta en ${cp.falta}` : ''}${cp.falta && cp.mejorable ? ' y es mejorable en ' : (cp.mejorable ? 'Es mejorable en ' : '')}${cp.mejorable || ''} de ${r.n} respuestas.
+        <button type="button" class="tl-link" data-abrir="${esc(prio.letra)}">Ver cómo mejorarlo →</button></p>`
+        : '<p class="tl-res-prioridad">🎉 Todas tus respuestas cumplen los pilares que se revisan en el texto.</p>'}
+      <div class="tl-res-barras">${PILARES.filter(p => p.evaluable).map(p => barra(p.letra)).join('')}</div>
+      ${r.hallazgos.length ? `<p class="tl-res-hallazgos-titulo">Lo que más se repite</p>
+        <ul class="tl-res-hallazgos">${r.hallazgos.map(h => `<li><b>${h.veces}</b> ${esc(h.etiqueta)}</li>`).join('')}</ul>` : ''}`;
+  }
+
+  function atajosDelLote() {
+    const cards = [...$('resultados').querySelectorAll('.tl-card')];
+    return construirAtajos(cards.map(card => {
+      const idx = Number(card.dataset.resp);
+      const ev = evaluar(estado.respuestas[idx], catalogo, estado.rubro);
+      return {
+        atajo: card.querySelector('.tl-atajo-input').value,
+        titulo: tituloDeRespuesta(ev),
+        categoria: 'Taller ACTÚEN+',
+        texto: componerTexto(card._bloques, apagadosDe(card)),
+      };
+    }), { origen: 'taller', rubro: estado.rubro });
   }
 
   function notaPlantillas(p, pc) {
@@ -1212,6 +1541,7 @@ if (typeof document !== 'undefined') {
   async function iniciar() {
     aplicarTema();
     renderPilares();
+    iniciarDialogo();
     try {
       const res = await fetch('rubros.json', { cache: 'no-cache' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -1225,13 +1555,35 @@ if (typeof document !== 'undefined') {
       Object.entries(catalogo.rubros).map(([k, r]) => `<option value="${k}">${r.icon} ${esc(r.name)}</option>`).join('');
 
     let pendiente = null;
-    $('entrada').addEventListener('input', () => { clearTimeout(pendiente); pendiente = setTimeout(renderResultados, 250); });
-    $('rubro').addEventListener('change', renderResultados);
+    $('entrada').addEventListener('input', () => {
+      clearTimeout(pendiente);
+      pendiente = setTimeout(() => { renderResultados(); guardarBorrador(); }, 250);
+    });
+    $('rubro').addEventListener('change', () => { renderResultados(); guardarBorrador(); });
+    $('btnVaciar').addEventListener('click', () => {
+      $('entrada').value = '';
+      $('avisoImportacion').hidden = true;
+      renderResultados();
+      guardarBorrador();
+      $('entrada').focus();
+    });
+    $('resumenLote').addEventListener('click', ev => {
+      const b = ev.target.closest('[data-abrir]');
+      if (b) abrirPilar(b.dataset.abrir);
+    });
+    $('btnAtajosJson').addEventListener('click', () => {
+      descargar('atajos_taller_actuen.json', JSON.stringify(atajosDelLote(), null, 2), 'application/json');
+    });
+    $('btnAtajosCsv').addEventListener('click', () => {
+      descargar('atajos_taller_actuen.csv', '\ufeff' + atajosACsv(atajosDelLote()), 'text/csv');
+    });
     $('btnEjemplo').addEventListener('click', () => {
       const r = $('rubro').value;
       $('entrada').value = EJEMPLOS[r] || EJEMPLOS.construccion_corralon;
       if (!EJEMPLOS[r]) $('rubro').value = 'auto';
+      $('avisoImportacion').hidden = true;
       renderResultados();
+      guardarBorrador();
     });
 
     $('resultados').addEventListener('change', ev => {
@@ -1266,6 +1618,25 @@ if (typeof document !== 'undefined') {
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     });
+
+    // Qué se carga al abrir: lo que manda el Analizador, o el borrador guardado.
+    const importado = /[?&]desde=analizador\b/.test(location.search) ? leerJson(CLAVE_IMPORTACION) : null;
+    if (importado && importado.texto) {
+      $('entrada').value = importado.texto;
+      if (importado.rubro && catalogo.rubros[importado.rubro]) $('rubro').value = importado.rubro;
+      $('avisoImportacionTexto').textContent =
+        `Se cargaron ${importado.cantidad} respuestas desde el Analizador: las que más repiten tus asesores, cada una con un mensaje real de cliente.`;
+      $('avisoImportacion').hidden = false;
+      try { localStorage.removeItem(CLAVE_IMPORTACION); } catch (e) { /* sin almacenamiento */ }
+      history.replaceState(null, '', location.pathname);
+      guardarBorrador();
+    } else {
+      const borrador = leerJson(CLAVE_BORRADOR);
+      if (borrador && borrador.texto) {
+        $('entrada').value = borrador.texto;
+        if (borrador.rubro && $('rubro').querySelector(`option[value="${borrador.rubro}"]`)) $('rubro').value = borrador.rubro;
+      }
+    }
 
     renderResultados();
   }

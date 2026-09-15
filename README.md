@@ -131,7 +131,7 @@ Analizador ACTUEN/
 ├── tests/
 │   ├── test_engine.py            # 24 tests de regresión (stdlib)
 │   ├── test_paridad.py / paridad.js  # 7 escenarios de paridad navegador ↔ Python
-│   ├── test_taller.js            # 46 tests del Taller ACTÚEN+
+│   ├── test_taller.js            # 51 tests del Taller ACTÚEN+
 │   ├── test_manual.py            # 8 tests: manual de ventas = catálogo = motor
 │   ├── correr_todo.sh            # Corre las cuatro suites
 │   └── fixture_demo.csv          # Fixture anonimizado
@@ -217,7 +217,7 @@ columna revisar, en vez de producir un informe vacío pero verosímil.
 ## ✅ 5. Verificación
 
 ```bash
-./tests/correr_todo.sh           # motor (24) + paridad (7) + taller (46) + manual (8)
+./tests/correr_todo.sh           # motor (24) + paridad (7) + taller (51) + manual (8)
 ```
 
 Cubren normalización de valores y fechas, paridad entre formatos de CSV, error

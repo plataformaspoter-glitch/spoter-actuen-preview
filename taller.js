@@ -24,21 +24,44 @@
 // NÚCLEO (sin DOM)
 // ==========================================================================
 
+// `pregunta`, `mal` y `bien` son para explicar el método en la página: una
+// pregunta que cualquiera puede hacerse sobre su respuesta y un ejemplo de cada lado.
 const PILARES = [
   { letra: 'A', nombre: 'Atender sin laberintos', evaluable: true,
-    idea: 'El cliente cuenta lo que necesita de entrada, sin navegar un menú de opciones.' },
+    idea: 'El cliente cuenta lo que necesita de entrada, sin navegar un menú de opciones.',
+    pregunta: '¿El cliente puede decir lo que necesita apenas escribe?',
+    mal: 'Elegí una opción: 1. Ventas 2. Envíos 3. Pagos',
+    bien: '¡Hola! Contame qué necesitás y te ayudo.' },
   { letra: 'C', nombre: 'Cero vueltas', evaluable: true,
-    idea: 'Todo lo necesario en un solo bloque: información, datos a pedir y acción. Nada de ráfagas ni un dato por turno.' },
+    idea: 'Todo lo necesario en un solo bloque: información, datos a pedir y acción. Nada de ráfagas ni un dato por turno.',
+    pregunta: '¿Resuelve todo en un solo mensaje, o hay que ir y volver?',
+    mal: '"Buenos días!" · "sale $6.260" · "¿a qué dirección?" (tres mensajes sueltos)',
+    bien: 'Precio, datos que faltan y próximo paso, juntos en un mensaje.' },
   { letra: 'T', nombre: 'Tiempos aceitados', evaluable: false,
-    idea: 'Responder dentro del SLA del rubro. Se mide en tus chats, no en un texto.' },
+    idea: 'Responder dentro del SLA del rubro. Se mide en tus chats, no en un texto.',
+    pregunta: '¿Contesta a tiempo?',
+    mal: 'Responder a los 40 minutos, cuando ya consultó en otro lado.',
+    bien: 'Responder dentro del tiempo ideal de tu rubro.' },
   { letra: 'U', nombre: 'Ubicar la intención', evaluable: true,
-    idea: 'Responder lo que el cliente preguntó y pedir en el mismo turno los datos que dicen qué tan cerca de comprar está.' },
+    idea: 'Responder lo que el cliente preguntó y pedir en el mismo turno los datos que dicen qué tan cerca de comprar está.',
+    pregunta: '¿Contesta lo que preguntó y pide lo que falta para avanzar?',
+    mal: 'Cliente: "¿Cuánto sale el cemento?" → "¿Para qué obra es?"',
+    bien: '"Está $6.260. ¿Cuántas bolsas y a qué zona lo mandamos?"' },
   { letra: 'E', nombre: 'Experiencia personalizada', evaluable: true,
-    idea: 'Hablarle a una persona, no a un expediente. Sin fórmulas de mesa de entradas.' },
+    idea: 'Hablarle a una persona, no a un expediente. Sin fórmulas de mesa de entradas.',
+    pregunta: '¿Suena a una persona o a un expediente?',
+    mal: '"Estimado cliente, su consulta ha sido recibida."',
+    bien: '"¡Hola Juan! Ya lo reviso."' },
   { letra: 'N', nombre: 'Nutrir y cerrar', evaluable: true,
-    idea: 'Cada respuesta termina con una pregunta de avance. Nunca deja la próxima jugada en manos del cliente.' },
+    idea: 'Cada respuesta termina con una pregunta de avance. Nunca deja la próxima jugada en manos del cliente.',
+    pregunta: '¿Termina con un próximo paso concreto?',
+    mal: '"Cualquier consulta, avisame."',
+    bien: '"¿Te lo reservo para el jueves?"' },
   { letra: '+', nombre: 'Optimización continua', evaluable: false,
-    idea: 'Reparto de carga entre bot y asesores. Se mide en tus chats, no en un texto.' },
+    idea: 'Reparto de carga entre bot y asesores. Se mide en tus chats, no en un texto.',
+    pregunta: '¿El trabajo está bien repartido entre el bot y las personas?',
+    mal: 'Una sola asesora atiende 9 de cada 10 chats.',
+    bien: 'El bot resuelve lo repetitivo y deriva lo que necesita criterio.' },
 ];
 
 const SALTO = '[---saltomensaje---]';
@@ -46,7 +69,11 @@ const SALTO = '[---saltomensaje---]';
 const RE_SALUDO_INICIAL = /^\s*[¡!]*\s*(hola|buen[oa]s?(\s+(d[ií]as?|tardes?|noches?))?)([\s,.!¡]+buen[oa]s?(\s+(d[ií]as?|tardes?|noches?))?)?\b[\s,.!¡]*/i;
 const RE_CORTESIA = /^[¿\s]*(c[oó]mo (est[aá]s|and[aá]s|va|le va|te va)|todo bien)[?!.\s]*$/i;
 const RE_OPCION_MENU = /^\s*(\d{1,2}\s*[-.)️⃣]|[1-9]\ufe0f?\u20e3|[a-e]\))\s*\S/i;
-const RE_INSTRUCCION_MENU = /(escrib[ií]|respond[eé]|marc[aá]|eleg[ií]|seleccion|opci[oó]n|digit[aá]|presion[aá]|ingres[aá] el n)/i;
+const RE_INSTRUCCION_MENU = /(\b(escrib[ií]|respond[eé]|marc[aá]|eleg[ií]|seleccion[aá]|digit[aá]|presion[aá])(\s|$|[.,:!])|opci[oó]n|ingres[aá] el n)/i;
+// Encabezado que pide datos: la lista numerada que sigue son campos, no un menú.
+const RE_PIDE_DATOS = /(pasame|pas[aá]nos|decime|dec[ií]nos|envi[aá]nos|envianos|indic[aá](me|nos)|necesito|necesitamos|contame|cont[aá]nos|complet[aá]|respond[eé](me|nos)|mand[aá](me|nos)|adjunt[aá])/i;
+// Menú en una sola línea: "Elegí una opción: 1. Ventas 2. Envíos 3. Pagos".
+const RE_MENU_EN_LINEA = /(?:^|\s)1\s*[.)-]\s*\S.*?\s2\s*[.)-]\s*\S/;
 const RE_ESCRIBI_MENU = /(escrib[ií]|envi[aá]|mand[aá]|tip[eé]a)\s+(la palabra\s+)?["'«*]?(men[uú]|inicio|volver|opciones)\b/i;
 const RE_PASIVO = /(nos comunicaremos|a la brevedad|en breve (te|le) (respond|contact|escrib)|cualquier (otra )?(duda|consulta)|quedo a (tu|su|vuestra) disposici|quedamos a (tu|su) disposici|av[ií]same|nos avis[aá]s|me avis[aá]s|espero tu respuesta|saludos( cordiales)?|muchas gracias|gracias por (tu|su) consulta)/i;
 const RE_BUROCRATICO = /(estimad[oa]s?\s+(cliente|usuari|afiliad|client)|su (consulta|solicitud) (ha sido|fue) (recibida|registrada)|a la brevedad|nos comunicaremos con usted|le informamos que|sr\.?\/?a?\.? cliente)/i;
@@ -334,13 +361,33 @@ function desarmar(texto) {
   const lineas = String(texto).replace(/\r/g, '').split('\n');
   let primera = true;
   const tratoUsted = /\busted(es)?\b/i.test(texto);
-  const hayOpciones = lineas.filter(l => RE_OPCION_MENU.test(limpiarLinea(l)) && !RE_CAMPO_LISTA.test(limpiarLinea(l))).length >= 2;
 
-  for (const cruda of lineas) {
+  // Menú escrito en una línea: se separa en la instrucción y una línea por opción.
+  for (let i = 0; i < lineas.length; i++) {
+    const l = limpiarLinea(lineas[i]);
+    if (RE_MENU_EN_LINEA.test(l) && RE_INSTRUCCION_MENU.test(l)) {
+      const partes = l.split(/\s(?=\d{1,2}\s*[.)-]\s*\S)/);
+      lineas.splice(i, 1, ...partes);
+      i += partes.length - 1;
+    }
+  }
+  // Líneas numeradas que siguen a "decime:" / "pasame:" son datos a pedir.
+  const esCampo = new Set();
+  let bajoPedido = false;
+  lineas.forEach((cruda, i) => {
+    const l = limpiarLinea(cruda);
+    if (!l) return;
+    if (/:\s*\**$/.test(l) && RE_PIDE_DATOS.test(l)) { bajoPedido = true; return; }
+    if (bajoPedido && /^(\d{1,2}\s*[.)-]|•|-)\s*\S/.test(l)) { esCampo.add(i); return; }
+    bajoPedido = false;
+  });
+  const hayOpciones = lineas.filter((l, i) => !esCampo.has(i) && RE_OPCION_MENU.test(limpiarLinea(l)) && !RE_CAMPO_LISTA.test(limpiarLinea(l))).length >= 2;
+
+  for (const [indice, cruda] of lineas.entries()) {
     const linea = limpiarLinea(cruda);
     if (!linea || cruda.trim() === SALTO) continue;
 
-    if (RE_CAMPO_LISTA.test(linea)) {
+    if (RE_CAMPO_LISTA.test(linea) || esCampo.has(indice)) {
       const t = linea.replace(/^\s*(\d{1,2}\s*[.)-]|•|-)\s*/, '').replace(/\*/g, '').trim();
       piezas.push({ tipo: 'pregunta', texto: t, original: t, campo: true });
       primera = false;
@@ -513,6 +560,12 @@ function datosDelCliente(cliente) {
   return out;
 }
 
+/** Cuántos datos distintos pide una pregunta ("¿cuántas bolsas y a qué zona?" = 2). */
+function datosEnPregunta(pregunta) {
+  const tipos = Object.values(DATOS).filter(d => d.enPregunta.test(pregunta)).length;
+  return Math.max(1, tipos);
+}
+
 function tipoDeDato(pregunta) {
   for (const [tipo, d] of Object.entries(DATOS)) if (d.enPregunta.test(pregunta)) return tipo;
   return null;
@@ -557,7 +610,8 @@ function evaluar(entrada, catalogo, rubroKey) {
 
   const lineasConContenido = texto.split('\n').map(l => l.trim()).filter(l => l && l !== SALTO);
   const soloSaludo = lineasConContenido.length > 0 && lineasConContenido.every(l => reDescartar.test(sinTildes(l)));
-  const datosPedidos = cuenta('pregunta') + cuenta('cierre');
+  const datosPedidos = piezas.filter(p => p.tipo === 'pregunta' || p.tipo === 'cierre')
+    .reduce((n, p) => n + datosEnPregunta(p.texto), 0);
   const preguntasSueltas = piezas.filter(p => p.tipo === 'pregunta' && !p.campo).length;
 
   // Preguntas por datos que el cliente ya dio.
@@ -585,7 +639,7 @@ function evaluar(entrada, catalogo, rubroKey) {
   } else if (lineasConContenido.length >= 3 && lineasConContenido.every(l => l.length < 60)
              && !lineasConContenido.some(l => /^(•|-|\d+\.|[📋💬👉💰🚚📦🕘📅💳⏱️])/u.test(l)) && datosPedidos <= 1 && cuenta('opcion') === 0) {
     r.C = { estado: 'mejorable', motivo: `${lineasConContenido.length} líneas cortas que se leen como ráfaga de mensajes sueltos. Van en un solo bloque con estructura.` };
-  } else if (cuenta('pregunta') === 1 && camposEsperados >= 2) {
+  } else if (piezas.filter(p => p.tipo === 'pregunta').reduce((n, p) => n + datosEnPregunta(p.texto), 0) === 1 && camposEsperados >= 2) {
     r.C = { estado: 'mejorable', motivo: `Pide un solo dato cuando para esta consulta hacen falta ${camposEsperados}: habrá que volver a preguntar en el próximo turno.` };
   } else if (largoSinEstructura) {
     r.C = { estado: 'mejorable', motivo: 'Párrafo largo sin estructura: en el celular se saltea. Separalo en bloques y viñetas.' };
@@ -1029,15 +1083,18 @@ if (typeof document !== 'undefined') {
   }
 
   function renderPilares() {
-    $('pilaresMetodo').innerHTML = PILARES.map(p => `
-      <div class="tl-pilar ${p.evaluable ? '' : 'tl-pilar--chats'}">
-        <span class="tl-letra">${esc(p.letra)}</span>
-        <div>
+    const tarjeta = p => `
+      <article class="tl-pilar" id="pilar-${p.letra === '+' ? 'mas' : p.letra}">
+        <header class="tl-pilar-head">
+          <span class="tl-letra">${esc(p.letra)}</span>
           <strong>${esc(p.nombre)}</strong>
-          <p>${esc(p.idea)}</p>
-          ${p.evaluable ? '' : '<span class="tl-tag">se mide en tus chats</span>'}
-        </div>
-      </div>`).join('');
+        </header>
+        <p class="tl-pilar-pregunta">${esc(p.pregunta)}</p>
+        <p class="tl-ej tl-ej--mal"><span aria-label="Mal">✗</span>${esc(p.mal)}</p>
+        <p class="tl-ej tl-ej--bien"><span aria-label="Bien">✓</span>${esc(p.bien)}</p>
+      </article>`;
+    $('pilaresMetodo').innerHTML = PILARES.filter(p => p.evaluable).map(tarjeta).join('');
+    $('pilaresChats').innerHTML = PILARES.filter(p => !p.evaluable).map(tarjeta).join('');
   }
 
   const ICONO = { ok: '✅', mejorable: '🟡', falta: '🔴', no_aplica: '⚪' };

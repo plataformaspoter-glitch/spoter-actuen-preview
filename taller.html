@@ -9,17 +9,55 @@
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="app.css">
   <style>
-    .tl-intro { max-width: 820px; margin-bottom: 26px; }
-    .tl-intro h2 { font-family: var(--font-heading); font-size: 24px; margin-bottom: 8px; }
-    .tl-intro p { color: var(--text-secondary); font-size: 14px; }
+    .tl-metodo { margin-bottom: 30px; }
+    .tl-intro { max-width: 860px; margin-bottom: 22px; }
+    .tl-intro h2 { font-family: var(--font-heading); font-size: 26px; margin-bottom: 8px; line-height: 1.2; }
+    .tl-intro p { color: var(--text-secondary); font-size: 15px; line-height: 1.6; }
+    .tl-sigla { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 4px; }
+    .tl-sigla a { text-decoration: none; display: flex; flex-direction: column; align-items: center; min-width: 58px; padding: 8px 6px; border-radius: var(--radius-sm); background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-secondary); font-size: 10.5px; transition: var(--transition); }
+    .tl-sigla a:hover { border-color: var(--spoter-pink-border); color: var(--text-primary); }
+    .tl-sigla b { font-size: 22px; color: var(--spoter-pink); line-height: 1.1; }
 
-    .tl-pilares { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 30px; }
-    .tl-pilar { display: flex; flex-direction: column; gap: 8px; padding: 14px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-card); }
-    .tl-pilar strong { font-size: 13px; }
-    .tl-pilar p { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
-    .tl-pilar--chats { opacity: .7; }
+    .tl-bloque-titulo { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin: 26px 0 12px; }
+    .tl-bloque-titulo span { text-transform: none; letter-spacing: 0; font-weight: 500; }
+
+    .tl-anatomia { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; align-items: center; padding: 20px; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-card); }
+    @media (max-width: 820px) { .tl-anatomia { grid-template-columns: 1fr; } }
+    .tl-chat { background: #0b141a; border-radius: 14px; padding: 16px; }
+    [data-theme="light"] .tl-chat { background: #efeae2; }
+    .tl-burbuja-cliente, .tl-burbuja { max-width: 92%; border-radius: 10px; padding: 8px 11px; font-size: 13.5px; line-height: 1.5; color: #111b21; }
+    .tl-burbuja-cliente { background: #fff; margin-bottom: 10px; border-top-left-radius: 2px; }
+    .tl-burbuja { background: #d9fdd3; margin-left: auto; border-top-right-radius: 2px; }
+    .tl-parte { display: flex; gap: 8px; align-items: flex-start; padding: 3px 4px; border-radius: 6px; }
+    .tl-parte + .tl-parte { margin-top: 2px; }
+    .tl-parte i { font-style: normal; flex: none; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; background: var(--spoter-pink); color: #fff; font-size: 11px; font-weight: 800; display: grid; place-items: center; margin-top: 1px; }
+    .tl-salto { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: #667781; }
+    .tl-leyenda-anatomia { list-style: none; display: grid; gap: 12px; }
+    .tl-leyenda-anatomia li { display: grid; grid-template-columns: 26px 1fr; gap: 10px; font-size: 13.5px; color: var(--text-secondary); line-height: 1.45; }
+    .tl-leyenda-anatomia i { font-style: normal; height: 24px; border-radius: 999px; background: var(--spoter-pink-light); color: var(--spoter-pink); font-weight: 800; font-size: 12px; display: grid; place-items: center; }
+    .tl-leyenda-anatomia strong { color: var(--text-primary); }
+
+    .tl-pilares { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .tl-pilar { display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-card); scroll-margin-top: 16px; }
+    .tl-pilar:target { border-color: var(--spoter-pink); box-shadow: 0 0 0 3px var(--spoter-pink-light); }
+    .tl-pilar-head { display: flex; align-items: center; gap: 10px; }
+    .tl-pilar-head strong { font-size: 15px; line-height: 1.25; }
+    .tl-pilar-pregunta { font-size: 14px; color: var(--text-primary); font-weight: 600; line-height: 1.4; }
+    .tl-ej { display: grid; grid-template-columns: 18px 1fr; gap: 6px; font-size: 12.5px; line-height: 1.45; padding: 7px 9px; border-radius: var(--radius-sm); color: var(--text-secondary); }
+    .tl-ej span { font-weight: 800; }
+    .tl-ej--mal { background: var(--danger-bg); }
+    .tl-ej--mal span { color: var(--danger); }
+    .tl-ej--bien { background: var(--success-bg); }
+    .tl-ej--bien span { color: var(--success); }
     .tl-letra { flex: none; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; background: var(--spoter-pink-light); color: var(--spoter-pink); }
-    .tl-tag { display: inline-block; margin-top: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); }
+    .tl-pilares--chats .tl-pilar { background: transparent; border-style: dashed; }
+    .tl-chats-nota { font-size: 13px; color: var(--text-secondary); margin: -4px 0 12px; }
+    .tl-chats-nota a { color: var(--spoter-pink); font-weight: 700; }
+
+    .tl-pasos { list-style: none; counter-reset: paso; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .tl-pasos li { counter-increment: paso; display: grid; grid-template-columns: 34px 1fr; gap: 12px; padding: 14px 16px; border-radius: var(--radius-md); background: var(--spoter-pink-light); font-size: 13.5px; line-height: 1.45; color: var(--text-secondary); }
+    .tl-pasos li::before { content: counter(paso); width: 34px; height: 34px; border-radius: 50%; background: var(--spoter-pink); color: #fff; font-weight: 800; display: grid; place-items: center; }
+    .tl-pasos strong { display: block; color: var(--text-primary); font-size: 14px; margin-bottom: 2px; }
 
     .tl-entrada { border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-card); padding: 18px; margin-bottom: 24px; }
     .tl-entrada-top { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
@@ -101,14 +139,59 @@
       </div>
     </header>
 
-    <section class="tl-intro">
-      <h2>El método en tus propias palabras</h2>
-      <p>ACTÚEN+ no es un texto precargado: es una forma de ordenar cada respuesta para que el cliente
-        avance en un solo turno. Pegá las respuestas rápidas que usan hoy tus asesores y mirá qué pilar
-        cumple cada una y cómo queda reacomodada. Todo se procesa en esta pestaña: nada sale de tu equipo.</p>
-    </section>
+    <section class="tl-metodo" aria-labelledby="tituloMetodo">
+      <div class="tl-intro">
+        <h2 id="tituloMetodo">¿Qué es el método ACTÚEN+?</h2>
+        <p>Es una forma de escribir cada respuesta de WhatsApp para que el cliente <strong>avance en un solo mensaje</strong>,
+          sin idas y vueltas. No es un texto para copiar: son 7 preguntas que podés hacerle a cualquier respuesta.
+          Cinco se revisan mirando el texto; las otras dos, mirando tus chats.</p>
+        <nav class="tl-sigla" aria-label="Los 7 pilares">
+          <a href="#pilar-A"><b>A</b>Atender</a>
+          <a href="#pilar-C"><b>C</b>Cero vueltas</a>
+          <a href="#pilar-T"><b>T</b>Tiempos</a>
+          <a href="#pilar-U"><b>Ú</b>Ubicar</a>
+          <a href="#pilar-E"><b>E</b>Experiencia</a>
+          <a href="#pilar-N"><b>N</b>Nutrir y cerrar</a>
+          <a href="#pilar-mas"><b>+</b>Optimizar</a>
+        </nav>
+      </div>
 
-    <div class="tl-pilares" id="pilaresMetodo"></div>
+      <h3 class="tl-bloque-titulo">Así se ve una respuesta que cumple <span>— cada número marca la parte y el pilar</span></h3>
+      <div class="tl-anatomia">
+        <div class="tl-chat" aria-label="Ejemplo de conversación">
+          <div class="tl-burbuja-cliente">Hola, ¿cuánto sale la bolsa de cemento? Necesito para una obra en Pilar.</div>
+          <div class="tl-burbuja">
+            <div class="tl-parte"><i>1</i><span>👋 ¡Hola! Gracias por escribirnos.</span></div>
+            <div class="tl-parte"><i>2</i><span>El cemento Avellaneda está <b>$6.260</b> la bolsa, con envío a Pilar.</span></div>
+            <div class="tl-parte"><i>3</i><span>📋 Para pasarte el total, decime:<br>1. Cuántas bolsas<br>2. Dirección de la obra</span></div>
+            <div class="tl-parte"><i>4</i><span class="tl-salto">[---saltomensaje---]</span></div>
+            <div class="tl-parte"><i>5</i><span>👉 <b>¿Te lo reservo para esta semana?</b></span></div>
+          </div>
+        </div>
+        <ul class="tl-leyenda-anatomia">
+          <li><i>1</i><span><strong>Saludo breve, de persona a persona</strong> (E). Sin "estimado cliente". Y el cliente no tuvo que elegir en un menú (A).</span></li>
+          <li><i>2</i><span><strong>Responde lo que preguntó</strong> (U): el precio, primero y en el chat. Y no pregunta la zona, que ya la dijo.</span></li>
+          <li><i>3</i><span><strong>Pide todo lo que falta, junto</strong> (C y U): una lista, no una pregunta por mensaje.</span></li>
+          <li><i>4</i><span><strong>Todo en un solo turno</strong> (C). Si hace falta separar la información del cierre, se usa esta marca y Spoter lo envía como dos burbujas seguidas.</span></li>
+          <li><i>5</i><span><strong>Termina con un próximo paso</strong> (N): una pregunta que invita a comprometerse, no "cualquier cosa avisame".</span></li>
+        </ul>
+      </div>
+
+      <h3 class="tl-bloque-titulo">Los 5 pilares que se revisan en el texto <span>— son los que evalúa el taller</span></h3>
+      <div class="tl-pilares" id="pilaresMetodo"></div>
+
+      <h3 class="tl-bloque-titulo">Los 2 que se miden en tus chats</h3>
+      <p class="tl-chats-nota">No se pueden juzgar mirando un texto suelto: dependen de cuánto tardan y de cómo se reparte el trabajo.
+        Los mide el <a href="index.html">Analizador</a> con tus conversaciones exportadas.</p>
+      <div class="tl-pilares tl-pilares--chats" id="pilaresChats"></div>
+
+      <h3 class="tl-bloque-titulo">Cómo se usa el taller</h3>
+      <ol class="tl-pasos">
+        <li><span><strong>Pegá tus respuestas</strong>Las que usan hoy tus asesores. Si podés, sumá arriba lo que escribió el cliente con <code>Cliente:</code>.</span></li>
+        <li><span><strong>Mirá qué pilar falla y por qué</strong>Cada respuesta muestra un semáforo por pilar con el motivo concreto.</span></li>
+        <li><span><strong>Copiá la versión acomodada</strong>O exportá un prompt para que una IA la redacte mejor, con el método incluido.</span></li>
+      </ol>
+    </section>
 
     <section class="tl-entrada">
       <div class="tl-entrada-top">

@@ -32,12 +32,34 @@ usan los asesores. Para cada una muestra qué pilar cumple y por qué, y la devu
 reacomodada en la estructura del método, lista para copiar. No necesita haber
 analizado chats antes.
 
-El reacomodo es determinístico y **no redacta frases nuevas**: ordena las del
-cliente (saludo, información, datos a pedir, `[---saltomensaje---]`, cierre),
-quita cierres pasivos y firmas, convierte menús en ejemplos y reemplaza un puñado
-de fórmulas burocráticas fijas. Los datos a pedir y el cierre que agrega salen de
-las plantillas del rubro en `rubros.json` y se muestran como **sugerencia**, con
-un interruptor para sacarlos. T y + no se puntúan: se miden en los chats.
+**Con contexto es más fino.** Si antes de la respuesta se pega lo que escribió el
+cliente (`Cliente: …`), el taller detecta qué pidió —precio, stock, envío, turno,
+pago, trámite, reclamo, horario; puede ser más de una cosa— y qué datos ya dio
+(dirección, cantidad, producto, DNI, día, forma de pago). Con eso marca si la
+respuesta no contesta lo que se preguntó, si vuelve a pedir un dato conocido (y lo
+convierte en confirmación: "¿Te lo enviamos a Belgrano 1450?"), o si un reclamo no
+reconoce el problema.
+
+**Hallazgos sin contexto:** menú disfrazado ("escribí MENÚ"), adjunto sin resumir,
+preguntas sueltas, "no" sin alternativa, derivación sin plazo, mayúsculas
+sostenidas y mezcla de usted y vos.
+
+**El reacomodo es determinístico y no redacta frases nuevas.** Ordena las del
+cliente, arma listas de precios, corrige tildes sin ambigüedad, quita cierres
+pasivos y firmas, y convierte menús en ejemplos. Lo que agrega —datos a pedir,
+marcadores como `{PRECIO}` y el cierre— sale de las plantillas del rubro o del
+método y se muestra como **sugerencia** con un interruptor. Las sugerencias se
+eligen por la intención de la consulta y nunca piden algo que el cliente ya dio;
+un cierre solo se sugiere si cumple el pilar N.
+
+**Prompt para IA.** Para redactar de verdad, el taller exporta un prompt con el
+método, el contexto del rubro, reglas, diagnóstico, borrador y plantilla de
+referencia: uno por respuesta (para el asesor) o uno con todas (para armar la
+biblioteca de atajos, incluidas las situaciones del rubro que faltan). Al pegarlo
+en una IA el texto sí sale del equipo, por eso se **anonimiza por defecto**: DNI,
+teléfonos, emails, CBU, direcciones, nombres y firmas.
+
+T y + no se puntúan: se miden en los chats.
 
 ### Opción B — Con el motor Python local
 
@@ -109,7 +131,7 @@ Analizador ACTUEN/
 ├── tests/
 │   ├── test_engine.py            # 24 tests de regresión (stdlib)
 │   ├── test_paridad.py / paridad.js  # 7 escenarios de paridad navegador ↔ Python
-│   ├── test_taller.js            # 21 tests del Taller ACTÚEN+
+│   ├── test_taller.js            # 45 tests del Taller ACTÚEN+
 │   ├── correr_todo.sh            # Corre las tres suites
 │   └── fixture_demo.csv          # Fixture anonimizado
 ├── tools/
@@ -193,7 +215,7 @@ columna revisar, en vez de producir un informe vacío pero verosímil.
 ## ✅ 5. Verificación
 
 ```bash
-./tests/correr_todo.sh           # motor (24) + paridad (7) + taller (21)
+./tests/correr_todo.sh           # motor (24) + paridad (7) + taller (45)
 ```
 
 Cubren normalización de valores y fechas, paridad entre formatos de CSV, error
@@ -207,10 +229,10 @@ escenarios y en 5 exports reales de dos clientes (entre 599 y 646 campos cada un
 Requiere Node; sin Node, esos tests se saltean con aviso.
 
 **Taller:** además de casos puntuales, verifica que reacomodar nunca baje el
-puntaje, que no se pierda ninguna frase del cliente y que apagar sugerencias las
-saque sin romper la numeración. Esas tres invariantes se comprobaron sobre
-12.959 respuestas reales de asesores (promedio 3,1 → 4,6 de 5 pilares evaluables,
-cero regresiones); el corpus real no se versiona por tener datos personales.
+puntaje, que no se pierdan frases ni montos del cliente y que apagar sugerencias
+las saque sin romper la numeración. Se validó sobre 16.514 pares reales mensaje
+del cliente → respuesta del asesor: promedio 3,05 → 4,71 de 5 pilares evaluables,
+cero regresiones, cero errores, 0,2 ms por respuesta; el corpus real no se versiona por tener datos personales.
 
 ---
 

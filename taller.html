@@ -69,6 +69,20 @@
     .tl-vacio, .tl-error { color: var(--text-secondary); padding: 24px; text-align: center; border: 1px dashed var(--border-color); border-radius: var(--radius-lg); }
     .tl-error { color: var(--danger); }
     .tl-limites { font-size: 12px; color: var(--text-muted); margin-top: 26px; max-width: 820px; }
+    .tl-intencion { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--spoter-pink-light); color: var(--spoter-pink); vertical-align: middle; margin-left: 6px; }
+    .tl-original--cliente { border-style: solid; border-left: 4px solid var(--text-muted); }
+    .tl-eval-nota { display: block; margin-top: 3px; font-size: 11.5px; color: var(--text-secondary); }
+    .tl-eval-nota::before { content: '+ '; font-weight: 700; }
+    .tl-retoque { position: absolute; left: -2px; top: -8px; font-size: 11px; color: var(--spoter-pink); }
+    .tl-bloque--precios .tl-bloque-texto { font-variant-numeric: tabular-nums; }
+    .tl-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tl-prompt-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; border: 1px solid var(--spoter-pink-border); background: var(--spoter-pink-light); border-radius: var(--radius-lg); padding: 14px 18px; margin-bottom: 18px; }
+    .tl-prompt-bar p { font-size: 12.5px; color: var(--text-secondary); max-width: 560px; }
+    .tl-prompt-bar strong { color: var(--text-primary); }
+    .tl-prompt-bar label { font-size: 12px; display: inline-flex; gap: 6px; align-items: center; }
+    .tl-prompt-preview { border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-card); padding: 14px 18px; margin-bottom: 18px; }
+    .tl-prompt-preview textarea { width: 100%; min-height: 220px; resize: vertical; margin: 8px 0; padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .tl-prompt-preview-top { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12px; color: var(--text-secondary); }
   </style>
 </head>
 <body>
@@ -107,19 +121,42 @@
       </div>
       <textarea id="entrada" spellcheck="false" placeholder="Hola! te paso el presupuesto en pdf. Cualquier consulta avisame.
 
+Cliente: tienen hierro del 12? necesito 20 barras para Pilar
 Buenos dias!
-cemento avellaneda $6260 holcim $6500
-a que direccion lo necesitas?"></textarea>
+si, tenemos. a que zona lo necesitas?"></textarea>
       <p class="tl-ayuda">Separá cada respuesta con una línea en blanco. Si alguna tiene párrafos, separalas con una línea
         <code>---</code>. Si tus asesores mandan varios mensajes seguidos, pegalos juntos como una sola respuesta.</p>
+      <p class="tl-ayuda">Para un análisis más fino, agregá arriba lo que escribió el cliente con <code>Cliente:</code> al
+        principio de la línea. Así el taller revisa si la respuesta contesta lo que preguntó y no vuelve a pedir datos que ya dio.</p>
+    </section>
+
+    <section class="tl-prompt-bar" id="barraPrompt" hidden>
+      <p><strong>¿Querés que lo redacte una IA?</strong> Exportá un prompt con el método, tu rubro, el diagnóstico y el
+        borrador, listo para pegar en ChatGPT, Claude o la IA que usen. Por respuesta, desde cada tarjeta; o todo junto para armar
+        la biblioteca de atajos.</p>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center">
+        <label><input type="checkbox" id="ocultarDatos" checked> Ocultar datos personales</label>
+        <button class="btn btn-primary" id="btnPromptBiblioteca">🤖 Prompt para armar la biblioteca</button>
+      </div>
+    </section>
+
+    <section class="tl-prompt-preview" id="promptPreview" hidden>
+      <div class="tl-prompt-preview-top">
+        <span>Prompt copiado al portapapeles · <span id="promptLargo"></span></span>
+        <button class="btn btn-secondary" id="btnDescargarPrompt">⬇️ Descargar .md</button>
+      </div>
+      <textarea id="promptTexto" readonly aria-label="Prompt generado"></textarea>
+      <p class="tl-ayuda">Al pegarlo en una IA, el texto sale de tu equipo. Revisalo antes: la opción de ocultar datos tapa DNI,
+        teléfonos, emails, CBU, direcciones y nombres que detecta, pero no puede garantizar encontrarlos todos.</p>
     </section>
 
     <div id="resultados"></div>
 
     <p class="tl-limites"><strong>Qué hace y qué no.</strong> El taller ordena tus frases en la estructura del método,
-      convierte menús en ejemplos y reemplaza un puñado de fórmulas burocráticas fijas. No redacta frases nuevas: los
-      datos a pedir y el cierre que agrega salen de las plantillas de tu rubro y quedan marcados como sugerencia, para que
-      decidas si aplican. T (tiempos) y + (reparto bot/asesores) se miden en tus chats con el Analizador, no en un texto.</p>
+      convierte menús en ejemplos, arma listas de precios, corrige tildes sin ambigüedad y reemplaza un puñado de fórmulas
+      burocráticas fijas. Si le das el mensaje del cliente, detecta qué pidió y qué datos ya dio. No redacta frases nuevas: los
+      datos a pedir, los marcadores como <code>{PRECIO}</code> y el cierre que agrega salen de las plantillas de tu rubro o
+      del método, y quedan marcados como sugerencia para que decidas si aplican. Para una redacción de verdad, usá el prompt. T (tiempos) y + (reparto bot/asesores) se miden en tus chats con el Analizador, no en un texto.</p>
   </div>
   <script src="taller.js"></script>
 </body>

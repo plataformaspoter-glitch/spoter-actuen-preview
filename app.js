@@ -192,30 +192,11 @@ function initExecutiveControls() {
         const isSales = (currentData.meta.business_focus === 'ventas');
         currentData.master_templates = getDynamicRubroTemplates(newRubro, isSales, currentData.meta.company_name);
 
-        // Re-mapear inmediatamente los disparadores de Handoff al nuevo rubro
-        const gapCats = getRubroGapCategories(newRubro);
-        if (currentData.handoff_gap_analysis && currentData.handoff_gap_analysis.top_triggers) {
-          const oldList = currentData.handoff_gap_analysis.top_triggers;
-          currentData.handoff_gap_analysis.top_triggers = gapCats.map((c, i) => {
-            const old = oldList[i] || {};
-            return {
-              category_key: c.key,
-              title: c.title,
-              icon: c.icon,
-              count: old.count || 45,
-              percentage: old.percentage || 12.5,
-              human_hours_spent: old.human_hours_spent || 8.0,
-              is_avoidable: c.feasibility !== "Consultiva (Humano)",
-              automation_feasibility: c.feasibility,
-              solution_type: c.solution_type,
-              solution_action: c.solution_action,
-              sample_client_phrases: old.sample_client_phrases || [],
-              sample_operator_responses: old.sample_operator_responses || [],
-              template_target_id: c.template_target_id
-            };
-          });
-          renderHandoffGapAnalysis(currentData.handoff_gap_analysis);
-        }
+        // Los disparadores de handoff NO se re-mapean acá. La versión anterior
+        // arrastraba los conteos del rubro viejo por posición —la categoría 3 de
+        // corralón no tiene relación con la 3 de salud— e inventaba 45 chats y
+        // 8 horas cuando no había valor previo. triggerReload() rehace el
+        // análisis completo con el rubro nuevo unas líneas más abajo.
 
         renderTemplates(currentData.master_templates, isSales);
         renderQualificationPanel(currentData);
@@ -629,11 +610,58 @@ function percentileAt(sortedList, q) {
   return sortedList[idx];
 }
 
+/** Réplica de round(x) de Python a entero: en los empates redondea al par.
+ *  Math.round(340.5) da 341; Python da 340 porque 340 es par. */
+/** Largo en puntos de código, como el len() de Python.
+ *  El .length de JS cuenta unidades UTF-16: un emoji fuera del BMP vale 2 y en
+ *  Python vale 1. En un export real hay cientos de mensajes con emoji, y esa
+ *  diferencia alcanzaba para correr de banda el Índice de Conversión. */
+function largo(texto) {
+  return [...String(texto == null ? '' : texto)].length;
+}
+
+/** Últimos n puntos de código, como el s[-n:] de Python. */
+function ultimos(texto, n) {
+  const cp = [...String(texto == null ? '' : texto)];
+  return cp.length > n ? cp.slice(-n).join('') : cp.join('');
+}
+
+function round0(n) {
+  const x = Number(n);
+  if (!isFinite(x)) return x;
+  const negativo = x < 0;
+  const abs = Math.abs(x);
+  const piso = Math.floor(abs);
+  const resto = abs - piso;
+  let r;
+  if (resto === 0.5) r = (piso % 2 === 0) ? piso : piso + 1;
+  else r = Math.round(abs);
+  return negativo ? -r : r;
+}
+
 function round1(n) {
-  // toFixed opera sobre el double exacto, igual que el round(x, 1) de Python.
-  // Math.round(n*10)/10 falla en casos como 5.35, donde la multiplicación por 10
-  // redondea a 53.5 y termina en 5.4 mientras Python da 5.3.
-  return Number(Number(n).toFixed(1));
+  // Réplica de round(x, 1) de Python, que redondea al par en los empates exactos.
+  // Dos casos que hay que distinguir y que los atajos habituales confunden:
+  //   2.25  es exactamente representable -> empate -> 2.2 (2 es par)
+  //   5.35  en binario es 5.34999...     -> no es empate -> 5.3
+  // Math.round(n*10)/10 falla en el segundo; toFixed(1) falla en el primero.
+  // Mirar 20 decimales permite ver cuál de los dos es.
+  const x = Number(n);
+  if (!isFinite(x)) return x;
+  const negativo = x < 0;
+  const [entero, decimales] = Math.abs(x).toFixed(20).split('.');
+  const primero = +decimales[0];
+  const resto = decimales.slice(1);
+
+  let digito;
+  if (/^5 *0*$/.test(resto) || /^50*$/.test(resto)) {
+    digito = (primero % 2 === 0) ? primero : primero + 1;   // empate: al par
+  } else {
+    digito = (+resto[0] >= 5) ? primero + 1 : primero;
+  }
+
+  const valor = Number(entero) + digito / 10;
+  return negativo ? -valor : valor;
 }
 
 /** Renderiza con un decimal fijo, como el round(x, 1) de Python al interpolar. */
@@ -778,7 +806,7 @@ function computeSchedule(clientConvs, uniqueClients) {
     peak_hour: `${pad(peakHourIdx)}:00 a ${pad(peakHourIdx + 1)}:00 hs`,
     peak_day: peakDay,
     top_peak_hours: topPeakHours,
-    peak_hours_summary: topPeakHours.map(p => `${p.hour_range.split(' ')[0]} hs (${p.percentage}%)`).join(' | '),
+    peak_hours_summary: topPeakHours.map(p => `${p.hour_range.split(' ')[0]} hs (${fmt1(p.percentage)}%)`).join(' | '),
     business_hours_count: biz,
     after_hours_count: after,
     business_hours_percentage: round1((biz / (uniqueClients || 1)) * 100),
@@ -839,7 +867,7 @@ function computePrioritizationAndLtv(clientConvs, infoRubro, sla, focus) {
   const avgTicket = ltvCfg.avg_ticket_usd;
   const freq = ltvCfg.annual_frequency;
   const years = ltvCfg.retention_years;
-  const ltvVal = Math.round(avgTicket * freq * years);
+  const ltvVal = round0(avgTicket * freq * years);
   const cac = ltvCfg.cac_usd;
   const tWarn = sla.warning != null ? sla.warning : 15.0;
 
@@ -875,7 +903,7 @@ function computePrioritizationAndLtv(clientConvs, infoRubro, sla, focus) {
     // G: Engagement (ritmo + sustancia)
     const gRitmo = userMsgs.length >= 3 ? 8 : (userMsgs.length >= 1 ? 5 : 0);
     const avgCharLen = userMsgs.length
-      ? userMsgs.reduce((a, m) => a + (m['Mensaje'] || '').length, 0) / userMsgs.length : 0;
+      ? userMsgs.reduce((a, m) => a + largo(m['Mensaje'] || ''), 0) / userMsgs.length : 0;
     const hasQ = userText.includes('?') ? 5 : 0;
     const gSustancia = Math.min(10, (avgCharLen > 35 ? 5 : 2) + hasQ);
     const g = gRitmo + gSustancia;
@@ -929,18 +957,18 @@ function computePrioritizationAndLtv(clientConvs, infoRubro, sla, focus) {
   const modelo = CATALOGO.modelo_perdida[tipoCliente];
   const perdida = infoRubro.tasa_caida != null ? infoRubro.tasa_caida : S.tasa_caida_conversion;
 
-  const valorCicloRenovacion = Math.round(avgTicket * freq);
+  const valorCicloRenovacion = round0(avgTicket * freq);
   const usaCiclo = modelo.base === 'ciclo_renovacion';
   const baseUnitaria = usaCiclo ? valorCicloRenovacion : ltvVal;
   const baseEtiqueta = usaCiclo
     ? `Ciclo de renovación ($${valorCicloRenovacion.toLocaleString('en-US')} USD/año)`
     : `Valor de vida completo ($${ltvVal.toLocaleString('en-US')} USD)`;
 
-  const immediateLost = Math.round(leadsAtRisk * avgTicket * perdida);
-  const ltvCapitalLost = Math.round(leadsAtRisk * baseUnitaria * perdida);
-  const cacWasted = modelo.incluye_cac ? Math.round(leadsAtRisk * cac) : 0;
+  const immediateLost = round0(leadsAtRisk * avgTicket * perdida);
+  const ltvCapitalLost = round0(leadsAtRisk * baseUnitaria * perdida);
+  const cacWasted = modelo.incluye_cac ? round0(leadsAtRisk * cac) : 0;
   const totalRisk = ltvCapitalLost + cacWasted;
-  const recovered = Math.round(totalRisk * S.tasa_recuperacion_spoter);
+  const recovered = round0(totalRisk * S.tasa_recuperacion_spoter);
   const fx = S.tipo_cambio_ars;
 
   const suma = a => a.reduce((x, y) => x + y, 0);
@@ -1222,9 +1250,9 @@ function computeScorecard(ctx) {
   const frias = (dist.baja_20_39 || 0) + (dist.ruido_0_19 || 0);
   const totalIc = calientes + frias + (dist.media_40_59 || 0);
   const uStatus = avgIc >= 60 ? 'ÓPTIMO' : (avgIc >= 40 ? 'ALERTA' : 'CRÍTICO');
-  sc.push({ pillar: 'U - Ubicar la Intención', score: Math.round(avgIc), status: uStatus,
+  sc.push({ pillar: 'U - Ubicar la Intención', score: round0(avgIc), status: uStatus,
             focus_context: `Índice de Conversión medio: ${avgIc}/100`,
-            diagnosis: `El IC medio de la cartera es ${avgIc}/100: ${calientes} conversaciones con intención alta y ${frias} que quedaron en zona fría o ruido sobre ${totalIc} analizadas. El ${(topics && topics.length) ? topics[0].percentage : 30}% ingresa por '${topInquiry}'. Un IC bajo puede venir de tráfico frío o de no extraer la necesidad completa en el turno inicial; el desglose por conversación permite distinguirlo.`,
+            diagnosis: `El IC medio de la cartera es ${avgIc}/100: ${calientes} conversaciones con intención alta y ${frias} que quedaron en zona fría o ruido sobre ${totalIc} analizadas. El ${(topics && topics.length) ? fmt1(topics[0].percentage) : 30}% ingresa por '${topInquiry}'. Un IC bajo puede venir de tráfico frío o de no extraer la necesidad completa en el turno inicial; el desglose por conversación permite distinguirlo.`,
             recommendation: `Diseñar un Blueprint de Micro-intenciones: Al consultar por ${topInquiry.toLowerCase()}, solicitar los datos clave (habilitantes) en el turno inicial para elevar el IC.` });
 
   // E - Experiencia Personalizada (medido con las fases Spoter Lite)
@@ -1235,9 +1263,9 @@ function computeScorecard(ctx) {
   const enRescate = fases.cierre_rescate_count || 0;
   const eStatus = pctRescatables >= 50 ? 'CRÍTICO' : (pctRescatables >= 20 ? 'ALERTA' : 'ÓPTIMO');
   sc.push({ pillar: 'E - Experiencia Personalizada',
-            score: Math.max(0, Math.min(100, Math.round(100 - pctRescatables))), status: eStatus,
-            focus_context: `Protocolo de Rescate: ${pctRescatables}% de la fase de cierre quedó sin reactivar`,
-            diagnosis: `De ${enRescate} conversaciones que llegaron a la fase de cierre/rescate, ${rescatables} (${pctRescatables}%) conservaban intención activa (IC >= 40) y quedaron abandonadas sin una pregunta de rescate estructurada. Es abandono sin seguimiento ${isSales ? 'comercial del presupuesto' : 'del estado del trámite/caso'}.`,
+            score: Math.max(0, Math.min(100, round0(100 - pctRescatables))), status: eStatus,
+            focus_context: `Protocolo de Rescate: ${fmt1(pctRescatables)}% de la fase de cierre quedó sin reactivar`,
+            diagnosis: `De ${enRescate} conversaciones que llegaron a la fase de cierre/rescate, ${rescatables} (${fmt1(pctRescatables)}%) conservaban intención activa (IC >= 40) y quedaron abandonadas sin una pregunta de rescate estructurada. Es abandono sin seguimiento ${isSales ? 'comercial del presupuesto' : 'del estado del trámite/caso'}.`,
             recommendation: 'Protocolo de Rescate: Reactivar al usuario utilizando su nombre y el motivo específico de su consulta, evitando plantillas robóticas.' });
 
   // N - Nutrir y Cerrar (medido con la tasa de cierres pasivos)
@@ -1246,9 +1274,9 @@ function computeScorecard(ctx) {
   const evaluables = ctx.cierresEvaluables || 0;
   const nStatus = pasivos >= uc.umbral_critico_pct ? 'CRÍTICO' : (pasivos >= uc.umbral_alerta_pct ? 'ALERTA' : 'ÓPTIMO');
   sc.push({ pillar: 'N - Nutrir y Cerrar',
-            score: Math.max(0, Math.min(100, Math.round(100 - pasivos))), status: nStatus,
-            focus_context: (isSales ? 'Tipping Point Comercial' : 'Confirmación de FCR (Resolución)') + ` · ${pasivos}% de cierres pasivos`,
-            diagnosis: `El ${pasivos}% de los cierres termina con un mensaje que no incluye pregunta de avance ni llamado a la acción, dejando el control en el usuario. Medido sobre ${evaluables.toLocaleString('en-US')} conversaciones con cierre propio, excluyendo difusiones y mensajes automáticos.`,
+            score: Math.max(0, Math.min(100, round0(100 - pasivos))), status: nStatus,
+            focus_context: (isSales ? 'Tipping Point Comercial' : 'Confirmación de FCR (Resolución)') + ` · ${fmt1(pasivos)}% de cierres pasivos`,
+            diagnosis: `El ${fmt1(pasivos)}% de los cierres termina con un mensaje que no incluye pregunta de avance ni llamado a la acción, dejando el control en el usuario. Medido sobre ${evaluables.toLocaleString('en-US')} conversaciones con cierre propio, excluyendo difusiones y mensajes automáticos.`,
             recommendation: 'Cierre Activo Obligatorio: ' + (isSales
               ? 'Cerrar con una pregunta de reserva o confirmación de pedido (Tipping Point).'
               : "Cerrar con confirmación explícita de solución ('¿Quedó resuelta tu gestión o necesitás algo más?').") });
@@ -1277,11 +1305,11 @@ function computeScorecard(ctx) {
   if (pctRiesgo >= 30) { pStatus = 'CRÍTICO'; pScore = Math.min(pScore, 35); }
   else if (pctRiesgo >= 15 && pStatus === 'ÓPTIMO') { pStatus = 'ALERTA'; pScore = Math.min(pScore, 60); }
   if (enRiesgo) {
-    pDiag += ` En paralelo, ${enRiesgo} leads (${pctRiesgo}%) con intención activa esperaron más allá del umbral de alerta: $${capital.toLocaleString('en-US')} USD de capital de cartera expuesto.`;
+    pDiag += ` En paralelo, ${enRiesgo} leads (${fmt1(pctRiesgo)}%) con intención activa esperaron más allá del umbral de alerta: $${capital.toLocaleString('en-US')} USD de capital de cartera expuesto.`;
     pRecom += ' Priorizar por Índice de Urgencia para que el capital en riesgo se atienda primero.';
   }
   sc.push({ pillar: '+ Optimización Continua', score: pScore, status: pStatus,
-            focus_context: `Carga Humana (${handoff.human_share_percentage || 0}%) vs Bot (${botPct}%) · Capital expuesto: $${capital.toLocaleString('en-US')} USD`,
+            focus_context: `Carga Humana (${fmt1(handoff.human_share_percentage || 0)}%) vs Bot (${fmt1(botPct)}%) · Capital expuesto: $${capital.toLocaleString('en-US')} USD`,
             diagnosis: pDiag, recommendation: pRecom });
 
   return sc;
@@ -1370,6 +1398,7 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
   let opCounts = {};
   let waitTimes = [];
   let allClientText = [];
+  let filasPorCliente = [];
   let preguntasEmpresa = {};
   let systemDrops = 0;
   let botWelcomes = 0;
@@ -1385,24 +1414,16 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
       companyMsgs += effectiveCount;
       const op = (r['Nombre Operador'] || '').trim() || 'Bot / Sistema';
       opCounts[op] = (opCounts[op] || 0) + effectiveCount;
-      const dest = (r['Destinatario'] || '').trim();
-      if (dest) {
-        if (!clientConvs[dest]) clientConvs[dest] = [];
-        clientConvs[dest].push(r);
-      }
+      filasPorCliente.push([(r['Destinatario'] || '').trim(), r]);
     } else {
       clientMsgs++;
-      const num = (r['Número'] || '').trim();
-      if (num) {
-        if (!clientConvs[num]) clientConvs[num] = [];
-        clientConvs[num].push(r);
-      }
+      filasPorCliente.push([(r['Número'] || '').trim(), r]);
       if (msg) allClientText.push(msg.toLowerCase());
     }
 
     // Señales que usa el Semáforo: preguntas cortas de la empresa, expulsiones
     // del sistema y disparos del bot de bienvenida.
-    if (propio && msg.includes('?') && msg.length < 80) {
+    if (propio && msg.includes('?') && largo(msg) < 80) {
       preguntasEmpresa[msg] = (preguntasEmpresa[msg] || 0) + 1;
     }
     if (msg.includes('fue removido automáticamente') || msg.includes('operador fue removido')) systemDrops++;
@@ -1412,25 +1433,6 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
     const te = (r['Tiempo Espera'] || '').trim();
     if (te && !isNaN(parseFloat(te))) waitTimes.push(parseFloat(te));
   });
-
-  const realUniqueClients = Object.keys(clientConvs).length;
-
-  // Validación dura: espejo de la de engine.py. Un mapeo fallido daba antes un
-  // informe vacío pero verosímil; ahora avisa qué columna hay que revisar.
-  if (companyMsgs === 0 || realUniqueClients === 0) {
-    const columnas = [...new Set(rows.slice(0, 50).flatMap(r => Object.keys(r)))].sort();
-    const motivos = [];
-    if (companyMsgs === 0) {
-      motivos.push("no se identificó ningún mensaje enviado por la empresa (la columna 'Propio' debe valer Si/true/1/out en los salientes)");
-    }
-    if (realUniqueClients === 0) {
-      motivos.push("no se identificó ningún cliente (faltan las columnas 'Número' y/o 'Destinatario')");
-    }
-    showParseError(motivos, columnas, rows.length);
-    return;
-  }
-
-  const uniqueClients = realUniqueClients || 1;
 
   // Detección dinámica del nombre de la empresa a partir de los datos subidos
   const destCounts = {};
@@ -1462,6 +1464,33 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
     }
   }
 
+  // Las conversaciones se arman después de detectar la empresa, para poder
+  // excluirla: su propio número y su nombre aparecen como interlocutor y si no
+  // se filtran cuentan como un cliente más. El motor ya lo hacía.
+  filasPorCliente.forEach(([cid, r]) => {
+    if (!cid || cid === detectedCompanyNumber || cid === detectedCompanyName) return;
+    if (!clientConvs[cid]) clientConvs[cid] = [];
+    clientConvs[cid].push(r);
+  });
+
+  const realUniqueClients = Object.keys(clientConvs).length;
+
+  // Validación dura: espejo de la de engine.py. Un mapeo fallido daba antes un
+  // informe vacío pero verosímil; ahora avisa qué columna hay que revisar.
+  if (companyMsgs === 0 || realUniqueClients === 0) {
+    const columnas = [...new Set(rows.slice(0, 50).flatMap(r => Object.keys(r)))].sort();
+    const motivos = [];
+    if (companyMsgs === 0) {
+      motivos.push("no se identificó ningún mensaje enviado por la empresa (la columna 'Propio' debe valer Si/true/1/out en los salientes)");
+    }
+    if (realUniqueClients === 0) {
+      motivos.push("no se identificó ningún cliente (faltan las columnas 'Número' y/o 'Destinatario')");
+    }
+    showParseError(motivos, columnas, rows.length);
+    return;
+  }
+
+  const uniqueClients = realUniqueClients || 1;
   const fullText = allClientText.join(' ');
 
   // Clasificación de los 11 rubros
@@ -1630,7 +1659,7 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
   // 'Eric. Gracias por...' son la misma plantilla y el dedup literal no las une.
   const firmaDe = t => {
     const n = String(t || '').toLowerCase().replace(/\s+/g, ' ').trim();
-    return n.length > 60 ? n.slice(-60) : n;
+    return ultimos(n, 60);
   };
   const aparFirma = {};
   for (const cid of Object.keys(clientConvs)) {
@@ -1652,11 +1681,13 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
   const reDescartar = new RegExp(mf.regex_descartar, 'i');
   const fraseUtil = t => {
     const x = String(t || '').replace(/\n/g, ' ').trim();
-    if (x.length < mf.min_largo || x.length > mf.max_largo) return false;
+    const n = largo(x);
+    if (n < mf.min_largo || n > mf.max_largo) return false;
     const m = reDescartar.exec(x);
     return !(m && m.index === 0);
   };
 
+  const rePedidoHumano = new RegExp(CATALOGO.deteccion_handoff.regex_pedido_humano, 'i');
   let totalHumanConvs = 0;
   Object.keys(clientConvs).forEach(cid => {
     const msgs = clientConvs[cid];
@@ -1694,7 +1725,13 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
           break;
         }
       }
-      if (!matchedKey) matchedKey = catDefs[0].key;
+      // Espejo del motor: si nada matchea pero el cliente pidió un humano de
+      // forma explícita, la conversación cae en la categoría consultiva (la
+      // última), no en la primera.
+      if (!matchedKey) {
+        const pidioHumano = clientTextsBefore.some(t => rePedidoHumano.test(t));
+        matchedKey = pidioHumano ? catDefs[catDefs.length - 1].key : catDefs[0].key;
+      }
 
       catCounts[matchedKey]++;
       const humanMsgsInConv = msgs.filter(m => isPropio(m) && !esMensajeDeBot(m)).length;
@@ -1702,9 +1739,12 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
 
       // 1. Frase del cliente: la más larga que pase el filtro, que es la que
       //    muestra de verdad qué vino a pedir.
-      const candidatas = clientTextsBefore.filter(fraseUtil);
+      // Espejo del pool del motor: los ecos de menú (los que arrancan con '.')
+      // no son consultas del cliente y no sirven como ejemplo.
+      const freeTexts = clientTextsBefore.filter(t => !t.startsWith('.') && largo(t) > 6);
+      const candidatas = freeTexts.filter(fraseUtil);
       if (candidatas.length && catSamples[matchedKey].length < 3) {
-        const elegida = candidatas.reduce((a, b) => (b.length > a.length ? b : a))
+        const elegida = candidatas.reduce((a, b) => (largo(b) > largo(a) ? b : a))
           .replace(/\n/g, ' ').trim();
         if (!catSamples[matchedKey].includes(elegida)) catSamples[matchedKey].push(elegida);
       }
@@ -1719,7 +1759,7 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
         if (txt && !esPlantilla(txt) && fraseUtil(txt)) opMsgs.push(txt);
       }
       if (opMsgs.length && catOperatorSamples[matchedKey].length < 3) {
-        const elegida = opMsgs.reduce((a, b) => (b.length > a.length ? b : a))
+        const elegida = opMsgs.reduce((a, b) => (largo(b) > largo(a) ? b : a))
           .replace(/\n/g, ' ').trim();
         if (!catOperatorSamples[matchedKey].includes(elegida)) {
           catOperatorSamples[matchedKey].push(elegida);
@@ -1754,7 +1794,7 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
       icon: cdef.icon,
       count: cnt,
       percentage: Math.round((cnt / (totalHumanConvs || 1)) * 1000) / 10,
-      human_hours_spent: Math.round((catHours[k] || 0) * 10) / 10,
+      human_hours_spent: round1(catHours[k] || 0),
       is_avoidable: cdef.feasibility !== "Consultiva (Humano)",
       automation_feasibility: cdef.feasibility,
       solution_type: cdef.solution_type,
@@ -1768,57 +1808,16 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
   const handoffGapAnalysis = {
     total_human_handoffs: totalHumanConvs,
     avoidable_handoffs_count: avoidableCount,
-    avoidable_handoffs_percentage: avoidablePct || 78.3,
-    consultative_handoffs_count: Math.max(0, totalHumanConvs - avoidableCount),
-    consultative_handoffs_percentage: Math.round((100 - (avoidablePct || 78.3)) * 10) / 10,
-    recoverable_hours_month: Math.round(avoidableHours * 10) / 10 || 78.5,
-    top_triggers: topTriggers.length ? topTriggers : [
-      {
-        category_key: "precios_catalogo",
-        title: "Cotizaciones y Precios de Catálogo Básico",
-        icon: "📋",
-        count: Math.round(totalHumanConvs * 0.38),
-        percentage: 38.2,
-        human_hours_spent: 30.5,
-        is_avoidable: true,
-        automation_feasibility: "Alta (Inmediata)",
-        solution_type: "Base de Conocimiento RAG",
-        solution_action: "Sincronizar catálogo y lista de precios oficial para responder en 1 solo bloque estructurado.",
-        sample_client_phrases: ["Hola, quería consultar precio y disponibilidad", "¿Tienen catálogo con los medios de pago?"],
-        template_target_id: "presupuesto_comercial"
-      },
-      {
-        key: "envios_logistica",
-        category_key: "envios_logistica",
-        title: "Envíos, Fletes y Tiempos de Entrega",
-        icon: "🚚",
-        count: Math.round(totalHumanConvs * 0.22),
-        percentage: 22.4,
-        human_hours_spent: 18.0,
-        is_avoidable: true,
-        automation_feasibility: "Alta (Inmediata)",
-        solution_type: "Matriz de Zonas Spoter",
-        solution_action: "Cargar radios de cobertura y tiempos estimados de entrega en la Base de Conocimiento.",
-        sample_client_phrases: ["¿Hacen envíos a mi dirección?", "¿Cuánto tarda en llegar el pedido?"],
-        template_target_id: "envios_retail"
-      },
-      {
-        key: "pagos_facturacion",
-        category_key: "pagos_facturacion",
-        title: "Pagos, Alias, CBU y Facturación",
-        icon: "💳",
-        count: Math.round(totalHumanConvs * 0.17),
-        percentage: 17.7,
-        human_hours_spent: 14.2,
-        is_avoidable: true,
-        automation_feasibility: "Alta (Inmediata)",
-        solution_type: "Atajo Maestro Inmediato",
-        solution_action: "Configurar atajo de medios de pago y recolección automática de datos de facturación en mensaje cero.",
-        sample_client_phrases: ["Pasame el alias para transferir", "¿Hacen factura con los datos de mi empresa?"],
-        template_target_id: "medios_pago_gral"
-      }
-    ]
+    avoidable_handoffs_percentage: avoidablePct,
+    consultative_handoffs_count: totalHumanConvs - avoidableCount,
+    consultative_handoffs_percentage: round1(100 - avoidablePct),
+    recoverable_hours_month: round1(avoidableHours),
+    // Sin respaldo inventado: si no hay disparadores, la lista va vacía. La
+    // versión anterior devolvía tres categorías con conteos, horas y frases de
+    // cliente falsas cuando los datos reales no daban ninguna.
+    top_triggers: topTriggers
   };
+;
 
   // --- GENERACIÓN DINÁMICA DE PLANTILLAS MAESTRAS SEGÚN RUBRO Y EMPRESA ---
   const masterTemplates = getDynamicRubroTemplates(rubroKey, isSales, detectedCompanyName);
@@ -1931,9 +1930,9 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
       baseline_msgs_per_client: parseFloat(baselineMsgs),
       target_msgs_per_client: targetMsgs,
       messages_saved: savedMsgs,
-      reduction_percentage: fmt1(reduccionPct),
-      hours_saved_monthly: savedHours,
-      optimization_rationale: `Línea de base actual: tu empresa envía hoy ${baselineMsgs} mensajes por cliente. El estándar metodológico ACTÚEN+ en un solo bloque requiere ${fmt1(targetMsgs)} mensajes empresa para cerrar o resolver. El ${reduccionPct}% de optimización representa la eliminación de ${savedMsgs.toLocaleString('en-US')} mensajes fragmentados innecesarios.`,
+      reduction_percentage: reduccionPct,
+      hours_saved_monthly: parseFloat(savedHours),
+      optimization_rationale: `Línea de base actual: tu empresa envía hoy ${baselineMsgs} mensajes por cliente. El estándar metodológico ACTÚEN+ en un solo bloque requiere ${fmt1(targetMsgs)} mensajes empresa para cerrar o resolver. El ${fmt1(reduccionPct)}% de optimización representa la eliminación de ${savedMsgs.toLocaleString('en-US')} mensajes fragmentados innecesarios.`,
       economic_benefit: {
         total_ars: totalArs,
         total_usd: totalUsd,

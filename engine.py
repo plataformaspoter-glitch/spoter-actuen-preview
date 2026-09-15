@@ -1530,7 +1530,7 @@ class ActuenAnalyzer:
 
     def _compute_handoff_gap_analysis(self, client_conversations, operator_counts, rubro_key='construccion_corralon'):
         is_bot_re = re.compile(r'bot|sistema|auto|automatiz', re.IGNORECASE)
-        human_req_re = re.compile(r'\b(asesor|operador|humano|persona|alguien|ayuda|atenci[oó]n|hablar con|no me entend|pasame|comunicarme)\b', re.IGNORECASE)
+        human_req_re = re.compile(CATALOGO['deteccion_handoff']['regex_pedido_humano'], re.IGNORECASE)
 
         categories_def = self._get_rubro_gap_categories(rubro_key)
 

@@ -8,6 +8,7 @@ asesores, evaluación bajo el **Método ACTÚEN+**, detección automática de ru
 matemática del **LTV en riesgo** y fases del motor **Spoter Lite**.
 
 **🚀 Demo en vivo:** https://plataformaspoter-glitch.github.io/spoter-actuen/
+**🛠️ Taller ACTÚEN+:** https://plataformaspoter-glitch.github.io/spoter-actuen/taller.html
 **📖 Manual de ventas:** https://plataformaspoter-glitch.github.io/spoter-actuen/manual_ventas.html
 
 ---
@@ -23,6 +24,20 @@ clasificación temática incluidos.
 Las conversaciones **nunca salen del equipo** — no se sube ningún archivo a
 ningún servidor. Es el argumento de privacidad más fuerte del producto y conviene
 decirlo en la demo.
+
+### Taller ACTÚEN+ — el método con tus propias respuestas
+
+`taller.html` explica los 7 pilares y deja pegar las respuestas rápidas que hoy
+usan los asesores. Para cada una muestra qué pilar cumple y por qué, y la devuelve
+reacomodada en la estructura del método, lista para copiar. No necesita haber
+analizado chats antes.
+
+El reacomodo es determinístico y **no redacta frases nuevas**: ordena las del
+cliente (saludo, información, datos a pedir, `[---saltomensaje---]`, cierre),
+quita cierres pasivos y firmas, convierte menús en ejemplos y reemplaza un puñado
+de fórmulas burocráticas fijas. Los datos a pedir y el cierre que agrega salen de
+las plantillas del rubro en `rubros.json` y se muestran como **sugerencia**, con
+un interruptor para sacarlos. T y + no se puntúan: se miden en los chats.
 
 ### Opción B — Con el motor Python local
 
@@ -81,6 +96,7 @@ Analizador ACTUEN/
 ├── engine.py                     # Motor determinístico (ETL, IC/IU, LTV, Lite, Semáforo, informes)
 ├── api_server.py                 # Servidor HTTP local. NO se publica: es herramienta de escritorio
 ├── index.html                    # Aplicación principal
+├── taller.html / taller.js       # Taller ACTÚEN+: evalúa y reacomoda respuestas rápidas
 ├── app.js                        # Motor del navegador + interfaz. Paridad con engine.py
 ├── app.css                       # Sistema de diseño (variables, modo claro/oscuro, responsive)
 ├── sample_data.json              # Lote de prueba anonimizado para la demo
@@ -92,6 +108,9 @@ Analizador ACTUEN/
 ├── README.md                     # Este archivo
 ├── tests/
 │   ├── test_engine.py            # 24 tests de regresión (stdlib)
+│   ├── test_paridad.py / paridad.js  # 7 escenarios de paridad navegador ↔ Python
+│   ├── test_taller.js            # 21 tests del Taller ACTÚEN+
+│   ├── correr_todo.sh            # Corre las tres suites
 │   └── fixture_demo.csv          # Fixture anonimizado
 ├── tools/
 │   └── generar_rubros_json.py    # Re-emite rubros.json
@@ -174,7 +193,7 @@ columna revisar, en vez de producir un informe vacío pero verosímil.
 ## ✅ 5. Verificación
 
 ```bash
-python3 tests/test_engine.py     # 24 tests, solo biblioteca estándar
+./tests/correr_todo.sh           # motor (24) + paridad (7) + taller (21)
 ```
 
 Cubren normalización de valores y fechas, paridad entre formatos de CSV, error
@@ -182,9 +201,16 @@ visible ante un CSV ininterpretable, que el IC lea de verdad el texto, que los
 pilares se muevan con los datos, y que los mensajes automáticos no se cuenten como
 trabajo humano.
 
-**Paridad entre motores:** el navegador y `engine.py` se verificaron sobre los
-mismos archivos con una comparación campo por campo — 17 bloques, 620 campos, cero
-diferencias. Hoy esa comparación se corre a mano; automatizarla está pendiente.
+**Paridad entre motores:** `tests/paridad.js` carga el `app.js` real en Node y
+compara su salida contra `engine.py` campo por campo. Cero diferencias en 7
+escenarios y en 5 exports reales de dos clientes (entre 599 y 646 campos cada uno).
+Requiere Node; sin Node, esos tests se saltean con aviso.
+
+**Taller:** además de casos puntuales, verifica que reacomodar nunca baje el
+puntaje, que no se pierda ninguna frase del cliente y que apagar sugerencias las
+saque sin romper la numeración. Esas tres invariantes se comprobaron sobre
+12.959 respuestas reales de asesores (promedio 3,1 → 4,6 de 5 pilares evaluables,
+cero regresiones); el corpus real no se versiona por tener datos personales.
 
 ---
 

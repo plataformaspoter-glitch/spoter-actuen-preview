@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spoter | Taller ACTÚEN+ — Tus respuestas rápidas con el método</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="app.css">
+  <style>
+    .tl-intro { max-width: 820px; margin-bottom: 26px; }
+    .tl-intro h2 { font-family: var(--font-heading); font-size: 24px; margin-bottom: 8px; }
+    .tl-intro p { color: var(--text-secondary); font-size: 14px; }
+
+    .tl-pilares { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 30px; }
+    .tl-pilar { display: flex; flex-direction: column; gap: 8px; padding: 14px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-card); }
+    .tl-pilar strong { font-size: 13px; }
+    .tl-pilar p { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+    .tl-pilar--chats { opacity: .7; }
+    .tl-letra { flex: none; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; background: var(--spoter-pink-light); color: var(--spoter-pink); }
+    .tl-tag { display: inline-block; margin-top: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); }
+
+    .tl-entrada { border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-card); padding: 18px; margin-bottom: 24px; }
+    .tl-entrada-top { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .tl-entrada label { font-weight: 700; font-size: 14px; }
+    .tl-entrada select { padding: 7px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-family: inherit; max-width: 100%; }
+    .tl-entrada textarea { width: 100%; min-height: 170px; resize: vertical; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .tl-ayuda { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+    .tl-ayuda code { background: var(--spoter-pink-light); color: var(--spoter-pink); padding: 0 4px; border-radius: 4px; }
+    #rubroDetectado { font-size: 12px; color: var(--text-secondary); }
+
+    .tl-card { border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-card); padding: 18px; margin-bottom: 18px; }
+    .tl-card-head { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+    .tl-card-head h3 { font-size: 16px; }
+    .tl-score { font-size: 13px; color: var(--text-secondary); }
+    .tl-score strong { color: var(--success); font-size: 15px; }
+    .tl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 820px) { .tl-grid { grid-template-columns: 1fr; } }
+    .tl-grid h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); margin-bottom: 8px; }
+    .tl-original { white-space: pre-wrap; word-break: break-word; font: 13px/1.5 var(--font-main); padding: 12px; border-radius: var(--radius-sm); background: var(--bg-secondary); border: 1px dashed var(--border-color); margin-bottom: 12px; }
+
+    .tl-evals { list-style: none; display: grid; gap: 6px; }
+    .tl-eval { display: grid; grid-template-columns: 22px 20px 1fr; gap: 6px; font-size: 12.5px; align-items: start; padding: 6px 8px; border-radius: var(--radius-sm); }
+    .tl-eval-letra { font-weight: 800; color: var(--spoter-pink); text-align: center; }
+    .tl-eval--falta { background: var(--danger-bg); }
+    .tl-eval--mejorable { background: var(--warning-bg); }
+    .tl-eval--no_aplica { color: var(--text-muted); }
+
+    .tl-leyenda { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .tl-chip { font-size: 11px; font-weight: 600; padding: 2px 8px 2px 6px; border-radius: 999px; background: var(--bg-secondary); display: inline-flex; align-items: center; gap: 5px; }
+    .tl-chip::before { content: ''; width: 4px; height: 12px; border-radius: 2px; background: var(--chip); }
+    .tl-chip--tuyo { --chip: var(--info); }
+    .tl-chip--metodo { --chip: var(--spoter-pink); }
+    .tl-chip--sugerido { --chip: var(--warning); }
+    .tl-bloque--tuyo { border-color: var(--info); }
+    .tl-bloque--metodo { border-color: var(--spoter-pink); }
+    .tl-bloque--sugerido { border-color: var(--warning); }
+
+    .tl-bloques { display: grid; gap: 6px; padding: 12px; border-radius: var(--radius-md); background: var(--bg-secondary); margin-bottom: 10px; }
+    .tl-bloque { position: relative; border-left: 4px solid; padding: 6px 10px; border-radius: 4px; font-size: 13px; }
+    .tl-bloque-texto { white-space: pre-wrap; word-break: break-word; }
+    .tl-bloque--sugerido { background: var(--warning-bg); padding-right: 92px; }
+    .tl-bloque--salto { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--text-muted); }
+    .tl-bloque--campo { margin-left: 14px; }
+    .tl-bloque--apagado { opacity: .35; text-decoration: line-through; }
+    .tl-toggle { position: absolute; right: 8px; top: 6px; font-size: 11px; color: var(--text-secondary); display: flex; gap: 4px; align-items: center; cursor: pointer; }
+    .tl-nota { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
+    .tl-vacio, .tl-error { color: var(--text-secondary); padding: 24px; text-align: center; border: 1px dashed var(--border-color); border-radius: var(--radius-lg); }
+    .tl-error { color: var(--danger); }
+    .tl-limites { font-size: 12px; color: var(--text-muted); margin-top: 26px; max-width: 820px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="app-header">
+      <div class="brand-group">
+        <img src="https://spoter.com.ar/wp-content/uploads/2022/11/Logo-Spoter.png" alt="Spoter" class="spoter-logo">
+        <div class="brand-titles">
+          <h1>Spoter <span>| Taller ACTÚEN+</span></h1>
+          <p>Tus respuestas rápidas, acomodadas con el método</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="index.html" class="btn btn-secondary" style="text-decoration:none">⚡ Analizador</a>
+        <button class="btn-icon" id="btnTheme" title="Alternar tema claro/oscuro">🌙</button>
+      </div>
+    </header>
+
+    <section class="tl-intro">
+      <h2>El método en tus propias palabras</h2>
+      <p>ACTÚEN+ no es un texto precargado: es una forma de ordenar cada respuesta para que el cliente
+        avance en un solo turno. Pegá las respuestas rápidas que usan hoy tus asesores y mirá qué pilar
+        cumple cada una y cómo queda reacomodada. Todo se procesa en esta pestaña: nada sale de tu equipo.</p>
+    </section>
+
+    <div class="tl-pilares" id="pilaresMetodo"></div>
+
+    <section class="tl-entrada">
+      <div class="tl-entrada-top">
+        <label for="entrada">Tus respuestas rápidas</label>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">
+          <span id="rubroDetectado"></span>
+          <select id="rubro" aria-label="Rubro"></select>
+          <button class="btn btn-secondary" id="btnEjemplo">Probar con un ejemplo</button>
+        </div>
+      </div>
+      <textarea id="entrada" spellcheck="false" placeholder="Hola! te paso el presupuesto en pdf. Cualquier consulta avisame.
+
+Buenos dias!
+cemento avellaneda $6260 holcim $6500
+a que direccion lo necesitas?"></textarea>
+      <p class="tl-ayuda">Separá cada respuesta con una línea en blanco. Si alguna tiene párrafos, separalas con una línea
+        <code>---</code>. Si tus asesores mandan varios mensajes seguidos, pegalos juntos como una sola respuesta.</p>
+    </section>
+
+    <div id="resultados"></div>
+
+    <p class="tl-limites"><strong>Qué hace y qué no.</strong> El taller ordena tus frases en la estructura del método,
+      convierte menús en ejemplos y reemplaza un puñado de fórmulas burocráticas fijas. No redacta frases nuevas: los
+      datos a pedir y el cierre que agrega salen de las plantillas de tu rubro y quedan marcados como sugerencia, para que
+      decidas si aplican. T (tiempos) y + (reparto bot/asesores) se miden en tus chats con el Analizador, no en un texto.</p>
+  </div>
+  <script src="taller.js"></script>
+</body>
+</html>

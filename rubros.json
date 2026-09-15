@@ -165,6 +165,9 @@
     "max_largo": 140,
     "regex_descartar": "^(hola|buenas|buen[ao]s?( d[ií]as?| tardes?| noches?)?|hola buen[ao]s?( d[ií]as?| tardes?| noches?)?|gracias|ok|dale|listo|perfecto|s[ií]|no|mendoza|\\[image\\]|\\[audio\\]|\\[imagen\\]|\\[document\\][^\\n]*)[\\s.!¡?¿]*$"
   },
+  "deteccion_handoff": {
+    "regex_pedido_humano": "\\b(asesor|operador|humano|persona|alguien|ayuda|atenci[oó]n|hablar con|no me entend|pasame|comunicarme)\\b"
+  },
   "deteccion_cierre": {
     "umbral_difusion_conversaciones": 5,
     "regex_automatico": "(te damos la bienvenida|gracias por comunicarte|bienvenid|nos encontramos \\*?cerrad|ser[aá]s atendid|horario de atenci[oó]n)",

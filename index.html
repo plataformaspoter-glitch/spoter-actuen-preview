@@ -48,6 +48,9 @@
         <a href="manual_ventas.html" target="_blank" class="btn-manual-link" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--spoter-pink); color: var(--spoter-pink); font-size: 12px; font-weight: 700; background: var(--spoter-pink-light); transition: all 0.2s ease;">
           📖 Manual de Ventas
         </a>
+        <a href="taller.html" target="_blank" class="btn-manual-link" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--spoter-pink); color: var(--spoter-pink); font-size: 12px; font-weight: 700; background: var(--spoter-pink-light); transition: all 0.2s ease;">
+          🛠️ Taller ACTÚEN+
+        </a>
         <div class="status-indicator" id="apiStatusBadge">
           <span class="status-dot"></span> Verificando conexión...
         </div>
@@ -853,9 +856,12 @@
               Reemplazan las conversaciones desordenadas por 1 solo bloque estructurado con viñetas y llamado a la acción.
             </p>
           </div>
-          <button class="btn btn-secondary" id="btnToggleMoreTemplates">
-            ➕ Ver Más Plantillas del Rubro
-          </button>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <a href="taller.html" target="_blank" class="btn btn-primary" style="text-decoration: none;">🛠️ Acomodar mis propias respuestas</a>
+            <button class="btn btn-secondary" id="btnToggleMoreTemplates">
+              ➕ Ver Más Plantillas del Rubro
+            </button>
+          </div>
         </div>
         <div id="templatesList">
           <!-- Renderizado dinámico de tarjetas Antes vs Después -->

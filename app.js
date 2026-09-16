@@ -2519,8 +2519,9 @@ function initResetModal() {
   });
 
   btnDownloadFirst.addEventListener('click', () => {
-    window.location.href = '/api/export/report';
-    showToast("📥 Descargando informe ejecutivo de respaldo...");
+    // Antes navegaba a /api/export/report: sin el servidor local eso es un 404
+    // y, peor, saca al usuario de la página con el análisis hecho.
+    downloadReportFile();
   });
 
   btnConfirm.addEventListener('click', () => {

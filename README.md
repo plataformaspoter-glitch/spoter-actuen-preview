@@ -148,7 +148,8 @@ Analizador ACTUEN/
 │   ├── test_engine.py            # 24 tests de regresión (stdlib)
 │   ├── test_paridad.py / paridad.js  # 7 escenarios de paridad navegador ↔ Python
 │   ├── test_taller.js            # 60 tests del Taller ACTÚEN+
-│   ├── test_manual.py            # 9 tests: manual = catálogo = motor; versión de scripts
+│   ├── test_manual.py            # 9 tests: manual = catálogo = motor
+│   ├── test_paginas.js / paginas.js  # 23 tests: cada página sin el servidor Python
 │   ├── correr_todo.sh            # Corre las cuatro suites
 │   └── fixture_demo.csv          # Fixture anonimizado
 ├── tools/
@@ -156,6 +157,12 @@ Analizador ACTUEN/
 │   └── generar_tabla_ltv.py      # Regenera la tabla de LTV del manual .md
 └── PLAN.md                       # Estado del trabajo y decisiones tomadas
 ```
+
+**Páginas sin servidor:** `tests/test_paginas.js` carga cada HTML con sus
+scripts en un DOM mínimo, con `/api/` respondiendo 404 como en GitHub Pages, y
+verifica que no queden ids inexistentes ni botones sin conectar, y que las
+exportaciones descarguen un archivo en vez de navegar a la API. Nació de tres
+errores reales de esa familia.
 
 **Versión de scripts:** los HTML cargan `app.js?v=…`, `taller.js?v=…`, etc. Al
 desplegar cambios de JS o CSS, subí ese valor en las tres páginas (hay un test
@@ -238,7 +245,7 @@ columna revisar, en vez de producir un informe vacío pero verosímil.
 ## ✅ 5. Verificación
 
 ```bash
-./tests/correr_todo.sh           # motor (24) + paridad (7) + taller (60) + manual (9)
+./tests/correr_todo.sh           # motor (24) + paridad (7) + taller (60) + manual (9) + páginas (23)
 ```
 
 Cubren normalización de valores y fechas, paridad entre formatos de CSV, error

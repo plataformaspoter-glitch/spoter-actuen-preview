@@ -14,6 +14,8 @@
   let sesion = null;
 
   async function estadoDeSesion() {
+    // En GitHub Pages no hay servidor: ni se pregunta, así la consola queda limpia.
+    if (/\.github\.io$/i.test(location.hostname)) return null;
     try {
       const r = await fetch('/api/sesion');
       if (!r.ok) return null;

@@ -280,7 +280,7 @@ const INTENCIONES = {
     respuesta: /(\$\s?\d|\d+\s?(pesos|usd)|precio|valor|cotiz|presupuest|\{PRECIO|\{TOTAL)/,
     plantilla: /(presupuest|cotiz|precio|tarifa|arancel|ficha|catalogo|aridos|hierro|paquete|carrera|unidad|producto|loteo|carta)/,
     marcador: '💰 *{PRODUCTO}:* ${PRECIO}',
-    campos: ['¿Qué necesitás cotizar, exactamente?'],
+    campos: ['¿Qué necesitás cotizar, exactamente?', '¿Qué cantidad necesitás?', '¿Para cuándo lo necesitás?'],
     cierre: '¿Querés que te lo reserve?' },
   stock: { etiqueta: '📦 Stock',
     cliente: /(\bstock\b|disponib|\b(tienen|tenes|tendran|hay|les queda|manejan|venden)\s+(?!que\b|problema|drama|chance|algun|alguna|forma|manera|posibilidad|tarjeta|opcion|novedad|lugar|turno)[a-z]{3,}[^?]*\?)/,
@@ -330,7 +330,7 @@ const DATOS = {
   producto: { nombre: 'producto',
     // "precio de 20 bolsas de cemento con envío" → "cemento"; "cuánto sale el plan familiar" → "plan familiar"
     enCliente: /(?:precio|presupuesto|cotizaci[oó]n|cotizar|necesito|quiero|busco|tienen|ten[eé]s|cu[aá]nto (?:sale|salen|cuesta|cuestan|est[aá]))\s+(?:de\s+|del\s+|el\s+|la\s+|los\s+|las\s+|un[ao]?s?\s+)?(?:\d+\s+[a-záéíóúñ]+\s+de\s+)?((?!(?:precio|presupuesto|info|informaci[oó]n|saber|consultar|hacer|un|una)\b)[a-záéíóúñ][a-záéíóúñ0-9 ]{2,28}?)(?=\s+(?:con|para|a|y|en|que|por)\b|[?,.!\n]|$)/i,
-    enPregunta: /(\blista\b|material|producto|pieza|repuesto|modelo|especialidad|\btalle|\bmedida|cotizar)/i,
+    enPregunta: /(\blista\b|material|producto|pieza|repuesto|modelo|especialidad|\btalle|\bmedida|cotizar|qu[eé] precio)/i,
     confirmar: null },
 };
 
@@ -673,6 +673,15 @@ function datosEnPregunta(pregunta) {
   return Math.max(1, tipos);
 }
 
+const RE_YA_COTIZA = /(\$\s?\d|\d\s?(pesos|usd|u\$s)\b|(te|les?) (paso|mando|env[ií]o|adjunto|dejo|comparto)\s+(el |la |un |una )?(presupuesto|cotizaci[oó]n|lista de precios|precio))/i;
+
+const RE_POR_UNIDAD = /(\b(la|el|por|cada|x)\s+(bolsa|bols[oó]n|unidad|metro|m2|m3|m²|kilo|kg|litro|caja|barra|placa|rollo|chapa|pallet|pack|docena|par)\b|c\/u|\bxu\b)/i;
+
+/** ¿La respuesta del equipo ya cotiza? (da un precio o manda el presupuesto) */
+function yaCotiza(piezas) {
+  return piezas.some(p => p.tipo === 'precios' || (typeof p.texto === 'string' && RE_YA_COTIZA.test(p.texto)));
+}
+
 function tipoDeDato(pregunta) {
   for (const [tipo, d] of Object.entries(DATOS)) if (d.enPregunta.test(pregunta)) return tipo;
   return null;
@@ -924,6 +933,13 @@ function reacomodar(entrada, catalogo, rubroKey) {
   // En un reclamo primero va lo que permite ubicar el caso, no los requisitos de un trámite nuevo.
   const candidatos = intenciones[0] === 'reclamo' ? [...deIntencion, ...dePlantilla] : [...dePlantilla, ...deIntencion];
   const tipos = new Set([...campos.map(c => c.tipoDato), ...Object.keys(conocidos)].filter(Boolean));
+  // Si la respuesta ya da un precio o manda el presupuesto, el producto se sabe:
+  // preguntar "¿qué necesitás cotizar?" después de cotizar suena a no leer lo propio.
+  if (yaCotiza(piezas)) tipos.add('producto');
+  // "¿Qué cantidad?" solo tiene sentido si el precio es por unidad (la bolsa,
+  // el metro, c/u); para una consulta o un plan mensual suena fuera de lugar.
+  const textoPropio = piezas.map(p => p.texto || '').join(' ');
+  if (yaCotiza(piezas) && !RE_POR_UNIDAD.test(textoPropio) && !intenciones.includes('stock')) tipos.add('cantidad');
   const yaPedido = new Set(campos.flatMap(c => palabras(c.texto)));
   for (const c of candidatos) {
     if (campos.length >= 4 || (!plantillaCampos && campos.length >= 3)) break;
@@ -1023,6 +1039,7 @@ function contextoDelRubro(catalogo, rubroKey) {
 }
 
 const REGLAS_PROMPT = `- No inventes precios, stock, plazos, políticas, direcciones ni nombres. Donde falte un dato real, dejá un marcador entre llaves: {PRECIO}, {PLAZO}, {DIRECCION_LOCAL}, etc.
+- Los datos reales que ya están en la respuesta (precios, plazos, horarios, cantidades) se conservan tal cual: los marcadores son solo para lo que falta, nunca para tapar un dato que el negocio ya dio.
 - Español rioplatense con voseo, cercano y profesional. Nada de "estimado cliente", "a la brevedad" ni "quedo a disposición".
 - Formato WhatsApp: *negrita* para lo clave, viñetas • para información, lista numerada para los datos a pedir. Como máximo 2 o 3 emojis y solo si ordenan.
 - Un solo bloque. Si hace falta separar la información del cierre, usá una única vez la marca [---saltomensaje---] en su propia línea.
@@ -1388,6 +1405,9 @@ if (typeof document !== 'undefined') {
       $('rubroDetectado').textContent = '';
     }
     estado = { respuestas, rubro };
+    // La capa de IA (taller_ia.js) necesita saber qué texto corresponde a cada
+    // tarjeta y con qué rubro se evaluó.
+    window.estadoDelTaller = () => estado;
     $('barraPrompt').hidden = !respuestas.length;
     $('promptPreview').hidden = true;
     renderResumen(respuestas, rubro);

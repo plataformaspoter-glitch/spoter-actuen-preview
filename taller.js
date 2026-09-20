@@ -577,7 +577,11 @@ function camposDePlantilla(plantilla) {
     .filter(l => !/[{$]/.test(l))
     .filter(l => /^\d+\.\s/.test(l) || (/^•\s/.test(l) && /[:?]\**\s*$/.test(l)))
     .map(l => l.replace(/^(\d+\.|•)\s*/, '').replace(/\*/g, '').replace(/[:.]\s*$/, '').trim())
-    .filter(Boolean);
+    // Un dato a pedir no es una oferta ni una explicación después de dos puntos:
+    // "Transferencia con 10% OFF" o "Tarjeta: en 3 cuotas" son ejemplos de la
+    // plantilla, no preguntas, y sus números no son del negocio. "3 fotos
+    // generales" o "Kilometraje (ej. 10.000 km)" sí son datos a pedir.
+    .filter(l => l && !/:\s*\S/.test(l) && !/(%|\bOFF\b|cuotas|\$)/i.test(l));
 }
 
 const VACIAS = new Set(('de la el los las un una y o a en con para por del al que se tu su mi ' +
@@ -941,8 +945,11 @@ function reacomodar(entrada, catalogo, rubroKey) {
   const textoPropio = piezas.map(p => p.texto || '').join(' ');
   if (yaCotiza(piezas) && !RE_POR_UNIDAD.test(textoPropio) && !intenciones.includes('stock')) tipos.add('cantidad');
   const yaPedido = new Set(campos.flatMap(c => palabras(c.texto)));
+  // Si la respuesta dice que no hay envíos, no se pide dónde entregar.
+  const sinEnvios = /\bno\s+(hacemos|realizamos|tenemos)\s+(env[ií]os?|entregas?|delivery)|\bno\s+enviamos\b/i.test(textoPropio);
   for (const c of candidatos) {
     if (campos.length >= 4 || (!plantillaCampos && campos.length >= 3)) break;
+    if (sinEnvios && /(entrega|env[ií]o|recibe en obra|direcci[oó]n)/i.test(c)) continue;
     const t = tipoDeDato(c);
     if ((t && tipos.has(t)) || palabras(c).some(w => yaPedido.has(w))) continue;
     campos.push({ origen: 'sugerido', texto: c.replace(/:$/, '') });
@@ -1040,6 +1047,7 @@ function contextoDelRubro(catalogo, rubroKey) {
 
 const REGLAS_PROMPT = `- No inventes precios, stock, plazos, políticas, direcciones ni nombres. Donde falte un dato real, dejá un marcador entre llaves: {PRECIO}, {PLAZO}, {DIRECCION_LOCAL}, etc.
 - Los datos reales que ya están en la respuesta (precios, plazos, horarios, cantidades) se conservan tal cual: los marcadores son solo para lo que falta, nunca para tapar un dato que el negocio ya dio.
+- Lo que la respuesta ya le dice al cliente también se conserva, con tus palabras: que se le manda el presupuesto o un adjunto, lo que el negocio NO hace, los medios de pago, los días y los links.
 - Español rioplatense con voseo, cercano y profesional. Nada de "estimado cliente", "a la brevedad" ni "quedo a disposición".
 - Formato WhatsApp: *negrita* para lo clave, viñetas • para información, lista numerada para los datos a pedir. Como máximo 2 o 3 emojis y solo si ordenan.
 - Un solo bloque. Si hace falta separar la información del cierre, usá una única vez la marca [---saltomensaje---] en su propia línea.

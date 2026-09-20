@@ -302,13 +302,28 @@ const INTENCIONES = {
 const ORDEN_INTENCIONES = ['reclamo', 'tramite', 'pago', 'turno', 'precio', 'envio', 'stock', 'horario', 'seguimiento'];
 
 /** Tipos de dato: cómo aparecen en el mensaje del cliente y cómo se preguntan. */
+const UNIDADES = 'barras?|bolsas?|bolsones?|m3|m2|m²|metros?|mts?|unidades?|kg|kilos?|litros?|cajas?|' +
+  'packs?|pallets?|camionadas?|placas?|rollos?|chapas?|personas?|noches?|cubiertos?';
+
 const DATOS = {
+  // La zona va antes que la dirección: si el cliente dijo "Pilar", preguntar
+  // "¿en qué zona?" sobra, pero pedir la calle y la altura sigue haciendo falta.
+  zona: { nombre: 'zona',
+    // El lugar suele venir de costado: "para una obra en Pilar", "me lo traen
+    // a Moreno?", "estoy en Villa Luzuriaga", "soy de zona sur".
+    enCliente: /(?:vivo en|estoy en|soy de|obra (?:es |est[aá] |queda )?en|(?:traen|llevan|mandan|env[ií]an|entregan)(?:\s+\w+){0,2}\s+a|barrio|zona)\s*([^.,;\n?¿!]{3,40})/i,
+    enPregunta: /(direcci[oó]n aproximada|\bzona\b|barrio|localidad|a d[oó]nde|d[oó]nde (ser[ií]a|es la obra|lo (env|mand|entreg)))/i,
+    confirmar: v => `¿Te lo enviamos a ${v}?` },
   direccion: { nombre: 'dirección',
-    enCliente: /(?:mi direcci[oó]n (?:es|queda)|direcci[oó]n:?|domicilio:?|vivo en|entregar en|\bcalle\b|\bav\.|avenida|barrio)\s*([^.,;\n?¿!]{3,40})/i,
-    enPregunta: /(direcci[oó]n|domicilio|\bzona\b|barrio|localidad|a d[oó]nde|d[oó]nde (ser[ií]a|es la obra|lo (env|mand|entreg)))/i,
+    enCliente: /(?:mi direcci[oó]n (?:es|queda)|direcci[oó]n:?|domicilio:?|entregar en|entrega en|\bcalle\b|\bav\.|avenida)\s*([^.,;\n?¿!]{3,40})/i,
+    enPregunta: /(direcci[oó]n (?!aproximada)|domicilio|calle y altura|altura|d[oó]nde (entregamos|descargamos))/i,
     confirmar: v => `¿Te lo enviamos a ${v}?` },
   cantidad: { nombre: 'cantidad',
-    enCliente: /\b(\d+(?:[.,]\d+)?\s*(?:barras?|bolsas?|bolsones?|m3|m2|m²|metros?|mts?|unidades?|kg|kilos?|litros?|cajas?|packs?|pallets?|camionadas?|placas?|rollos?|chapas?|personas?|noches?|cubiertos?))\b/i,
+    // Con unidad ("20 bolsas") o sin ella ("necesito 20"): el cliente ya dijo
+    // cuánto, y volver a preguntarlo suena a que no se leyó el mensaje.
+    enCliente: new RegExp(`\\b(\\d+(?:[.,]\\d+)?\\s*(?:${UNIDADES}))\\b` +
+      // Sin unidad, la cantidad se reconoce por el verbo: "necesito 20".
+      `|\\b(?:necesito|necesitar[ií]a|quiero|querr[ií]a|llevo|preciso|comprar[ií]a|ser[ií]an?|son|me llevo)\\s+(\\d+(?:[.,]\\d+)?)(?!\\s*(?:${UNIDADES}|%|hs\\b|horas|am\\b|pm\\b|:|\\/))`, 'i'),
     enPregunta: /(cu[aá]nt[oa]s\b|qu[eé] cantidad|\bcantidad\b)/i,
     confirmar: v => `¿Confirmamos ${v}?` },
   dni: { nombre: 'DNI',
@@ -666,7 +681,13 @@ function datosDelCliente(cliente) {
   for (const [tipo, d] of Object.entries(DATOS)) {
     if (!d.enCliente) continue;
     const m = cliente.match(d.enCliente);
-    if (m) out[tipo] = (m[1] || m[2] || m[0]).trim().replace(/[\s.]+$/, '');
+    if (!m) continue;
+    // El verbo y la cantidad quedan pegados en algunas capturas ("cotizar 50
+    // chapas"): lo que importa es el dato, no cómo lo pidió.
+    const valor = (m.slice(1).find(Boolean) || m[0]).trim()
+      .replace(/^(?:cotizar|presupuestar|comprar|llevar)\s+/i, '')
+      .replace(/[\s.]+$/, '');
+    if (valor) out[tipo] = tipo === 'producto' ? valor.replace(/^\d+(?:[.,]\d+)?\s+/, '') : valor;
   }
   return out;
 }

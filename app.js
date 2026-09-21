@@ -42,7 +42,7 @@ const EXPLANATIONS = {
     benchmark: "Ahorro promedio del 55% al 60% en volumen de mensajes y recupero de más de 100 horas operativas mensuales."
   },
   bottleneck: {
-    title: "Carga Operativa, Bot y Derivación Humana (Handoff)",
+    title: "Cómo se reparte la atención entre el bot y las personas",
     meaning: "Analiza cómo se distribuye la atención entre el Bot (automatización) y los asesores humanos del equipo.",
     calculation: "Se separa el volumen atendido por Bots del volumen atendido por personas reales. En los asesores humanos, se calcula el porcentaje absorbido por el asesor más cargado.",
     impact: "💡 Enfoque Spoter: Si el Bot absorbe volumen, es Verde = Bueno (automatización exitosa). Si un asesor humano concentra más del 60% de la carga humana, es Rojo = Malo (cuello de botella con demoras y errores).",
@@ -221,7 +221,7 @@ function initExecutiveControls() {
         renderQualificationPanel(currentData);
         updateScorecardHandoff(currentData, newVal);
         const policyLabel = selectHandoff.options[selectHandoff.selectedIndex].text;
-        showToast(`🤖 Política de Handoff actualizada: ${policyLabel}`);
+        showToast(`🤖 Pase de bot a persona actualizado: ${policyLabel}`);
       }
       triggerReload();
     });
@@ -1323,7 +1323,7 @@ function computeScorecard(ctx) {
     aRecom = 'Filtro Directo: Identificar al cliente en el primer mensaje y transferir al asesor asignado sin menús infinitos.';
   }
   sc.push({ pillar: 'A - Atraer y Atender', score: aStatus === 'ÓPTIMO' ? 75 : 55, status: aStatus,
-            focus_context: `Política de Handoff: ${policy.toUpperCase()}`, diagnosis: aDiag, recommendation: aRecom });
+            focus_context: `Pase de bot a persona: ${policy.toUpperCase()}`, diagnosis: aDiag, recommendation: aRecom });
 
   // C - Cero Vueltas
   const cStatus = fragmentationRate > 35 ? 'CRÍTICO' : (fragmentationRate > 15 ? 'ALERTA' : 'ÓPTIMO');

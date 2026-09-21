@@ -29,7 +29,7 @@
       });
     }
   </script>
-  <link rel="stylesheet" href="app.css?v=20260921f">
+  <link rel="stylesheet" href="app.css?v=20260921g">
 </head>
 <body>
 
@@ -57,30 +57,33 @@
 
     <!-- Panel Inicial de Carga / Ingestión (Se oculta tras procesar) -->
     <section class="upload-container" id="dropzonePanel">
-      <!-- Cuadro inicial de Drag & Drop -->
-      <div class="dropzone-box" id="dropzoneBox">
-        <div class="upload-icon">⚡</div>
-        <h3>Auditoría y Optimización de Conversaciones de WhatsApp</h3>
-        <p class="dropzone-desc">
-          Arrastrá y soltá acá los archivos de exportación de WhatsApp en formato CSV para diagnosticar la interacción bajo el <strong>Método ACTÚEN+ de Spoter</strong>, detectar cuellos de botella y proyectar el ahorro económico.
-        </p>
-        
-        <!-- Indicador de Cantidad Máxima de Archivos -->
-        <div class="upload-max-badge">
-          <span class="max-badge-icon">📁</span>
-          <span>Capacidad máxima de procesamiento: <strong>Hasta 10 archivos CSV simultáneos</strong></span>
+      <!-- Dos caminos: traer tus chats, o ver una auditoría ya hecha -->
+      <div class="inicio-grid">
+        <div class="inicio-card inicio-card--subir" id="dropzoneBox">
+          <span class="inicio-tag">Con tus datos</span>
+          <h3>Subí tus exportaciones de WhatsApp</h3>
+          <p class="inicio-desc">Archivos <strong>.CSV</strong> exportados de tu plataforma de WhatsApp. Se procesan en tu navegador: no se suben a ningún servidor.</p>
+          <div class="inicio-drop" id="dropzoneHint">
+            <span class="inicio-drop-icono">📁</span>
+            <span>Arrastrá los archivos acá, o</span>
+            <button class="btn btn-primary btn-select-files" id="btnUpload">📤 Seleccionar archivos CSV</button>
+          </div>
+          <p class="inicio-nota">Hasta 10 archivos por vez · El análisis tarda unos segundos</p>
+          <input type="file" id="fileInput" multiple accept=".csv" style="display: none;">
         </div>
-      </div>
-      
-      <!-- Botones por FUERA del cuadro inicial -->
-      <div class="upload-btn-group-outside">
-        <button class="btn btn-primary btn-select-files" id="btnUpload">
-          📤 Seleccionar Archivos CSV
-        </button>
-        <button class="btn btn-secondary btn-test-batch" id="btnLoadDefault">
-          ⚡ Cargar Lote de Prueba
-        </button>
-        <input type="file" id="fileInput" multiple accept=".csv" style="display: none;">
+
+        <div class="inicio-card inicio-card--demo">
+          <span class="inicio-tag inicio-tag--demo">Sin datos propios</span>
+          <h3>Ver una auditoría de ejemplo</h3>
+          <p class="inicio-desc">Una concesionaria inventada, con una semana de chats reales en volumen: quién pregunta por un 0 km financiado y cuánto espera para que le contesten.</p>
+          <ul class="inicio-lista">
+            <li><strong>34 clientes</strong> con intención de compra alta, sobre 70 conversaciones</li>
+            <li><strong>30 de ellos</strong> esperaron porque se atiende por orden de llegada</li>
+            <li><strong>8 conversaciones</strong> cruzaron las 24 h y ya cuesta plata reabrirlas</li>
+          </ul>
+          <button class="btn btn-primary btn-test-batch" id="btnLoadDefault">⚡ Ver la auditoría de ejemplo</button>
+          <p class="inicio-nota">Datos ficticios, armados para mostrar el método. Ninguna empresa real.</p>
+        </div>
       </div>
     </section>
 
@@ -121,11 +124,11 @@
           </div>
         </div>
 
-        <!-- Paso 3: Política de Handoff -->
+        <!-- Paso 3: pase de bot a persona -->
         <div class="wizard-step-card">
           <div class="step-badge">3</div>
           <div class="step-content">
-            <h4>🤖 Política de Handoff</h4>
+            <h4>🤖 Pase de bot a persona</h4>
             <p class="step-hint">Derivación Bot ➔ Asesor Humano</p>
             <select class="wizard-select" id="wizSelectHandoff">
               <option value="hybrid">⚖️ Híbrido (Equilibrado)</option>
@@ -153,7 +156,7 @@
             <p id="wizTxtFocusQual">Calculando afinidad comercial...</p>
           </div>
           <div class="qualification-item">
-            <strong>🤖 Política de Handoff & Automatización</strong>
+            <strong>🤖 Pase de bot a persona</strong>
             <p id="wizTxtHandoffQual">Evaluando balance bot vs personas...</p>
           </div>
           <div class="qualification-item">
@@ -196,8 +199,8 @@
             </div>
 
             <div class="selector-group">
-              <label for="selectHandoff">Política Handoff:</label>
-              <select class="focus-select" id="selectHandoff" title="Política de Handoff (Derivación Bot ➔ Asesor)">
+              <label for="selectHandoff">Pase a persona:</label>
+              <select class="focus-select" id="selectHandoff" title="Cuándo pasa del bot a una persona del equipo">
                 <option value="hybrid">⚖️ Híbrido (Equilibrado)</option>
                 <option value="bot_priority">🤖 Bot Autoservicio (Max Automatización)</option>
                 <option value="human_priority">👤 Humano Prioritario (Venta Consultiva)</option>
@@ -243,7 +246,7 @@
             <p id="txtFocusQual">Calculando afinidad comercial vs asistencial...</p>
           </div>
           <div class="qualification-item" id="itemHandoffQual">
-            <strong>🤖 Política de Handoff & Automatización</strong>
+            <strong>🤖 Pase de bot a persona</strong>
             <p id="txtHandoffQual">Evaluando el balance de mensajes resueltos por bot vs personal humano...</p>
           </div>
           <div class="qualification-item" id="itemSlaQual">
@@ -301,7 +304,7 @@
 
         <div class="kpi-card alert" id="cardKpiFrag" data-kpi="fragmentation" title="Hacé clic para ver la explicación">
           <div class="kpi-title">
-            <span>Fragmentación (C)</span>
+            <span>Mensajes cortados (C)</span><span class="tip" tabindex="0" role="note" aria-label="Qué significa" data-tip="Cuántas respuestas salen en ráfagas de dos o más mensajes seguidos en vez de uno solo ordenado. Cada ráfaga suma notificaciones y confunde al cliente.">ℹ️</span>
             <span class="kpi-status-tag status-alert" id="tagKpiFrag">🔴 MALO / CRÍTICO</span>
           </div>
           <div class="kpi-value" id="kpiFragmentation">-%</div>
@@ -310,7 +313,7 @@
 
         <div class="kpi-card warning" id="cardKpiWait" data-kpi="wait_time" title="Hacé clic para ver la explicación y SLA del rubro">
           <div class="kpi-title">
-            <span>Espera Media (T)</span>
+            <span>Espera media (T)</span><span class="tip" tabindex="0" role="note" aria-label="Qué significa" data-tip="Cuánto tarda en promedio la primera respuesta. Se compara con el tiempo objetivo de tu rubro: pasado ese punto, la mayoría ya preguntó en otro lado.">ℹ️</span>
             <span class="kpi-status-tag status-warning" id="tagKpiWait">🟡 ALERTA</span>
           </div>
           <div class="kpi-value" id="kpiAvgWait">- min</div>
@@ -326,7 +329,7 @@
           <div class="kpi-sub" id="kpiSavedSub">Ahorro mensual proyectado</div>
         </div>
 
-        <div class="kpi-card warning" id="kpiCardBottleneck" data-kpi="bottleneck" title="Hacé clic para ver la distribución de carga y handoff">
+        <div class="kpi-card warning" id="kpiCardBottleneck" data-kpi="bottleneck" title="Hacé clic para ver cómo se reparte la atención">
           <div class="kpi-title">
             <span id="kpiBottleneckTitle">Carga de Atención</span>
             <span class="kpi-status-tag status-warning" id="tagKpiBottleneck">🟡 ALERTA</span>
@@ -344,7 +347,7 @@
         </button>
         <button class="tab-btn" data-tab="tabLtvTriage">
           <span class="tab-num">2</span>
-          <span class="tab-label">💰 LTV & Triage IU/IC</span>
+          <span class="tab-label">💰 Plata en riesgo y prioridades</span>
         </button>
         <button class="tab-btn" data-tab="tabTopics">
           <span class="tab-num">3</span>
@@ -352,7 +355,7 @@
         </button>
         <button class="tab-btn" data-tab="tabHandoffGaps">
           <span class="tab-num">4</span>
-          <span class="tab-label">🔬 Motivos de Handoff</span>
+          <span class="tab-label">🔬 Por qué interviene una persona</span>
         </button>
         <button class="tab-btn" data-tab="tabFriction">
           <span class="tab-num">5</span>
@@ -375,7 +378,7 @@
         </div>
       </section>
 
-      <!-- Pestaña 2: Auditoría de LTV Económico, Priorización IU/IC & Cuello de Botella FIFO -->
+      <!-- Pestaña 2: plata en riesgo, prioridades y el costo de atender por orden de llegada -->
       <section class="tab-pane" id="tabLtvTriage">
         <div class="ltv-executive-section">
           <div class="ltv-section-header">
@@ -392,7 +395,7 @@
           <div class="ltv-kpi-grid">
             <div class="ltv-kpi-card danger-card" id="cardLtvRisk" data-ltv-kpi="capital_risk" title="Hacé clic para ver el cálculo detallado y metodología">
               <div class="ltv-card-top">
-                <span class="ltv-card-label">Capital LTV en Riesgo</span>
+                <span class="ltv-card-label">Plata en riesgo</span><span class="tip" tabindex="0" role="note" aria-label="Qué significa" data-tip="Lo que valen, a lo largo de toda la relación, los clientes que se están perdiendo por demoras o respuestas incompletas. No es la venta de hoy: es todo lo que ese cliente hubiera comprado.">ℹ️</span>
                 <span class="ltv-card-badge badge-risk">🔴 DESTRUCCIÓN LTV</span>
               </div>
               <div class="ltv-card-main-val" id="valLtvTotalRisk">$0 USD</div>
@@ -412,7 +415,7 @@
 
             <div class="ltv-kpi-card warning-card" id="cardLtvMeta24" data-ltv-kpi="meta_24h" title="Hacé clic para ver el cálculo detallado y metodología">
               <div class="ltv-card-top">
-                <span class="ltv-card-label">Fugas Ventana 24h Meta</span>
+                <span class="ltv-card-label">Conversaciones que pasaron las 24 h</span><span class="tip" tabindex="0" role="note" aria-label="Qué significa" data-tip="WhatsApp cobra por reabrir una conversación después de 24 horas sin respuesta. Este número dice cuántos clientes cruzaron ese límite esperando.">ℹ️</span>
                 <span class="ltv-card-badge badge-fifo">⏱️ LÍMITE WHATSAPP</span>
               </div>
               <div class="ltv-card-main-val" id="valMeta24hBreaches">0 chats</div>
@@ -635,7 +638,7 @@
       </section>
 
       <!-- Pestaña 3: Fugas Operativas, Tiempos y Horarios -->
-            <!-- Pestaña 4: Diagnóstico Causal & Motivos de Handoff -->
+            <!-- Pestaña 4: por qué interviene una persona -->
       <section class="tab-pane" id="tabHandoffGaps">
 <!-- AUDITORÍA DE BRECHAS DE AUTOMATIZACIÓN & DISPARADORES DE HANDOFF -->
         <div class="card-panel gap-audit-panel" id="handoffGapPanel" style="margin-top: 20px;">
@@ -657,7 +660,7 @@
           <!-- Métricas Resumen de Brechas -->
           <div class="gap-metrics-grid">
             <div class="gap-metric-card">
-              <div class="gap-metric-title">Total Handoffs a Humanos</div>
+              <div class="gap-metric-title">Veces que intervino una persona<span class="tip" tabindex="0" role="note" aria-label="Qué significa" data-tip="Cuántas veces la conversación pasó del bot a alguien del equipo. No es malo en sí: lo que importa es por qué pasó y si era evitable.">ℹ️</span></div>
               <div class="gap-metric-val" id="valGapTotalHandoffs">-</div>
               <div class="gap-metric-sub">Conversaciones atendidas por personas</div>
             </div>
@@ -689,7 +692,7 @@
             </div>
           </div>
 
-          <!-- Lista de Disparadores de Handoff -->
+          <!-- Qué dispara el pase a una persona -->
           <div style="margin-top: 24px;">
             <h4 style="font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
               <span>🎯</span> Ranking de Dudas y Objetivos que sacaron a los Asesores a la cancha:
@@ -989,7 +992,7 @@
   <!-- Notificación Toast Flotante -->
   <div class="toast" id="toastNotification">Mensaje</div>
 
-  <script src="atajos.js?v=20260921f"></script>
-  <script src="app.js?v=20260921f"></script>
+  <script src="atajos.js?v=20260921g"></script>
+  <script src="app.js?v=20260921g"></script>
 </body>
 </html>

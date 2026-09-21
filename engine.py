@@ -9,7 +9,7 @@ Novedades V2.5 (Algoritmos de Priorización IU/IC, Fugas FIFO, LTV Económico y 
 Novedades V2.3:
 1. Análisis de Horarios y Días de Inicio de Conversación (Heatmap / Distribución horaria y semanal de primeros contactos).
 2. Diferenciación inteligente entre Bot (automatización exitosa) y Cuello de Botella Humano.
-3. Selector de Política de Handoff (Bot Autoservicio vs Híbrido vs Humano Prioritario).
+3. Selector del pase de bot a persona (autoservicio, híbrido o persona primero).
 4. Métricas claras de Ping-Pong (Idas y vueltas de mensajes por caso con semáforo de fricción).
 5. Explicación fundamentada del Objetivo de Optimización en base al excedente real de mensajes.
 6. Catálogo ampliado de Respuestas Maestras (6+ plantillas especializadas por rubro con soporte para "Ver Más").
@@ -1204,7 +1204,7 @@ class ActuenAnalyzer:
             "pillar": "A - Atraer y Atender",
             "score": 75 if a_status == "ÓPTIMO" else 55,
             "status": a_status,
-            "focus_context": f"Política de Handoff: {policy.upper()}",
+            "focus_context": f"Pase de bot a persona: {policy.upper()}",
             "diagnosis": a_diag,
             "recommendation": a_recom
         })

@@ -2923,3 +2923,46 @@ input[type="range"] {
   line-height: 1.5;
   color: var(--text-secondary);
 }
+
+/* ── Globo de ayuda ───────────────────────────────────────────────────────
+   Explica la jerga donde aparece, sin sacar al usuario de la pantalla. */
+.tip { position: relative; display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; margin-left: 5px; border-radius: 50%; border: 1px solid var(--border-color);
+  background: var(--bg-secondary); color: var(--text-secondary); font-size: 10px; cursor: help;
+  vertical-align: middle; flex: none; }
+.tip:hover, .tip:focus-visible { border-color: var(--spoter-pink); color: var(--spoter-pink); outline: none; }
+.tip::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 9px); left: 50%;
+  width: max-content; max-width: 260px; transform: translate(-50%, 4px); padding: 9px 11px;
+  border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card);
+  color: var(--text-primary); font-size: 12px; font-weight: 500; line-height: 1.45; text-align: left;
+  text-transform: none; letter-spacing: 0; white-space: normal; z-index: 40;
+  opacity: 0; visibility: hidden; transition: opacity .15s ease, transform .15s ease;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .28); pointer-events: none; }
+.tip:hover::after, .tip:focus-visible::after { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
+@media (max-width: 720px) {
+  .tip::after { left: auto; right: -8px; transform: translate(0, 4px); }
+  .tip:hover::after, .tip:focus-visible::after { transform: translate(0, 0); }
+}
+
+/* ── Pantalla inicial del Analizador ──────────────────────────────────────
+   Dos caminos con el mismo peso visual: traer tus chats o ver un ejemplo. */
+.inicio-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; }
+.inicio-card { display: flex; flex-direction: column; gap: 10px; padding: 26px 24px;
+  border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-card); }
+.inicio-card--demo { border-color: var(--spoter-pink-border); background: var(--spoter-pink-light); }
+.inicio-card h3 { font-family: var(--font-heading); font-size: 20px; line-height: 1.25; }
+.inicio-tag { align-self: flex-start; font-size: 10.5px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .07em; padding: 3px 9px; border-radius: 999px; background: var(--bg-secondary); color: var(--text-secondary); }
+.inicio-tag--demo { background: var(--spoter-pink); color: #fff; }
+.inicio-desc { font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); }
+.inicio-drop { display: flex; flex-direction: column; align-items: center; gap: 9px; text-align: center;
+  padding: 22px 16px; border: 1.5px dashed var(--border-color); border-radius: var(--radius-md);
+  background: var(--bg-secondary); font-size: 13px; color: var(--text-secondary); transition: border-color .2s, background .2s; }
+.inicio-drop.dragover { border-color: var(--spoter-pink); background: var(--spoter-pink-light); }
+.inicio-drop-icono { font-size: 26px; }
+.inicio-lista { display: grid; gap: 7px; padding-left: 18px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); }
+.inicio-lista strong { color: var(--text-primary); }
+.inicio-card .btn { align-self: flex-start; }
+.inicio-nota { font-size: 11.5px; color: var(--text-muted); margin-top: auto; }
+.inicio-card--subir.dragover { border-color: var(--spoter-pink); }
+.inicio-card--subir.dragover .inicio-drop { border-color: var(--spoter-pink); background: var(--spoter-pink-light); }

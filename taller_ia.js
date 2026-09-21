@@ -37,7 +37,7 @@
         ${sesion.rol === 'admin' ? '<a class="btn btn-secondary" href="admin.html" style="text-decoration:none">⚙️ Administración</a>' : ''}
         <button class="btn btn-secondary" id="tlSalir">Cerrar sesión</button>
       </span>`;
-    document.querySelector('.tl-metodo').before(caja);
+    (document.querySelector('.tl-guia') || document.querySelector('.tl-entrada')).before(caja);
     $('tlSalir').addEventListener('click', async () => {
       await fetch('/api/sesion', { method: 'DELETE' });
       location.reload();

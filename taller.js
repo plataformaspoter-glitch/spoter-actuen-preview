@@ -1266,6 +1266,30 @@ if (typeof module !== 'undefined') {
 // ==========================================================================
 
 if (typeof document !== 'undefined') {
+  /**
+   * Casos listos para pegar, uno por situación típica. Enseñan el formato por
+   * imitación: se ve el "Cliente:", la respuesta del equipo y el separador ---
+   * sin tener que leer las instrucciones.
+   */
+  const CASOS = {
+    cotizacion: {
+      etiqueta: '💰 Cotización de un producto',
+      texto: 'Cliente: hola, cuanto sale la bolsa de cemento? necesito 20 para una obra en Pilar\nBuenos dias! te paso el presupuesto en pdf. cualquier consulta avisame.',
+    },
+    renovacion: {
+      etiqueta: '🔁 Renovación de un servicio',
+      texto: 'Cliente: me llego el aviso de vencimiento, que tengo que hacer?\nHola! si, vence este mes. Te paso con administracion asi te informan.',
+    },
+    reclamo: {
+      etiqueta: '😠 Reclamo de un cliente enojado',
+      texto: 'Cliente: hace 10 dias que espero la autorizacion y nadie me responde\nEstimado cliente, su solicitud ha sido recibida. Nos comunicaremos a la brevedad.',
+    },
+    envio: {
+      etiqueta: '🚚 Consulta de envío',
+      texto: 'Cliente: hacen envios a Moreno?\nsi hacemos, depende la zona. a que direccion?',
+    },
+  };
+
   const EJEMPLOS = {
     construccion_corralon: [
       'Cliente: hola, necesito precio de 20 bolsas de cemento con envio a calle Belgrano 1450\nBuenos dias!\ncemento avellaneda $6260 holcim $6500\ndepende la zona, a que direccion lo solicitaba?',
@@ -1410,7 +1434,7 @@ if (typeof document !== 'undefined') {
 
   function iniciarDialogo() {
     const dlg = $('pilarDialogo');
-    document.querySelector('.tl-metodo').addEventListener('click', ev => {
+    document.querySelector('.tl-teoria').addEventListener('click', ev => {
       const card = ev.target.closest('.tl-pilar');
       if (card && !ev.target.closest('a')) abrirPilar(card.dataset.letra);
     });
@@ -1501,12 +1525,17 @@ if (typeof document !== 'undefined') {
           </div>
           <div>
             <h4>Acomodada con ACTÚEN+</h4>
+            <div class="tl-vista" role="group" aria-label="Cómo mostrar la respuesta">
+              <button type="button" class="tl-vista-btn tl-vista-btn--activo" data-vista="partes">🧩 Por partes</button>
+              <button type="button" class="tl-vista-btn" data-vista="chat">💬 Como la ve el cliente</button>
+            </div>
             <div class="tl-leyenda">
               <span class="tl-chip tl-chip--tuyo">tus palabras</span>
               <span class="tl-chip tl-chip--metodo">estructura del método</span>
               <span class="tl-chip tl-chip--sugerido">sugerido</span>
             </div>
             <div class="tl-bloques">${bloquesHtml}</div>
+            <div class="tl-chat tl-chat--vista" hidden><div class="tl-chat-lienzo"></div></div>
             ${notaPlantillas(plantilla, plantillaCampos)}
             <div class="tl-acciones">
               <button class="btn btn-primary tl-copiar">📋 Copiar respuesta</button>
@@ -1521,6 +1550,29 @@ if (typeof document !== 'undefined') {
     $('resultados').querySelectorAll('.tl-card').forEach(card => {
       card._bloques = reacomodar(respuestas[Number(card.dataset.resp)], catalogo, rubro).bloques;
     });
+  }
+
+  const LARGO_BURBUJA = 700;
+
+  /**
+   * La respuesta acomodada, vista como la va a ver el cliente en WhatsApp.
+   * Es donde se entiende de un vistazo qué hace [---saltomensaje---] y cuándo
+   * una burbuja quedó demasiado larga para leerla en el celular.
+   */
+  function pintarChat(card) {
+    const idx = Number(card.dataset.resp);
+    const { cliente } = separarContexto(estado.respuestas[idx] || '');
+    const texto = componerTexto(card._bloques, apagadosDe(card));
+    const burbujas = texto.split(SALTO).map(t => t.trim()).filter(Boolean);
+    const negrita = t => esc(t).replace(/\*([^*\n]+)\*/g, '<strong>$1</strong>');
+    card.querySelector('.tl-chat-lienzo').innerHTML =
+      (cliente ? `<div class="tl-burbuja-cliente">${negrita(cliente)}</div>` : '') +
+      burbujas.map((b, i) => {
+        const larga = b.length > LARGO_BURBUJA;
+        return `<div class="tl-burbuja${larga ? ' tl-burbuja--larga' : ''}">${negrita(b)}` +
+          `<span class="tl-burbuja-pie">${b.length} caracteres${larga ? ' · pasa los ' + LARGO_BURBUJA + ', conviene partirla' : ''}</span></div>` +
+          (i < burbujas.length - 1 ? '<div class="tl-chat-corte">se envía como otro mensaje</div>' : '');
+      }).join('');
   }
 
   function renderResumen(respuestas, rubro) {
@@ -1642,6 +1694,23 @@ if (typeof document !== 'undefined') {
     $('btnAtajosCsv').addEventListener('click', () => {
       descargar('atajos_taller_actuen.csv', '\ufeff' + atajosACsv(atajosDelLote()), 'text/csv');
     });
+    function pegar(texto, rubro) {
+      $('entrada').value = texto;
+      if (rubro) $('rubro').value = rubro;
+      $('avisoImportacion').hidden = true;
+      ocultarGuia();
+      renderResultados();
+      guardarBorrador();
+      $('resultados').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    $('tlCasos').innerHTML = Object.entries(CASOS)
+      .map(([clave, c]) => `<button type="button" class="tl-caso" data-caso="${clave}">${esc(c.etiqueta)}</button>`).join('');
+    $('tlCasos').addEventListener('click', ev => {
+      const b = ev.target.closest('[data-caso]');
+      if (b) pegar(CASOS[b.dataset.caso].texto, 'auto');
+    });
+
     function cargarEjemplo() {
       const r = $('rubro').value;
       $('entrada').value = EJEMPLOS[r] || EJEMPLOS.construccion_corralon;
@@ -1666,11 +1735,24 @@ if (typeof document !== 'undefined') {
       const cb = ev.target;
       if (cb.type !== 'checkbox') return;
       cb.closest('.tl-bloque').classList.toggle('tl-bloque--apagado', !cb.checked);
+      const card = cb.closest('.tl-card');
+      // Si el chat está a la vista, tiene que reflejar lo que quedó activo.
+      if (card && !card.querySelector('.tl-chat--vista').hidden) pintarChat(card);
     });
     $('resultados').addEventListener('click', ev => {
       const card = ev.target.closest('.tl-card');
       if (!card) return;
       const idx = Number(card.dataset.resp);
+      const vista = ev.target.closest('[data-vista]');
+      if (vista) {
+        const chat = vista.dataset.vista === 'chat';
+        if (chat) pintarChat(card);
+        card.querySelector('.tl-chat--vista').hidden = !chat;
+        card.querySelector('.tl-bloques').hidden = chat;
+        card.querySelector('.tl-leyenda').hidden = chat;
+        card.querySelectorAll('[data-vista]').forEach(b => b.classList.toggle('tl-vista-btn--activo', b === vista));
+        return;
+      }
       if (ev.target.closest('.tl-copiar')) {
         copiar(ev.target.closest('.tl-copiar'), componerTexto(card._bloques, apagadosDe(card)), '📋 Copiar respuesta');
       } else if (ev.target.closest('.tl-prompt')) {

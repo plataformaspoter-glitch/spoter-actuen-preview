@@ -7,9 +7,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="app.css?v=20260921e">
+  <link rel="stylesheet" href="app.css?v=20260921f">
   <style>
-    .tl-metodo { margin-bottom: 30px; }
+    .tl-metodo { margin-bottom: 8px; }
+    .tl-teoria { margin: 28px 0 10px; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-card); padding: 4px 18px; }
+    .tl-teoria > summary { cursor: pointer; padding: 14px 4px; font-weight: 800; font-size: 15.5px; display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; list-style: none; }
+    .tl-teoria > summary::-webkit-details-marker { display: none; }
+    .tl-teoria > summary::before { content: '▸'; color: var(--spoter-pink); }
+    .tl-teoria[open] > summary::before { content: '▾'; }
+    .tl-teoria-pista { font-weight: 500; font-size: 12.5px; color: var(--text-muted); }
     .tl-intro { max-width: 860px; margin-bottom: 22px; }
     .tl-intro h2 { font-family: var(--font-heading); font-size: 26px; margin-bottom: 8px; line-height: 1.2; }
     .tl-intro p { color: var(--text-secondary); font-size: 15px; line-height: 1.6; }
@@ -28,6 +34,18 @@
     .tl-burbuja-cliente, .tl-burbuja { max-width: 92%; border-radius: 10px; padding: 8px 11px; font-size: 13.5px; line-height: 1.5; color: #111b21; }
     .tl-burbuja-cliente { background: #fff; margin-bottom: 10px; border-top-left-radius: 2px; }
     .tl-burbuja { background: #d9fdd3; margin-left: auto; border-top-right-radius: 2px; }
+    /* app.css le da display a varios bloques: sin esto, [hidden] no oculta. */
+    [hidden] { display: none !important; }
+    .tl-chat--vista { margin-top: 10px; }
+    .tl-chat-lienzo { display: grid; gap: 8px; }
+    .tl-burbuja, .tl-burbuja-cliente { white-space: pre-wrap; word-break: break-word; }
+    .tl-burbuja-pie { display: block; margin-top: 5px; font-size: 10.5px; color: #4b5b61; }
+    .tl-burbuja--larga { box-shadow: 0 0 0 2px var(--warning); }
+    .tl-burbuja--larga .tl-burbuja-pie { color: #8a5a00; font-weight: 700; }
+    .tl-chat-corte { text-align: center; font-size: 10.5px; color: #8696a0; text-transform: uppercase; letter-spacing: .06em; }
+    .tl-vista { display: flex; gap: 6px; margin-bottom: 8px; }
+    .tl-vista-btn { font-size: 12px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary); cursor: pointer; font-family: inherit; }
+    .tl-vista-btn--activo { border-color: var(--spoter-pink); background: var(--spoter-pink-light); color: var(--text-primary); font-weight: 700; }
     .tl-parte { display: flex; gap: 8px; align-items: flex-start; padding: 3px 4px; border-radius: 6px; }
     .tl-parte + .tl-parte { margin-top: 2px; }
     .tl-parte i { font-style: normal; flex: none; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; background: var(--spoter-pink); color: #fff; font-size: 11px; font-weight: 800; display: grid; place-items: center; margin-top: 1px; }
@@ -101,6 +119,10 @@
     .tl-pasos li::before { content: counter(paso); width: 34px; height: 34px; border-radius: 50%; background: var(--spoter-pink); color: #fff; font-weight: 800; display: grid; place-items: center; }
     .tl-pasos strong { display: block; color: var(--text-primary); font-size: 14px; margin-bottom: 2px; }
 
+    .tl-casos-titulo { font-size: 12.5px; color: var(--text-secondary); margin-bottom: 7px; }
+    .tl-casos { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }
+    .tl-caso { font-size: 12.5px; padding: 6px 13px; border-radius: 999px; border: 1px solid var(--spoter-pink-border); background: var(--spoter-pink-light); color: var(--text-primary); cursor: pointer; font-family: inherit; transition: border-color .15s, transform .15s; }
+    .tl-caso:hover { border-color: var(--spoter-pink); transform: translateY(-1px); }
     .tl-entrada { border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-card); padding: 18px; margin-bottom: 24px; }
     .tl-entrada-top { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
     .tl-entrada label { font-weight: 700; font-size: 14px; }
@@ -248,60 +270,6 @@
       </div>
     </header>
 
-    <section class="tl-metodo" aria-labelledby="tituloMetodo">
-      <div class="tl-intro">
-        <h2 id="tituloMetodo">¿Qué es el método ACTÚEN+?</h2>
-        <p>Es una forma de escribir cada respuesta de WhatsApp para que el cliente <strong>avance en un solo mensaje</strong>,
-          sin idas y vueltas. No es un texto para copiar: son 7 preguntas que podés hacerle a cualquier respuesta.
-          Cinco se revisan mirando el texto; las otras dos, mirando tus chats.</p>
-        <nav class="tl-sigla" aria-label="Los 7 pilares">
-          <a href="#pilar-A"><b>A</b>Atender</a>
-          <a href="#pilar-C"><b>C</b>Cero vueltas</a>
-          <a href="#pilar-T"><b>T</b>Tiempos</a>
-          <a href="#pilar-U"><b>Ú</b>Ubicar</a>
-          <a href="#pilar-E"><b>E</b>Experiencia</a>
-          <a href="#pilar-N"><b>N</b>Nutrir y cerrar</a>
-          <a href="#pilar-mas"><b>+</b>Optimizar</a>
-        </nav>
-      </div>
-
-      <h3 class="tl-bloque-titulo">Así se ve una respuesta que cumple <span>— cada número marca la parte y el pilar</span></h3>
-      <div class="tl-anatomia">
-        <div class="tl-chat" aria-label="Ejemplo de conversación">
-          <div class="tl-burbuja-cliente">Hola, ¿cuánto sale la bolsa de cemento? Necesito para una obra en Pilar.</div>
-          <div class="tl-burbuja">
-            <div class="tl-parte"><i>1</i><span>👋 ¡Hola! Gracias por escribirnos.</span></div>
-            <div class="tl-parte"><i>2</i><span>El cemento Avellaneda está <b>$6.260</b> la bolsa, con envío a Pilar.</span></div>
-            <div class="tl-parte"><i>3</i><span>📋 Para pasarte el total, decime:<br>1. Cuántas bolsas<br>2. Dirección de la obra</span></div>
-            <div class="tl-parte"><i>4</i><span class="tl-salto">[---saltomensaje---]</span></div>
-            <div class="tl-parte"><i>5</i><span>👉 <b>¿Te lo reservo para esta semana?</b></span></div>
-          </div>
-        </div>
-        <ul class="tl-leyenda-anatomia">
-          <li><i>1</i><span><strong>Saludo breve, de persona a persona</strong> (E). Sin "estimado cliente". Y el cliente no tuvo que elegir en un menú (A).</span></li>
-          <li><i>2</i><span><strong>Responde lo que preguntó</strong> (U): el precio, primero y en el chat. Y no pregunta la zona, que ya la dijo.</span></li>
-          <li><i>3</i><span><strong>Pide todo lo que falta, junto</strong> (C y U): una lista, no una pregunta por mensaje.</span></li>
-          <li><i>4</i><span><strong>Todo en un solo turno</strong> (C). Si hace falta separar la información del cierre, se usa esta marca y Spoter lo envía como dos burbujas seguidas.</span></li>
-          <li><i>5</i><span><strong>Termina con un próximo paso</strong> (N): una pregunta que invita a comprometerse, no "cualquier cosa avisame".</span></li>
-        </ul>
-      </div>
-
-      <h3 class="tl-bloque-titulo">Los 5 pilares que se revisan en el texto <span>— tocá una tarjeta para ver por qué importa y cómo mejorarlo</span></h3>
-      <div class="tl-pilares" id="pilaresMetodo"></div>
-
-      <h3 class="tl-bloque-titulo">Los 2 que se miden en tus chats</h3>
-      <p class="tl-chats-nota">No se pueden juzgar mirando un texto suelto: dependen de cuánto tardan y de cómo se reparte el trabajo.
-        Los mide el <a href="index.html">Analizador</a> con tus conversaciones exportadas.</p>
-      <div class="tl-pilares tl-pilares--chats" id="pilaresChats"></div>
-
-      <h3 class="tl-bloque-titulo">Cómo se usa el taller</h3>
-      <ol class="tl-pasos">
-        <li><span><strong>Pegá tus respuestas</strong>Las que usan hoy tus asesores. Si podés, sumá arriba lo que escribió el cliente con <code>Cliente:</code>.</span></li>
-        <li><span><strong>Mirá qué pilar falla y por qué</strong>Cada respuesta muestra un semáforo por pilar con el motivo concreto.</span></li>
-        <li><span><strong>Copiá la versión acomodada</strong>O exportá un prompt para que una IA la redacte mejor, con el método incluido.</span></li>
-      </ol>
-    </section>
-
     <section class="tl-guia" id="tlGuia" hidden>
       <div class="tl-guia-top">
         <h3>👋 ¿Primera vez acá? Esto es lo que tenés que pegar</h3>
@@ -336,10 +304,12 @@ si hacemos, depende la zona. a que direccion?</pre>
         <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">
           <span id="rubroDetectado"></span>
           <select id="rubro" aria-label="Rubro"></select>
-          <button class="btn btn-secondary" id="btnEjemplo">Probar con un ejemplo</button>
+          <button class="btn btn-secondary" id="btnEjemplo" title="Un lote completo del rubro elegido">Lote de ejemplo</button>
           <button class="btn btn-secondary" id="btnVaciar" title="Borra el texto pegado">Vaciar</button>
         </div>
       </div>
+      <p class="tl-casos-titulo">¿No sabés por dónde empezar? Tocá un caso y se pega ya formateado:</p>
+      <div class="tl-casos" id="tlCasos"></div>
       <textarea id="entrada" spellcheck="false" placeholder="Hola! te paso el presupuesto en pdf. Cualquier consulta avisame.
 
 Cliente: tienen hierro del 12? necesito 20 barras para Pilar
@@ -394,6 +364,63 @@ si, tenemos. a que zona lo necesitas?"></textarea>
 
     <div id="resultados"></div>
 
+    <details class="tl-teoria" id="tlTeoria">
+      <summary><span>📚 ¿Qué es el método ACTÚEN+?</span><span class="tl-teoria-pista">los 7 pilares, el ejemplo y cómo se revisa cada uno</span></summary>
+    <section class="tl-metodo" aria-labelledby="tituloMetodo">
+      <div class="tl-intro">
+        <h2 id="tituloMetodo">¿Qué es el método ACTÚEN+?</h2>
+        <p>Es una forma de escribir cada respuesta de WhatsApp para que el cliente <strong>avance en un solo mensaje</strong>,
+          sin idas y vueltas. No es un texto para copiar: son 7 preguntas que podés hacerle a cualquier respuesta.
+          Cinco se revisan mirando el texto; las otras dos, mirando tus chats.</p>
+        <nav class="tl-sigla" aria-label="Los 7 pilares">
+          <a href="#pilar-A"><b>A</b>Atender</a>
+          <a href="#pilar-C"><b>C</b>Cero vueltas</a>
+          <a href="#pilar-T"><b>T</b>Tiempos</a>
+          <a href="#pilar-U"><b>Ú</b>Ubicar</a>
+          <a href="#pilar-E"><b>E</b>Experiencia</a>
+          <a href="#pilar-N"><b>N</b>Nutrir y cerrar</a>
+          <a href="#pilar-mas"><b>+</b>Optimizar</a>
+        </nav>
+      </div>
+
+      <h3 class="tl-bloque-titulo">Así se ve una respuesta que cumple <span>— cada número marca la parte y el pilar</span></h3>
+      <div class="tl-anatomia">
+        <div class="tl-chat" aria-label="Ejemplo de conversación">
+          <div class="tl-burbuja-cliente">Hola, ¿cuánto sale la bolsa de cemento? Necesito para una obra en Pilar.</div>
+          <div class="tl-burbuja">
+            <div class="tl-parte"><i>1</i><span>👋 ¡Hola! Gracias por escribirnos.</span></div>
+            <div class="tl-parte"><i>2</i><span>El cemento Avellaneda está <b>$6.260</b> la bolsa, con envío a Pilar.</span></div>
+            <div class="tl-parte"><i>3</i><span>📋 Para pasarte el total, decime:<br>1. Cuántas bolsas<br>2. Dirección de la obra</span></div>
+            <div class="tl-parte"><i>4</i><span class="tl-salto">[---saltomensaje---]</span></div>
+            <div class="tl-parte"><i>5</i><span>👉 <b>¿Te lo reservo para esta semana?</b></span></div>
+          </div>
+        </div>
+        <ul class="tl-leyenda-anatomia">
+          <li><i>1</i><span><strong>Saludo breve, de persona a persona</strong> (E). Sin "estimado cliente". Y el cliente no tuvo que elegir en un menú (A).</span></li>
+          <li><i>2</i><span><strong>Responde lo que preguntó</strong> (U): el precio, primero y en el chat. Y no pregunta la zona, que ya la dijo.</span></li>
+          <li><i>3</i><span><strong>Pide todo lo que falta, junto</strong> (C y U): una lista, no una pregunta por mensaje.</span></li>
+          <li><i>4</i><span><strong>Todo en un solo turno</strong> (C). Si hace falta separar la información del cierre, se usa esta marca y Spoter lo envía como dos burbujas seguidas.</span></li>
+          <li><i>5</i><span><strong>Termina con un próximo paso</strong> (N): una pregunta que invita a comprometerse, no "cualquier cosa avisame".</span></li>
+        </ul>
+      </div>
+
+      <h3 class="tl-bloque-titulo">Los 5 pilares que se revisan en el texto <span>— tocá una tarjeta para ver por qué importa y cómo mejorarlo</span></h3>
+      <div class="tl-pilares" id="pilaresMetodo"></div>
+
+      <h3 class="tl-bloque-titulo">Los 2 que se miden en tus chats</h3>
+      <p class="tl-chats-nota">No se pueden juzgar mirando un texto suelto: dependen de cuánto tardan y de cómo se reparte el trabajo.
+        Los mide el <a href="index.html">Analizador</a> con tus conversaciones exportadas.</p>
+      <div class="tl-pilares tl-pilares--chats" id="pilaresChats"></div>
+
+      <h3 class="tl-bloque-titulo">Cómo se usa el taller</h3>
+      <ol class="tl-pasos">
+        <li><span><strong>Pegá tus respuestas</strong>Las que usan hoy tus asesores. Si podés, sumá arriba lo que escribió el cliente con <code>Cliente:</code>.</span></li>
+        <li><span><strong>Mirá qué pilar falla y por qué</strong>Cada respuesta muestra un semáforo por pilar con el motivo concreto.</span></li>
+        <li><span><strong>Copiá la versión acomodada</strong>O exportá un prompt para que una IA la redacte mejor, con el método incluido.</span></li>
+      </ol>
+    </section>
+    </details>
+
     <dialog class="tl-dialogo" id="pilarDialogo" aria-labelledby="pilarDialogoTitulo">
       <div class="tl-dialogo-cuerpo">
         <button type="button" class="tl-dlg-cerrar" id="pilarDialogoCerrar" aria-label="Cerrar">×</button>
@@ -407,8 +434,8 @@ si, tenemos. a que zona lo necesitas?"></textarea>
       datos a pedir, los marcadores como <code>{PRECIO}</code> y el cierre que agrega salen de las plantillas de tu rubro o
       del método, y quedan marcados como sugerencia para que decidas si aplican. Para una redacción de verdad, usá el prompt. T (tiempos) y + (reparto bot/asesores) se miden en tus chats con el Analizador, no en un texto.</p>
   </div>
-  <script src="atajos.js?v=20260921e"></script>
-  <script src="taller.js?v=20260921e"></script>
-  <script src="taller_ia.js?v=20260921e"></script>
+  <script src="atajos.js?v=20260921f"></script>
+  <script src="taller.js?v=20260921f"></script>
+  <script src="taller_ia.js?v=20260921f"></script>
 </body>
 </html>

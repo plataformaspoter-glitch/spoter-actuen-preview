@@ -1285,6 +1285,22 @@ if (typeof document !== 'undefined') {
   let catalogo = null;
   let estado = { respuestas: [], rubro: null };
   const CLAVE_BORRADOR = 'spoter_taller_borrador';
+  const CLAVE_GUIA = 'spoter_taller_guia_vista';
+
+  /**
+   * La guía de primera vez: qué pegar y de dónde sacarlo. Se muestra solo si
+   * el taller está vacío y nunca se cerró; apenas hay texto, sobra.
+   */
+  function mostrarGuiaSiHaceFalta() {
+    let vista = null;
+    try { vista = localStorage.getItem(CLAVE_GUIA); } catch (e) { /* sin almacenamiento */ }
+    $('tlGuia').hidden = !!vista || !!$('entrada').value.trim();
+  }
+
+  function ocultarGuia() {
+    $('tlGuia').hidden = true;
+    try { localStorage.setItem(CLAVE_GUIA, '1'); } catch (e) { /* sin almacenamiento */ }
+  }
   const CLAVE_IMPORTACION = 'spoter_taller_importacion';
 
   // El borrador vive solo en este navegador: si no hay almacenamiento
@@ -1626,14 +1642,25 @@ if (typeof document !== 'undefined') {
     $('btnAtajosCsv').addEventListener('click', () => {
       descargar('atajos_taller_actuen.csv', '\ufeff' + atajosACsv(atajosDelLote()), 'text/csv');
     });
-    $('btnEjemplo').addEventListener('click', () => {
+    function cargarEjemplo() {
       const r = $('rubro').value;
       $('entrada').value = EJEMPLOS[r] || EJEMPLOS.construccion_corralon;
       if (!EJEMPLOS[r]) $('rubro').value = 'auto';
       $('avisoImportacion').hidden = true;
+      ocultarGuia();
       renderResultados();
       guardarBorrador();
+    }
+    $('btnEjemplo').addEventListener('click', cargarEjemplo);
+    $('btnGuiaEjemplo').addEventListener('click', cargarEjemplo);
+    $('btnGuiaEmpezar').addEventListener('click', () => {
+      ocultarGuia();
+      $('entrada').focus();
+      $('entrada').scrollIntoView({ block: 'center', behavior: 'smooth' });
     });
+    $('btnGuiaCerrar').addEventListener('click', ocultarGuia);
+    // Apenas pega algo, la guía ya cumplió: no tiene que estorbar.
+    $('entrada').addEventListener('input', () => { if ($('entrada').value.trim()) ocultarGuia(); }, { once: false });
 
     $('resultados').addEventListener('change', ev => {
       const cb = ev.target;
@@ -1687,6 +1714,7 @@ if (typeof document !== 'undefined') {
       }
     }
 
+    mostrarGuiaSiHaceFalta();
     renderResultados();
   }
 

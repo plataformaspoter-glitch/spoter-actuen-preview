@@ -29,7 +29,7 @@
       });
     }
   </script>
-  <link rel="stylesheet" href="app.css?v=20260921h">
+  <link rel="stylesheet" href="app.css?v=20260921i">
 </head>
 <body>
 
@@ -230,12 +230,12 @@
         </div>
       </section>
 
-      <!-- Ficha Técnica de Calificación Automática Spoter (CÓMO se definieron) -->
-      <section class="qualification-panel" id="qualificationPanel">
-        <div class="qualification-header">
-          <h3>🔍 Criterios de Clasificación Automática de Spoter</h3>
-          <span style="font-size: 11px; color: var(--text-muted);">Análisis Semántico en Tiempo Real</span>
-        </div>
+      <!-- Cómo se clasificó: detalle para quien lo pida, cerrado por defecto -->
+      <details class="qualification-panel" id="qualificationPanel">
+        <summary class="qualification-header">
+          <h3>⚙️ Ver parámetros del diagnóstico</h3>
+          <span style="font-size: 11px; color: var(--text-muted);">Rubro, foco, pase a persona y tiempos: cómo los dedujo el análisis</span>
+        </summary>
         <div class="qualification-grid">
           <div class="qualification-item" id="itemRubroQual">
             <strong>🏢 Rubro Detectado</strong>
@@ -254,7 +254,7 @@
             <p id="txtSlaQual">Comparando los tiempos reales contra el estándar saludable del sector...</p>
           </div>
         </div>
-      </section>
+      </details>
 
       <!-- Guía Explicativa del Semáforo Spoter -->
       <div class="kpi-legend-bar">
@@ -270,7 +270,7 @@
       <section class="kpi-grid">
         <div class="kpi-card" id="cardKpiTotalMsgs" data-kpi="total_msgs" title="Hacé clic para ver la explicación">
           <div class="kpi-title">
-            <span>Total Mensajes</span>
+            <span>Mensajes analizados</span><span class="tip" tabindex="0" role="note" aria-label="Qué significa" data-tip="Todos los mensajes del período que subiste, de clientes y del equipo.">ℹ️</span>
             <span class="kpi-status-tag status-neutral" id="tagKpiTotalMsgs">ℹ️ AUDITADO</span>
           </div>
           <div class="kpi-value" id="kpiTotalMsgs">-</div>
@@ -279,7 +279,7 @@
 
         <div class="kpi-card" id="cardKpiClients" data-kpi="clients" title="Hacé clic para ver el desglose de los 3 picos de horarios">
           <div class="kpi-title">
-            <span>Usuarios Atendidos</span>
+            <span>Clientes atendidos</span><span class="tip" tabindex="0" role="note" aria-label="Qué significa" data-tip="Personas distintas que escribieron en el período. Es la base sobre la que se calcula todo lo demás.">ℹ️</span>
             <span class="kpi-status-tag status-neutral" id="tagKpiClients">📅 DEMANDA</span>
           </div>
           <div class="kpi-value" id="kpiClients">-</div>
@@ -304,7 +304,7 @@
 
         <div class="kpi-card alert" id="cardKpiFrag" data-kpi="fragmentation" title="Hacé clic para ver la explicación">
           <div class="kpi-title">
-            <span>Mensajes cortados (C)</span><span class="tip" tabindex="0" role="note" aria-label="Qué significa" data-tip="Cuántas respuestas salen en ráfagas de dos o más mensajes seguidos en vez de uno solo ordenado. Cada ráfaga suma notificaciones y confunde al cliente.">ℹ️</span>
+            <span>Fricción en el chat</span><span class="tip" tabindex="0" role="note" aria-label="Qué significa" data-tip="Cuántas respuestas salen en ráfagas de dos o más mensajes seguidos en vez de una sola ordenada. Cada ráfaga suma notificaciones y hace que el cliente tenga que juntar la información.">ℹ️</span>
             <span class="kpi-status-tag status-alert" id="tagKpiFrag">🔴 MALO / CRÍTICO</span>
           </div>
           <div class="kpi-value" id="kpiFragmentation">-%</div>
@@ -313,7 +313,7 @@
 
         <div class="kpi-card warning" id="cardKpiWait" data-kpi="wait_time" title="Hacé clic para ver la explicación y SLA del rubro">
           <div class="kpi-title">
-            <span>Espera media (T)</span><span class="tip" tabindex="0" role="note" aria-label="Qué significa" data-tip="Cuánto tarda en promedio la primera respuesta. Se compara con el tiempo objetivo de tu rubro: pasado ese punto, la mayoría ya preguntó en otro lado.">ℹ️</span>
+            <span>Cuánto espera un cliente</span><span class="tip" tabindex="0" role="note" aria-label="Qué significa" data-tip="Cuánto tarda en promedio la primera respuesta. Se compara con el tiempo objetivo de tu rubro: pasado ese punto, la mayoría ya preguntó en otro lado.">ℹ️</span>
             <span class="kpi-status-tag status-warning" id="tagKpiWait">🟡 ALERTA</span>
           </div>
           <div class="kpi-value" id="kpiAvgWait">- min</div>
@@ -322,7 +322,7 @@
 
         <div class="kpi-card success" id="cardKpiSavings" data-kpi="savings" title="Hacé clic para ver el desglose del Beneficio Económico y ROI">
           <div class="kpi-title">
-            <span>Beneficio Económico</span>
+            <span>Lo que se puede recuperar</span><span class="tip" tabindex="0" role="note" aria-label="Qué significa" data-tip="Plata que hoy se va en mensajes evitables y horas de tipeo, y que vuelve al ordenar las respuestas con el método.">ℹ️</span>
             <span class="kpi-status-tag status-success" id="tagKpiSavings">🟢 BUENO / ROI</span>
           </div>
           <div class="kpi-value" id="kpiSavedMsgs">-$0 (-%)</div>
@@ -627,14 +627,10 @@
               <table class="data-table table-compact">
                 <thead>
                   <tr>
-                    <th>Categoría</th>
-                    <th>Leads</th>
-                    <th>%</th>
-                    <th>Msgs Cli</th>
-                    <th>Msgs Op</th>
-                    <th>Total</th>
-                    <th>Exceso</th>
-                    <th>Semáforo</th>
+                    <th>Tema de la consulta</th>
+                    <th>Mensajes por caso</th>
+                    <th>De más vs. el estándar</th>
+                    <th>Estado</th>
                   </tr>
                 </thead>
                 <tbody id="topicsTableBody">
@@ -1001,7 +997,19 @@
   <!-- Notificación Toast Flotante -->
   <div class="toast" id="toastNotification">Mensaje</div>
 
-  <script src="atajos.js?v=20260921h"></script>
-  <script src="app.js?v=20260921h"></script>
+  <!-- Resumen persistente: qué se está perdiendo y qué hacer al respecto -->
+  <div class="cta-banner" id="ctaBanner" hidden>
+    <div class="cta-banner-datos">
+      <span class="cta-banner-cifra" id="ctaBannerIneficiencia">–</span>
+      <span class="cta-banner-texto" id="ctaBannerTexto">Cargando el resumen…</span>
+    </div>
+    <div class="cta-banner-acciones">
+      <a class="btn btn-primary" id="ctaBannerBoton" href="https://spoter.com.ar/" target="_blank" rel="noopener">⚡ Activar Spoter</a>
+      <button type="button" class="cta-banner-cerrar" id="ctaBannerCerrar" aria-label="Ocultar el resumen">✕</button>
+    </div>
+  </div>
+
+  <script src="atajos.js?v=20260921i"></script>
+  <script src="app.js?v=20260921i"></script>
 </body>
 </html>

@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="app.css?v=20260921h">
+  <link rel="stylesheet" href="app.css?v=20260921i">
   <style>
     .tl-metodo { margin-bottom: 8px; }
     .tl-teoria { margin: 28px 0 10px; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-card); padding: 4px 18px; }
@@ -119,6 +119,33 @@
     .tl-pasos li::before { content: counter(paso); width: 34px; height: 34px; border-radius: 50%; background: var(--spoter-pink); color: #fff; font-weight: 800; display: grid; place-items: center; }
     .tl-pasos strong { display: block; color: var(--text-primary); font-size: 14px; margin-bottom: 2px; }
 
+    .tl-editor { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 20px; align-items: start; }
+    @media (max-width: 980px) { .tl-editor { grid-template-columns: 1fr; } }
+    .tl-telefono { position: sticky; top: 16px; display: grid; gap: 10px; }
+    .tl-fono { border: 8px solid #2a2f3a; border-radius: 28px; overflow: hidden; background: #0b141a; box-shadow: 0 16px 40px rgba(0,0,0,.4); }
+    [data-theme="light"] .tl-fono { border-color: #d7dbe3; }
+    .tl-fono-barra { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #1f2c33; color: #e9edef; font-size: 13px; }
+    [data-theme="light"] .tl-fono-barra { background: #128c7e; color: #fff; }
+    .tl-fono-barra strong { display: block; font-size: 13.5px; }
+    .tl-fono-barra span { font-size: 11px; opacity: .75; }
+    .tl-fono-avatar { width: 30px; height: 30px; border-radius: 50%; background: #334b55; display: grid; place-items: center; font-size: 15px; }
+    .tl-fono-pantalla { min-height: 260px; max-height: 60vh; overflow-y: auto; padding: 14px 12px; display: grid; gap: 8px; align-content: start;
+      background: #0b141a url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><circle cx="8" cy="8" r="1" fill="%23ffffff10"/><circle cx="28" cy="24" r="1" fill="%23ffffff10"/></svg>'); }
+    [data-theme="light"] .tl-fono-pantalla { background-color: #efeae2; }
+    .tl-fono-vacio { color: #8696a0; font-size: 12.5px; text-align: center; padding: 40px 12px; }
+    .tl-sugerencias { display: grid; gap: 6px; }
+    .tl-sug { display: flex; gap: 8px; align-items: flex-start; padding: 9px 11px; border-radius: var(--radius-sm); font-size: 12.5px; line-height: 1.45;
+      border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-secondary); }
+    .tl-sug b { color: var(--text-primary); }
+    .tl-sug--falta { border-color: var(--danger); }
+    .tl-sug--mejorable { border-color: var(--warning); }
+    .tl-sug--ok { border-color: var(--success); }
+    .tl-sug-letra { flex: none; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 800; background: var(--bg-secondary); }
+    .tl-metodo-flotante { position: fixed; left: 16px; bottom: 16px; z-index: 50; display: flex; align-items: center; gap: 7px;
+      padding: 10px 15px; border-radius: 999px; border: 1px solid var(--spoter-pink-border); background: var(--bg-card);
+      color: var(--text-primary); font: 700 13px var(--font-main); cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+    .tl-metodo-flotante:hover { border-color: var(--spoter-pink); }
+    @media (max-width: 640px) { .tl-metodo-flotante span { display: none; } }
     .tl-casos-titulo { font-size: 12.5px; color: var(--text-secondary); margin-bottom: 7px; }
     .tl-casos { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }
     .tl-caso { font-size: 12.5px; padding: 6px 13px; border-radius: 999px; border: 1px solid var(--spoter-pink-border); background: var(--spoter-pink-light); color: var(--text-primary); cursor: pointer; font-family: inherit; transition: border-color .15s, transform .15s; }
@@ -298,6 +325,7 @@ si hacemos, depende la zona. a que direccion?</pre>
       </div>
     </section>
 
+    <div class="tl-editor">
     <section class="tl-entrada">
       <div class="tl-entrada-top">
         <label for="entrada">Tus respuestas rápidas</label>
@@ -322,6 +350,20 @@ si, tenemos. a que zona lo necesitas?"></textarea>
       <p class="tl-ayuda">Para un análisis más fino, agregá arriba lo que escribió el cliente con <code>Cliente:</code> al
         principio de la línea. Así el taller revisa si la respuesta contesta lo que preguntó y no vuelve a pedir datos que ya dio.</p>
     </section>
+
+    <aside class="tl-telefono" aria-label="Cómo se ve en WhatsApp">
+      <div class="tl-fono">
+        <div class="tl-fono-barra">
+          <span class="tl-fono-avatar">🧑</span>
+          <div><strong>Cliente</strong><span>en línea</span></div>
+        </div>
+        <div class="tl-fono-pantalla" id="tlPantalla">
+          <p class="tl-fono-vacio">Pegá una respuesta y acá vas a ver cómo le llega al cliente.</p>
+        </div>
+      </div>
+      <div class="tl-sugerencias" id="tlSugerencias" hidden></div>
+    </aside>
+    </div>
 
     <div class="tl-aviso" id="avisoImportacion" hidden role="status">
       <span id="avisoImportacionTexto"></span>
@@ -363,6 +405,8 @@ si, tenemos. a que zona lo necesitas?"></textarea>
     <section class="tl-biblioteca" id="bibliotecaIA" hidden></section>
 
     <div id="resultados"></div>
+
+    <button type="button" class="tl-metodo-flotante" id="btnTeoria" title="Ver el método ACTÚEN+">📚 <span>Método</span></button>
 
     <details class="tl-teoria" id="tlTeoria">
       <summary><span>📚 ¿Qué es el método ACTÚEN+?</span><span class="tl-teoria-pista">los 7 pilares, el ejemplo y cómo se revisa cada uno</span></summary>
@@ -434,8 +478,8 @@ si, tenemos. a que zona lo necesitas?"></textarea>
       datos a pedir, los marcadores como <code>{PRECIO}</code> y el cierre que agrega salen de las plantillas de tu rubro o
       del método, y quedan marcados como sugerencia para que decidas si aplican. Para una redacción de verdad, usá el prompt. T (tiempos) y + (reparto bot/asesores) se miden en tus chats con el Analizador, no en un texto.</p>
   </div>
-  <script src="atajos.js?v=20260921h"></script>
-  <script src="taller.js?v=20260921h"></script>
-  <script src="taller_ia.js?v=20260921h"></script>
+  <script src="atajos.js?v=20260921i"></script>
+  <script src="taller.js?v=20260921i"></script>
+  <script src="taller_ia.js?v=20260921i"></script>
 </body>
 </html>

@@ -207,6 +207,7 @@ function initTabs() {
     });
   });
   initVistaSelector();
+  initBannerCta();
 }
 
 // --- CONTROLES EJECUTIVOS SUPERIORES (FOCO Y HANDOFF) ---
@@ -2463,6 +2464,7 @@ function renderAnalysis(data) {
     : `$${(eco.total_ars / 1000).toFixed(0)}K`;
   
   document.getElementById('kpiSavedMsgs').textContent = `${formattedArs} (${data.savings.reduction_percentage}%)`;
+  mostrarBannerCta(data, formattedArs);
   document.getElementById('kpiSavedSub').textContent = `🟢 Bueno: -${data.savings.messages_saved.toLocaleString()} msgs | ~${eco.total_usd} USD/mes`;
 
   // KPI 6: Cuello de Botella y Handoff (Diferenciando Bot de Humano)
@@ -2651,6 +2653,23 @@ function renderScorecard(scorecard) {
     const pillarLetter = item.pillar.charAt(0);
     const pillarCleanName = item.pillar.includes('-') ? item.pillar.split('-')[1].trim() : item.pillar;
 
+    // El título dice el problema, no el nombre del pilar: "Cero Vueltas" no le
+    // dice nada a quien abre esto por primera vez. El nombre metodológico queda
+    // abajo, en chico, para quien ya conoce el método.
+    const sano = item.status === 'ÓPTIMO';
+    const TITULOS = {
+      A: [sano, 'El cliente puede decir lo que necesita apenas escribe', 'El cliente tiene que navegar antes de poder preguntar'],
+      C: [sano, 'Las respuestas llegan en un bloque ordenado', 'Hacen falta demasiados mensajes para contestar una consulta'],
+      T: [sano, 'Se contesta dentro del tiempo que espera tu rubro', 'Los clientes esperan más de lo que aguanta el rubro'],
+      U: [sano, 'Se pide todo lo que falta, junto', 'Se piden los datos de a uno y la charla se estira'],
+      E: [sano, 'El trato suena a persona, no a formulario', 'El trato es impersonal y se pierde el contexto del cliente'],
+      N: [sano, 'Las respuestas cierran con un próximo paso concreto', 'Las respuestas terminan sin invitar a avanzar'],
+      '+': [sano, 'El bot y el equipo se reparten bien la carga', 'La carga se apoya en pocas personas y se traba'],
+    };
+    const titulo = TITULOS[pillarLetter]
+      ? (TITULOS[pillarLetter][0] ? TITULOS[pillarLetter][1] : TITULOS[pillarLetter][2])
+      : pillarCleanName;
+
     // Métricas clave scannables por pilar
     let chipMetric = '';
     if (pillarLetter === 'A') chipMetric = `🎯 ${item.focus_context || 'Pase de bot a persona: equilibrado'}`;
@@ -2677,8 +2696,8 @@ function renderScorecard(scorecard) {
           <div class="pillar-identity">
             <span class="pillar-letter ${statusClass}">${pillarLetter}</span>
             <div class="pillar-title-group">
-              <h4 class="pillar-name">${pillarCleanName}</h4>
-              <span class="pillar-sub">${item.focus_context || ''}</span>
+              <h4 class="pillar-name">${escapeHtml(titulo)}</h4>
+              <span class="pillar-sub">Pilar ${pillarLetter} · ${escapeHtml(pillarCleanName)}${item.focus_context ? ` · ${item.focus_context}` : ''}</span>
             </div>
           </div>
           <span class="status-badge ${statusClass}">${item.status} (${item.score}/100)</span>
@@ -2694,9 +2713,12 @@ function renderScorecard(scorecard) {
         </div>
       </div>
 
-      <div class="score-action-toggle" id="togglePillar_${index}">
-        <span>⚡ Ver Solución Probable Spoter</span>
-        <span class="toggle-icon">▾</span>
+      <div class="score-cta-row">
+        <a class="btn-aplicar-metodo" href="taller.html" target="_blank" rel="noopener"
+           title="Abre el Taller ACTÚEN+ para reescribir tus respuestas con el método">⚡ Aplicar Método Spoter</a>
+        <button type="button" class="score-action-toggle" id="togglePillar_${index}">
+          Cómo lo resuelve Spoter <span class="toggle-icon">▾</span>
+        </button>
       </div>
 
       <div class="score-solution-drawer" id="drawerPillar_${index}">
@@ -2719,6 +2741,9 @@ function renderScorecard(scorecard) {
 
     // Interacción al clic: expande y muestra la solución probable en la tarjeta
     card.addEventListener('click', (e) => {
+      // El CTA se va al taller: no tiene que desplegar nada acá.
+      if (e.target.closest('.btn-aplicar-metodo')) return;
+
       // Si hizo clic en el botón de copiar
       if (e.target.closest('.btn-copy-solution') && !e.target.closest('.btn-detail-modal')) {
         e.stopPropagation();
@@ -2792,23 +2817,18 @@ function renderTopics(topics, isSales) {
   const ppTotalSub = document.getElementById('ppTotalSub');
   if (ppTotalSub) ppTotalSub.innerHTML = `Meta Calibrada: <strong>${idealTotal} msgs</strong>`;
 
+  // La tabla dice lo mínimo para decidir: de qué se habla, cuánto cuesta en
+  // mensajes y cuánto sobra. El desglose cliente/operador vive en el tooltip.
   topics.forEach(t => {
     const tr = document.createElement('tr');
-    const clientMsgs = t.avg_client_messages || (t.avg_messages_per_client * 0.45).toFixed(1);
-    const opMsgs = t.avg_operator_messages || (t.avg_messages_per_client * 0.55).toFixed(1);
-    const tIdealC = t.ideal_client_messages || idealC;
-    const tIdealOp = t.ideal_operator_messages || idealOp;
     const tIdealTotal = t.ideal_total_messages || idealTotal;
-    const excessRate = t.ping_pong_rate || (t.avg_messages_per_client / tIdealTotal).toFixed(1);
-
+    const exceso = Number((t.avg_messages_per_client - tIdealTotal).toFixed(1));
+    const signo = exceso > 0 ? '+' : '';
     tr.innerHTML = `
-      <td class="cat-cell" title="${escapeHtml(t.category)}"><strong>${escapeHtml(t.category)}</strong></td>
-      <td>${t.conversations.toLocaleString()}</td>
-      <td>${t.percentage}%</td>
-      <td><strong>${clientMsgs}</strong> <span style="font-size:10px;color:var(--text-muted);">(vs ${tIdealC})</span></td>
-      <td><strong>${opMsgs}</strong> <span style="font-size:10px;color:var(--text-muted);">(vs ${tIdealOp})</span></td>
-      <td><strong>${t.avg_messages_per_client}</strong></td>
-      <td><span class="badge-tag ${parseFloat(excessRate) > 2 ? 'red' : 'yellow'}">${excessRate}x</span></td>
+      <td class="cat-cell" title="${escapeHtml(t.category)}"><strong>${escapeHtml(t.category)}</strong>
+        <span class="cat-sub">${t.percentage}% de las consultas · ${t.conversations.toLocaleString()} casos</span></td>
+      <td><strong>${t.avg_messages_per_client}</strong> <span class="cat-sub">estándar: ${tIdealTotal}</span></td>
+      <td><span class="badge-tag ${exceso > tIdealTotal * 0.5 ? 'red' : exceso > 0 ? 'yellow' : 'green'}">${signo}${exceso} msgs</span></td>
       <td><span class="badge-tag ${t.badge_class}">${t.ping_pong_severity}</span></td>
     `;
     tbody.appendChild(tr);
@@ -2817,68 +2837,99 @@ function renderTopics(topics, isSales) {
   const ctx = document.getElementById('chartTopics').getContext('2d');
   if (charts.topics) charts.topics.destroy();
 
+  // Barras divergentes: el cero es el estándar del rubro. A la derecha y en rojo,
+  // los mensajes que sobran; a la izquierda y en verde, los temas que ya cierran
+  // en menos. Una barra agrupada obligaba a comparar alturas y hacer la resta.
+  const excesos = topics.map(t => Number((t.avg_messages_per_client - (t.ideal_total_messages || idealTotal)).toFixed(1)));
+  const tope = Math.max(3, ...excesos.map(Math.abs)) * 1.15;
+
   charts.topics = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: topics.map(t => t.category),
-      datasets: [
-        {
-          label: 'Msgs Cliente (Real)',
-          data: topics.map(t => t.avg_client_messages || (t.avg_messages_per_client * 0.45).toFixed(1)),
-          backgroundColor: 'rgba(6, 182, 212, 0.85)', // Cyan Interlocutor
-          borderRadius: 4
-        },
-        {
-          label: 'Msgs Empresa/Operador (Real)',
-          data: topics.map(t => t.avg_operator_messages || (t.avg_messages_per_client * 0.55).toFixed(1)),
-          backgroundColor: 'rgba(228, 45, 127, 0.85)', // Rosa Spoter Operador
-          borderRadius: 4
-        },
-        {
-          label: `Estándar de Industria (${idealTotal} msgs)`,
-          data: topics.map(t => t.ideal_total_messages || idealTotal),
-          type: 'line',
-          borderColor: '#10B981',
-          borderWidth: 2,
-          borderDash: [5, 5],
-          pointRadius: 3,
-          pointBackgroundColor: '#10B981',
-          fill: false
-        }
-      ]
+      datasets: [{
+        label: 'Mensajes de más respecto del estándar',
+        data: excesos,
+        backgroundColor: excesos.map(v => v > 0 ? 'rgba(239, 68, 68, 0.85)' : 'rgba(16, 185, 129, 0.85)'),
+        borderRadius: 4,
+      }],
     },
     options: {
+      indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
+        legend: { display: false },
         tooltip: {
           callbacks: {
-            label: (ctx) => {
-              const topic = topics[ctx.dataIndex];
-              const val = ctx.parsed.y !== undefined ? ctx.parsed.y : ctx.raw;
-              if (ctx.dataset.type === 'line') {
-                return ` ${ctx.dataset.label}: ${val} msgs`;
-              }
-              const clientMsg = Number(topic.avg_client_messages || (topic.avg_messages_per_client * 0.45));
-              const opMsg = Number(topic.avg_operator_messages || (topic.avg_messages_per_client * 0.55));
-              const totalCase = (clientMsg + opMsg) || 1;
-              const pctOfCase = Math.round((Number(val) / totalCase) * 100);
-              return ` ${ctx.dataset.label}: ${val} msgs (${pctOfCase}% del caso) | Demanda: ${topic.percentage}% (${topic.count} casos)`;
-            }
-          }
-        }
+            label: (c) => {
+              const t = topics[c.dataIndex];
+              const ideal = t.ideal_total_messages || idealTotal;
+              const cliente = Number(t.avg_client_messages || (t.avg_messages_per_client * 0.45)).toFixed(1);
+              const operador = Number(t.avg_operator_messages || (t.avg_messages_per_client * 0.55)).toFixed(1);
+              const v = Number(c.raw);
+              return [
+                v > 0 ? ` ${v} mensajes de más por caso` : ` ${Math.abs(v)} mensajes menos que el estándar`,
+                ` Real: ${t.avg_messages_per_client} · Estándar del rubro: ${ideal}`,
+                ` Del cliente: ${cliente} · Del equipo: ${operador}`,
+                ` Demanda: ${t.percentage}% (${t.conversations} casos)`,
+              ];
+            },
+          },
+        },
       },
       scales: {
-        x: { grid: { color: 'rgba(255,255,255,0.05)' } },
-        y: {
-          type: 'linear',
-          position: 'left',
-          title: { display: true, text: 'Mensajes por Caso' },
-          grid: { color: 'rgba(255,255,255,0.05)' },
-          suggestedMax: 30
-        }
-      }
-    }
+        x: {
+          min: -tope, max: tope,
+          title: { display: true, text: '← cierra en menos    ·    el 0 es el estándar del rubro    ·    mensajes de más →' },
+          grid: { color: (c) => (c.tick.value === 0 ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.05)') },
+        },
+        y: { grid: { display: false } },
+      },
+    },
+  });
+}
+
+/**
+ * El resumen que queda a la vista mientras se recorre el informe: cuánto del
+ * trabajo de hoy es evitable y cuánto vale. Sin esto, el número que justifica
+ * la conversación queda enterrado en la pestaña 7.
+ *
+ * El botón lleva al contacto comercial de Spoter. Cambiar CONTACTO_SPOTER por
+ * el wa.me del número comercial cuando esté definido.
+ */
+const CONTACTO_SPOTER = 'https://spoter.com.ar/';
+
+function mostrarBannerCta(data, ahorroFormateado) {
+  const banner = document.getElementById('ctaBanner');
+  if (!banner) return;
+  // En ventana privada o con el almacenamiento bloqueado, esto tira: el banner
+  // no puede ser el motivo de que no se vea el informe.
+  try { if (sessionStorage.getItem('spoter_banner_oculto') === '1') return; } catch (e) { /* sin almacenamiento */ }
+
+  const pct = (data.savings && data.savings.reduction_percentage) || 0;
+  const horas = (data.savings && data.savings.hours_saved_monthly) || 0;
+  const rubro = (data.meta && data.meta.detected_rubro) || 'tu rubro';
+
+  document.getElementById('ctaBannerIneficiencia').textContent = `${pct}%`;
+  document.getElementById('ctaBannerTexto').innerHTML =
+    `de los mensajes que manda tu equipo son evitables: <strong>${ahorroFormateado} por mes</strong>` +
+    (horas ? ` y <strong>${horas} horas</strong> de tipeo` : '') + '.';
+
+  const boton = document.getElementById('ctaBannerBoton');
+  const mensaje = `Hola, hice la auditoría del Analizador ACTÚEN+ (${rubro}): me marca ${pct}% de mensajes evitables. Quiero ver cómo lo resuelve Spoter.`;
+  boton.href = CONTACTO_SPOTER.includes('wa.me')
+    ? `${CONTACTO_SPOTER}?text=${encodeURIComponent(mensaje)}`
+    : CONTACTO_SPOTER;
+  banner.hidden = false;
+}
+
+function initBannerCta() {
+  const cerrar = document.getElementById('ctaBannerCerrar');
+  if (!cerrar) return;
+  cerrar.addEventListener('click', () => {
+    document.getElementById('ctaBanner').hidden = true;
+    try { sessionStorage.setItem('spoter_banner_oculto', '1'); } catch (e) { /* sin almacenamiento */ }
   });
 }
 

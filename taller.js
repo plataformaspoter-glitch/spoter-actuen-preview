@@ -1554,6 +1554,72 @@ if (typeof document !== 'undefined') {
 
   const LARGO_BURBUJA = 700;
 
+  /** Qué respuesta está tocando el cursor: es la que se previsualiza. */
+  function respuestaBajoElCursor(texto, posicion) {
+    const partes = separarRespuestas(texto);
+    if (partes.length <= 1) return partes[0] || '';
+    let recorrido = 0;
+    for (const parte of partes) {
+      const desde = texto.indexOf(parte, recorrido);
+      if (desde < 0) continue;
+      recorrido = desde + parte.length;
+      if (posicion <= recorrido) return parte;
+    }
+    return partes[partes.length - 1];
+  }
+
+  const negritaWsp = t => esc(t).replace(/\*([^*\n]+)\*/g, '<strong>$1</strong>');
+
+  function burbujasHtml(cliente, texto) {
+    const burbujas = String(texto || '').split(SALTO).map(t => t.trim()).filter(Boolean);
+    return (cliente ? `<div class="tl-burbuja-cliente">${negritaWsp(cliente)}</div>` : '') +
+      burbujas.map((b, i) => {
+        const larga = b.length > LARGO_BURBUJA;
+        return `<div class="tl-burbuja${larga ? ' tl-burbuja--larga' : ''}">${negritaWsp(b)}` +
+          `<span class="tl-burbuja-pie">${b.length} caracteres${larga ? ' · pasa los ' + LARGO_BURBUJA + ', conviene partirla' : ''}</span></div>` +
+          (i < burbujas.length - 1 ? '<div class="tl-chat-corte">se envía como otro mensaje</div>' : '');
+      }).join('');
+  }
+
+  /**
+   * El teléfono al costado del editor: muestra cómo le llega al cliente lo que
+   * se está escribiendo, y qué le falta. Es el mismo diagnóstico de las
+   * tarjetas, pero al lado del texto y mientras se escribe, que es cuando sirve.
+   */
+  function pintarTelefono() {
+    const caja = $('entrada');
+    const pantalla = $('tlPantalla');
+    const sugerencias = $('tlSugerencias');
+    if (!caja || !pantalla) return;
+
+    const texto = caja.value;
+    if (!texto.trim()) {
+      pantalla.innerHTML = '<p class="tl-fono-vacio">Pegá una respuesta y acá vas a ver cómo le llega al cliente.</p>';
+      sugerencias.hidden = true;
+      return;
+    }
+
+    const respuesta = respuestaBajoElCursor(texto, caja.selectionStart);
+    const { cliente, respuesta: soloRespuesta } = separarContexto(respuesta);
+    pantalla.innerHTML = burbujasHtml(cliente, soloRespuesta);
+    pantalla.scrollTop = pantalla.scrollHeight;
+
+    const rubro = $('rubro').value === 'auto' ? detectarRubroDeTexto(texto, catalogo) : $('rubro').value;
+    const ev = evaluar(respuesta, catalogo, rubro);
+    const flojos = PILARES.filter(p => p.evaluable)
+      .map(p => ({ p, e: ev.pilares[p.letra] }))
+      .filter(x => x.e.estado === 'falta' || x.e.estado === 'mejorable')
+      .slice(0, 3);
+
+    sugerencias.innerHTML = flojos.length
+      ? flojos.map(({ p, e }) => `<div class="tl-sug tl-sug--${e.estado}">
+          <span class="tl-sug-letra">${esc(p.letra)}</span>
+          <span><b>${esc(p.nombre)}:</b> ${esc(e.motivo)}</span></div>`).join('')
+      : `<div class="tl-sug tl-sug--ok"><span class="tl-sug-letra">✓</span>
+          <span><b>Cumple los ${ev.maximo} pilares de texto.</b> Copiala desde la tarjeta de abajo.</span></div>`;
+    sugerencias.hidden = false;
+  }
+
   /**
    * La respuesta acomodada, vista como la va a ver el cliente en WhatsApp.
    * Es donde se entiende de un vistazo qué hace [---saltomensaje---] y cuándo
@@ -1700,8 +1766,8 @@ if (typeof document !== 'undefined') {
       $('avisoImportacion').hidden = true;
       ocultarGuia();
       renderResultados();
+      pintarTelefono();
       guardarBorrador();
-      $('resultados').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     $('tlCasos').innerHTML = Object.entries(CASOS)
@@ -1718,6 +1784,7 @@ if (typeof document !== 'undefined') {
       $('avisoImportacion').hidden = true;
       ocultarGuia();
       renderResultados();
+      pintarTelefono();
       guardarBorrador();
     }
     $('btnEjemplo').addEventListener('click', cargarEjemplo);
@@ -1728,6 +1795,21 @@ if (typeof document !== 'undefined') {
       $('entrada').scrollIntoView({ block: 'center', behavior: 'smooth' });
     });
     $('btnGuiaCerrar').addEventListener('click', ocultarGuia);
+
+    // El teléfono sigue al cursor y al texto, sin recalcular en cada tecla.
+    let esperaTelefono = null;
+    const refrescarTelefono = () => {
+      clearTimeout(esperaTelefono);
+      esperaTelefono = setTimeout(pintarTelefono, 150);
+    };
+    ['input', 'click', 'keyup'].forEach(evento => $('entrada').addEventListener(evento, refrescarTelefono));
+    $('rubro').addEventListener('change', refrescarTelefono);
+
+    $('btnTeoria').addEventListener('click', () => {
+      const teoria = $('tlTeoria');
+      teoria.open = true;
+      teoria.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
     // Apenas pega algo, la guía ya cumplió: no tiene que estorbar.
     $('entrada').addEventListener('input', () => { if ($('entrada').value.trim()) ocultarGuia(); }, { once: false });
 
@@ -1798,6 +1880,7 @@ if (typeof document !== 'undefined') {
 
     mostrarGuiaSiHaceFalta();
     renderResultados();
+    pintarTelefono();
   }
 
   document.addEventListener('DOMContentLoaded', iniciar);

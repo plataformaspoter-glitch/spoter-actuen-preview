@@ -29,7 +29,7 @@
       });
     }
   </script>
-  <link rel="stylesheet" href="app.css?v=20260921j">
+  <link rel="stylesheet" href="app.css?v=20260921k">
 </head>
 <body>
 
@@ -57,6 +57,35 @@
 
     <!-- Panel Inicial de Carga / Ingestión (Se oculta tras procesar) -->
     <section class="upload-container" id="dropzonePanel">
+      <!-- Qué va a salir de acá, antes de pedir nada -->
+      <section class="inicio-promesa">
+        <h2>Qué vas a ver cuando termine</h2>
+        <p class="inicio-promesa-sub">El análisis tarda unos segundos y corre en tu navegador. Sale esto:</p>
+        <div class="inicio-promesa-grid">
+          <div class="promesa-item">
+            <span class="promesa-icono">🚦</span>
+            <strong>Qué está fallando y por qué</strong>
+            <span>Los 7 pilares del método, uno por uno, con el motivo concreto: no "mal", sino "hacen falta 3 mensajes para contestar un precio".</span>
+          </div>
+          <div class="promesa-item">
+            <span class="promesa-icono">⏱️</span>
+            <strong>Cuánto espera un cliente</strong>
+            <span>El tiempo real de primera respuesta contra el que aguanta tu rubro, y cuántas conversaciones cruzaron las 24 h de WhatsApp.</span>
+          </div>
+          <div class="promesa-item">
+            <span class="promesa-icono">💰</span>
+            <strong>Cuánta plata hay en juego</strong>
+            <span>Dos cifras separadas: el ingreso que puede no llegar por clientes mal atendidos, y el costo operativo que ya se paga todos los meses.</span>
+          </div>
+          <div class="promesa-item">
+            <span class="promesa-icono">📋</span>
+            <strong>Qué hacer el lunes</strong>
+            <span>Las respuestas que más se repiten, reescritas con el método y listas para pegar como atajos en WhatsApp.</span>
+          </div>
+        </div>
+        <p class="inicio-promesa-pie">🔒 Los archivos no se suben a ningún servidor: el análisis ocurre en esta pestaña.</p>
+      </section>
+
       <!-- Dos caminos: traer tus chats, o ver una auditoría ya hecha -->
       <div class="inicio-grid">
         <div class="inicio-card inicio-card--subir" id="dropzoneBox">
@@ -184,29 +213,6 @@
             <span class="badge-rubro" id="badgeRubroTop">🏢 Rubro: Detectando...</span>
             <span class="badge-files" id="badgeFilesTop">📁 0 archivos procesados</span>
           </div>
-          <div class="context-selectors">
-                        <div class="selector-group">
-              <label for="selectRubroTop">Rubro:</label>
-              <select class="focus-select" id="selectRubroTop" title="Cambiar rubro comercial de la empresa"></select>
-            </div>
-<div class="selector-group">
-              <label for="selectFocus">Foco del Canal:</label>
-              <select class="focus-select" id="selectFocus" title="Cambiar foco de análisis">
-                <option value="auto">🎯 Foco: Automático</option>
-                <option value="ventas">🛍️ Modo Ventas / Comercial</option>
-                <option value="soporte">🎧 Modo Soporte / Gestión</option>
-              </select>
-            </div>
-
-            <div class="selector-group">
-              <label for="selectHandoff">Pase a persona:</label>
-              <select class="focus-select" id="selectHandoff" title="Cuándo pasa del bot a una persona del equipo">
-                <option value="hybrid">⚖️ Híbrido (Equilibrado)</option>
-                <option value="bot_priority">🤖 Bot Autoservicio (Max Automatización)</option>
-                <option value="human_priority">👤 Humano Prioritario (Venta Consultiva)</option>
-              </select>
-            </div>
-          </div>
         </div>
 
         <div class="executive-actions">
@@ -254,9 +260,33 @@
             <p id="txtSlaQual">Comparando los tiempos reales contra el estándar saludable del sector...</p>
           </div>
         </div>
-      </details>
 
-      <!-- Guía Explicativa del Semáforo Spoter -->
+        <h4 class="qual-subtitulo">Cambiar los supuestos y volver a calcular</h4>
+          <div class="context-selectors">
+                        <div class="selector-group">
+              <label for="selectRubroTop">Rubro:</label>
+              <select class="focus-select" id="selectRubroTop" title="Cambiar rubro comercial de la empresa"></select>
+            </div>
+<div class="selector-group">
+              <label for="selectFocus">Foco del Canal:</label>
+              <select class="focus-select" id="selectFocus" title="Cambiar foco de análisis">
+                <option value="auto">🎯 Foco: Automático</option>
+                <option value="ventas">🛍️ Modo Ventas / Comercial</option>
+                <option value="soporte">🎧 Modo Soporte / Gestión</option>
+              </select>
+            </div>
+
+            <div class="selector-group">
+              <label for="selectHandoff">Pase a persona:</label>
+              <select class="focus-select" id="selectHandoff" title="Cuándo pasa del bot a una persona del equipo">
+                <option value="hybrid">⚖️ Híbrido (Equilibrado)</option>
+                <option value="bot_priority">🤖 Bot Autoservicio (Max Automatización)</option>
+                <option value="human_priority">👤 Humano Prioritario (Venta Consultiva)</option>
+              </select>
+            </div>
+        </div>
+
+        <h4 class="qual-subtitulo">Cómo leer los colores</h4>
       <div class="kpi-legend-bar">
         <span class="legend-title">🚦 Semáforo de Calificación Spoter:</span>
         <div class="legend-badges">
@@ -265,6 +295,9 @@
           <span class="legend-item"><span class="dot-red"></span> <strong>Rojo (Malo):</strong> Fuga de clientes, lentitud crítica o sobrecosto</span>
         </div>
       </div>
+
+
+      </details>
 
       <!-- Banner de Métricas Clave (KPIs Clickables con Semáforo y Contexto) -->
       <section class="kpi-grid">
@@ -1009,7 +1042,7 @@
     </div>
   </div>
 
-  <script src="atajos.js?v=20260921j"></script>
-  <script src="app.js?v=20260921j"></script>
+  <script src="atajos.js?v=20260921k"></script>
+  <script src="app.js?v=20260921k"></script>
 </body>
 </html>

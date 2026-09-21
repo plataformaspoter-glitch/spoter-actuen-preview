@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="app.css?v=20260921j">
+  <link rel="stylesheet" href="app.css?v=20260921k">
   <style>
     .tl-metodo { margin-bottom: 8px; }
     .tl-teoria { margin: 28px 0 10px; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-card); padding: 4px 18px; }
@@ -146,6 +146,20 @@
       color: var(--text-primary); font: 700 13px var(--font-main); cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
     .tl-metodo-flotante:hover { border-color: var(--spoter-pink); }
     @media (max-width: 640px) { .tl-metodo-flotante span { display: none; } }
+    .tl-stepper { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin-bottom: 16px; }
+    .tl-stepper li { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: var(--radius-md);
+      border: 1px solid var(--border-color); background: var(--bg-card); font-size: 12.5px; color: var(--text-muted); transition: border-color .2s, background .2s; }
+    .tl-stepper strong { display: block; font-size: 13.5px; color: var(--text-secondary); margin-bottom: 1px; }
+    .tl-stepper-num { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+      background: var(--bg-secondary); color: var(--text-muted); font-size: 11px; font-weight: 800; }
+    .tl-stepper li.activo { border-color: var(--spoter-pink); background: var(--spoter-pink-light); }
+    .tl-stepper li.activo strong { color: var(--text-primary); }
+    .tl-stepper li.activo .tl-stepper-num { background: var(--spoter-pink); color: #fff; }
+    /* El número se reemplaza por el tilde: font-size 0 esconde el texto sin tocar el HTML. */
+    .tl-stepper li.hecho .tl-stepper-num { background: var(--success); color: #fff; font-size: 0; }
+    .tl-stepper li.hecho .tl-stepper-num::before { content: '✓'; font-size: 12px; }
+    .tl-ayuda-detalle { margin-top: 10px; }
+    .tl-ayuda-detalle > summary { cursor: pointer; font-size: 12.5px; color: var(--spoter-pink); font-weight: 700; padding: 4px 0; }
     .tl-casos-titulo { font-size: 12.5px; color: var(--text-secondary); margin-bottom: 7px; }
     .tl-casos { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }
     .tl-caso { font-size: 12.5px; padding: 6px 13px; border-radius: 999px; border: 1px solid var(--spoter-pink-border); background: var(--spoter-pink-light); color: var(--text-primary); cursor: pointer; font-family: inherit; transition: border-color .15s, transform .15s; }
@@ -325,6 +339,15 @@ si hacemos, depende la zona. a que direccion?</pre>
       </div>
     </section>
 
+    <ol class="tl-stepper" id="tlStepper">
+      <li data-paso="1"><span class="tl-stepper-num">1</span>
+        <span><strong>Pegá tus respuestas</strong>Las que ya usa tu equipo</span></li>
+      <li data-paso="2"><span class="tl-stepper-num">2</span>
+        <span><strong>Mirá qué le falta</strong>Semáforo por pilar, con el motivo</span></li>
+      <li data-paso="3"><span class="tl-stepper-num">3</span>
+        <span><strong>Copiala corregida</strong>Lista para pegar en WhatsApp</span></li>
+    </ol>
+
     <div class="tl-editor">
     <section class="tl-entrada">
       <div class="tl-entrada-top">
@@ -343,12 +366,15 @@ si hacemos, depende la zona. a que direccion?</pre>
 Cliente: tienen hierro del 12? necesito 20 barras para Pilar
 Buenos dias!
 si, tenemos. a que zona lo necesitas?"></textarea>
+      <details class="tl-ayuda-detalle">
+        <summary>Cómo separar varias respuestas, y qué pasa con lo que pegás</summary>
       <p class="tl-ayuda">Separá cada respuesta con una línea en blanco. Si alguna tiene párrafos, separalas con una línea
         <code>---</code>. Si tus asesores mandan varios mensajes seguidos, pegalos juntos como una sola respuesta.</p>
       <p class="tl-ayuda">Lo que pegás se guarda solo en este navegador, para que no se pierda si recargás la página.
         ¿Ya analizaste tus chats? Desde el <a href="index.html">Analizador</a>, en "Respuestas Maestras", podés traer acá las respuestas que más repiten tus asesores.</p>
       <p class="tl-ayuda">Para un análisis más fino, agregá arriba lo que escribió el cliente con <code>Cliente:</code> al
         principio de la línea. Así el taller revisa si la respuesta contesta lo que preguntó y no vuelve a pedir datos que ya dio.</p>
+      </details>
     </section>
 
     <aside class="tl-telefono" aria-label="Cómo se ve en WhatsApp">
@@ -478,8 +504,8 @@ si, tenemos. a que zona lo necesitas?"></textarea>
       datos a pedir, los marcadores como <code>{PRECIO}</code> y el cierre que agrega salen de las plantillas de tu rubro o
       del método, y quedan marcados como sugerencia para que decidas si aplican. Para una redacción de verdad, usá el prompt. T (tiempos) y + (reparto bot/asesores) se miden en tus chats con el Analizador, no en un texto.</p>
   </div>
-  <script src="atajos.js?v=20260921j"></script>
-  <script src="taller.js?v=20260921j"></script>
-  <script src="taller_ia.js?v=20260921j"></script>
+  <script src="atajos.js?v=20260921k"></script>
+  <script src="taller.js?v=20260921k"></script>
+  <script src="taller_ia.js?v=20260921k"></script>
 </body>
 </html>

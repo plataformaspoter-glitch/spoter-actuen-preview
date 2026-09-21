@@ -1478,6 +1478,9 @@ if (typeof document !== 'undefined') {
     // tarjeta y con qué rubro se evaluó.
     window.estadoDelTaller = () => estado;
     $('barraPrompt').hidden = !respuestas.length;
+    // Con texto pegado ya se puede mirar el diagnóstico; con resultados en
+    // pantalla, lo que queda es copiar.
+    marcarPaso(respuestas.length ? 3 : 1);
     $('promptPreview').hidden = true;
     renderResumen(respuestas, rubro);
 
@@ -1554,6 +1557,20 @@ if (typeof document !== 'undefined') {
 
   const LARGO_BURBUJA = 700;
 
+  /**
+   * El paso a paso de arriba: dónde está parado el usuario. Sin esto, el taller
+   * es una pantalla con muchas cosas y ningún orden evidente.
+   */
+  function marcarPaso(paso) {
+    const lista = $('tlStepper');
+    if (!lista) return;
+    [...lista.children].forEach(li => {
+      const n = Number(li.dataset.paso);
+      li.classList.toggle('activo', n === paso);
+      li.classList.toggle('hecho', n < paso);
+    });
+  }
+
   /** Qué respuesta está tocando el cursor: es la que se previsualiza. */
   function respuestaBajoElCursor(texto, posicion) {
     const partes = separarRespuestas(texto);
@@ -1596,6 +1613,7 @@ if (typeof document !== 'undefined') {
     if (!texto.trim()) {
       pantalla.innerHTML = '<p class="tl-fono-vacio">Pegá una respuesta y acá vas a ver cómo le llega al cliente.</p>';
       sugerencias.hidden = true;
+      marcarPaso(1);
       return;
     }
 

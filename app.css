@@ -3015,3 +3015,20 @@ details.qualification-panel[open] > summary { margin-bottom: 14px; }
 .cta-banner-cerrar:hover { color: var(--text-primary); border-color: var(--spoter-pink); }
 @media (max-width: 640px) { .cta-banner { left: 8px; right: 8px; bottom: 8px; padding: 12px 14px; }
   .cta-banner-cifra { font-size: 22px; } }
+.qual-subtitulo { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--spoter-pink); margin: 18px 0 8px; }
+details.qualification-panel .context-selectors { display: flex; flex-wrap: wrap; gap: 14px; }
+details.qualification-panel .kpi-legend-bar { margin: 0; }
+
+/* Qué esperar del análisis, antes de pedir archivos. */
+.inicio-promesa { margin-bottom: 20px; padding: 24px; border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg); background: var(--bg-card); }
+.inicio-promesa h2 { font-family: var(--font-heading); font-size: 22px; }
+.inicio-promesa-sub { font-size: 13.5px; color: var(--text-secondary); margin: 4px 0 16px; }
+.inicio-promesa-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+.promesa-item { display: grid; gap: 4px; align-content: start; padding: 14px; border-radius: var(--radius-md);
+  background: var(--bg-secondary); }
+.promesa-icono { font-size: 20px; }
+.promesa-item strong { font-size: 14px; color: var(--text-primary); }
+.promesa-item span:last-child { font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+.inicio-promesa-pie { font-size: 12px; color: var(--text-muted); margin-top: 14px; }

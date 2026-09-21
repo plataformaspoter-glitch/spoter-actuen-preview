@@ -317,8 +317,16 @@ function initExecutiveControls() {
 }
 
 // --- VERIFICAR ESTADO API ---
+
+/** En GitHub Pages no hay servidor: preguntar por él solo ensucia la consola. */
+const SIN_SERVIDOR = /\.github\.io$/i.test(location.hostname);
+
 function checkApiStatus() {
   const badge = document.getElementById('apiStatusBadge');
+  if (SIN_SERVIDOR) {
+    badge.innerHTML = `<span class="status-dot" style="background:#f59e0b;box-shadow:none;"></span> Modo Autónomo en Navegador`;
+    return;
+  }
   fetch('/api/status')
     .then(r => r.json())
     .then(data => {
@@ -349,6 +357,9 @@ async function loadDataset(forcedRubro = null, forcedFocus = null, handoffPolicy
   localStorage.setItem('spoter_handoff_policy', hVal);
 
   try {
+    // Sin servidor no se pregunta: se va derecho al lote estático, abajo.
+    if (SIN_SERVIDOR) throw new Error('Sitio estático: se usa el lote de prueba');
+
     let url = `/api/analyze-default?handoff=${hVal}`;
     if (fVal) url += `&focus=${fVal}`;
     if (rVal) url += `&rubro=${rVal}`;

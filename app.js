@@ -145,6 +145,56 @@ function initTheme() {
 }
 
 // --- PESTAÑAS ---
+
+/**
+ * Quién mira el informe define qué pestañas hacen falta. El dueño quiere el
+ * semáforo, la plata y el simulador; quien atiende quiere tiempos, motivos y
+ * plantillas. El selector filtra, no reordena: los números de cada pestaña
+ * siguen siendo los mismos para guiar una demo.
+ */
+const VISTAS = {
+  gerencial: { etiqueta: 'Dirección', tabs: ['tabScorecard', 'tabLtvTriage', 'tabSimulator'],
+    nota: 'Semáforo, plata en riesgo y simulador.' },
+  operativa: { etiqueta: 'Operación', tabs: ['tabTopics', 'tabHandoffGaps', 'tabFriction', 'tabTemplates'],
+    nota: 'Demanda, motivos de intervención, tiempos y respuestas.' },
+  todo: { etiqueta: 'Todo', tabs: null, nota: 'Las 7 pestañas del informe.' },
+};
+
+const CLAVE_VISTA = 'spoter_vista_dashboard';
+
+function aplicarVista(clave) {
+  const vista = VISTAS[clave] || VISTAS.todo;
+  const botones = [...document.querySelectorAll('.tab-btn')];
+  botones.forEach(b => {
+    const visible = !vista.tabs || vista.tabs.includes(b.getAttribute('data-tab'));
+    b.hidden = !visible;
+  });
+  document.querySelectorAll('.vista-btn').forEach(b =>
+    b.classList.toggle('vista-btn--activa', b.dataset.vista === clave));
+  const nota = document.getElementById('vistaNota');
+  if (nota) nota.textContent = vista.nota;
+
+  // Si la pestaña abierta quedó fuera de la vista, se pasa a la primera que sí está.
+  const activa = botones.find(b => b.classList.contains('active'));
+  if (!activa || activa.hidden) {
+    const primera = botones.find(b => !b.hidden);
+    if (primera) primera.click();
+  }
+  try { localStorage.setItem(CLAVE_VISTA, clave); } catch (e) { /* sin almacenamiento */ }
+}
+
+function initVistaSelector() {
+  const caja = document.getElementById('vistaSelector');
+  if (!caja) return;
+  caja.addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-vista]');
+    if (b) aplicarVista(b.dataset.vista);
+  });
+  let guardada = null;
+  try { guardada = localStorage.getItem(CLAVE_VISTA); } catch (e) { /* sin almacenamiento */ }
+  aplicarVista(VISTAS[guardada] ? guardada : 'todo');
+}
+
 function initTabs() {
   const tabBtns = document.querySelectorAll('.tab-btn');
   tabBtns.forEach(btn => {
@@ -156,6 +206,7 @@ function initTabs() {
       document.getElementById(targetId).classList.add('active');
     });
   });
+  initVistaSelector();
 }
 
 // --- CONTROLES EJECUTIVOS SUPERIORES (FOCO Y HANDOFF) ---
@@ -2602,7 +2653,7 @@ function renderScorecard(scorecard) {
 
     // Métricas clave scannables por pilar
     let chipMetric = '';
-    if (pillarLetter === 'A') chipMetric = `🎯 Handoff: ${item.focus_context || 'Equilibrado'}`;
+    if (pillarLetter === 'A') chipMetric = `🎯 ${item.focus_context || 'Pase de bot a persona: equilibrado'}`;
     else if (pillarLetter === 'C') chipMetric = `⚡ Cero Vueltas: Bloque Único`;
     else if (pillarLetter === 'T') chipMetric = `⏱️ Calibrado con SLA Sectorial`;
     else if (pillarLetter === 'U') chipMetric = `🔍 Macro y Micro-intención`;
@@ -3955,7 +4006,7 @@ function updateScorecardHandoff(data, policy) {
   const h = data.handoff;
   const pA = data.scorecard.find(s => s.pillar && s.pillar.startsWith('A'));
   if (pA) {
-    pA.focus_context = `Handoff: ${policy.toUpperCase()}`;
+    pA.focus_context = `Pase de bot a persona: ${policy.toUpperCase()}`;
     if (policy === 'bot_priority') {
       pA.diagnosis = `En política de Bot Autoservicio, el bot absorbe el ${h.bot_share_percentage}% de la mensajería inicial sin desbordar al personal humano.`;
       pA.status = "ÓPTIMO";
@@ -4029,7 +4080,7 @@ function downloadClientReportFallback(data) {
 **Empresa:** ${comp}
 **Rubro Detectado:** ${data.meta.detected_rubro}
 **Foco:** ${data.meta.business_focus === 'ventas' ? 'Ventas / Comercial' : 'Soporte / Asistencial'}
-**Política Handoff:** ${data.meta.handoff_policy.toUpperCase()}
+**Pase de bot a persona:** ${data.meta.handoff_policy.toUpperCase()}
 **Mensajes Analizados:** ${data.meta.total_rows.toLocaleString()}
 **Usuarios Atendidos:** ${data.meta.unique_clients.toLocaleString()}
 

@@ -29,7 +29,7 @@
       });
     }
   </script>
-  <link rel="stylesheet" href="app.css?v=20260921g">
+  <link rel="stylesheet" href="app.css?v=20260921h">
 </head>
 <body>
 
@@ -338,6 +338,15 @@
           <div class="kpi-sub" id="kpiBottleneckSub">Distribución del equipo</div>
         </div>
       </section>
+
+      <!-- Para quién es esta lectura: filtra las pestañas, no las reordena -->
+      <div class="vista-selector" id="vistaSelector" role="group" aria-label="Para quién es esta lectura">
+        <span class="vista-label">Ver como</span>
+        <button type="button" class="vista-btn" data-vista="gerencial">👔 Dirección</button>
+        <button type="button" class="vista-btn" data-vista="operativa">🎧 Operación</button>
+        <button type="button" class="vista-btn vista-btn--activa" data-vista="todo">Todo</button>
+        <span class="vista-nota" id="vistaNota"></span>
+      </div>
 
       <!-- Navegación por Pestañas Spoter (Botones Ejecutivos Grandes y Visibles) -->
       <nav class="tabs-nav" id="mainTabsNav">
@@ -992,7 +1001,7 @@
   <!-- Notificación Toast Flotante -->
   <div class="toast" id="toastNotification">Mensaje</div>
 
-  <script src="atajos.js?v=20260921g"></script>
-  <script src="app.js?v=20260921g"></script>
+  <script src="atajos.js?v=20260921h"></script>
+  <script src="app.js?v=20260921h"></script>
 </body>
 </html>

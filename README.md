@@ -9,7 +9,6 @@ matemática del **LTV en riesgo** y fases del motor **Spoter Lite**.
 
 **🚀 Demo en vivo:** https://plataformaspoter-glitch.github.io/spoter-actuen/
 **🛠️ Taller ACTÚEN+:** https://plataformaspoter-glitch.github.io/spoter-actuen/taller.html
-**📖 Manual de ventas:** https://plataformaspoter-glitch.github.io/spoter-actuen/manual_ventas.html
 
 ---
 
@@ -138,7 +137,6 @@ Analizador ACTUEN/
 ├── app.js                        # Motor del navegador + interfaz. Paridad con engine.py
 ├── app.css                       # Sistema de diseño (variables, modo claro/oscuro, responsive)
 ├── sample_data.json              # Lote de prueba anonimizado para la demo
-├── manual_ventas.html / .js     # Manual de ventas; tabla y calculadora de LTV desde rubros.json
 ├── MANUAL_DE_VENTAS_ACTUEN_SPOTER.md  # Playbook comercial en Markdown
 ├── index_v2.4_clasico.html       # Redirige a index.html (la vista clásica se retiró)
 ├── Iniciar Analizador.command    # Lanzador de doble clic para macOS

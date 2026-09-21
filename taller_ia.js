@@ -32,6 +32,7 @@
     caja.innerHTML = `
       <span>Conectado como <strong>${esc(sesion.email)}</strong>${sesion.rol === 'admin' ? ' · admin' : ''}</span>
       <span class="tl-sesion-cupo" id="tlCupo"></span>
+      <span class="tl-cupo-aviso" id="tlCupoAviso" hidden></span>
       <span style="display:flex; gap:8px">
         ${sesion.rol === 'admin' ? '<a class="btn btn-secondary" href="admin.html" style="text-decoration:none">⚙️ Administración</a>' : ''}
         <button class="btn btn-secondary" id="tlSalir">Cerrar sesión</button>
@@ -47,8 +48,15 @@
   function mostrarCupo(cuota) {
     if (!cuota) return;
     $('tlCupo').textContent = cuota.puede_usar_ia
-      ? `${cuota.respuestas_restantes} mejoras con IA este mes · US$${cuota.presupuesto_restante_usd.toFixed(2)} disponibles`
+      ? `${cuota.respuestas_restantes} ${cuota.respuestas_restantes === 1 ? 'mejora' : 'mejoras'} con IA este mes · US$${cuota.presupuesto_restante_usd.toFixed(2)} disponibles`
       : `Sin cupo de IA: ${cuota.motivo}`;
+    // El aviso aparece con el cupo casi agotado, mientras todavía se puede pedir
+    // más: enterarse cuando ya no anda es enterarse tarde.
+    const aviso = $('tlCupoAviso');
+    if (!aviso) return;
+    aviso.textContent = cuota.aviso ? `⚠️ ${cuota.aviso}` : '';
+    aviso.hidden = !cuota.aviso;
+    $('tlCupo').classList.toggle('tl-sesion-cupo--aviso', !!cuota.aviso || !cuota.puede_usar_ia);
   }
 
   /** Agrega los botones a cada tarjeta, cada vez que el taller vuelve a dibujar. */

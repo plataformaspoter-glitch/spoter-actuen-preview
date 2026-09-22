@@ -319,8 +319,13 @@ function initExecutiveControls() {
 
 // --- VERIFICAR ESTADO API ---
 
-/** En GitHub Pages no hay servidor: preguntar por él solo ensucia la consola. */
-const SIN_SERVIDOR = /\.github\.io$/i.test(location.hostname);
+/**
+ * Dónde NO corre el motor Python (api_server.py): GitHub Pages y Firebase.
+ * Ahí el análisis se hace entero en el navegador, así que preguntar por
+ * /api/status y /api/analyze-default solo deja 404 en la consola de la gente.
+ * En localhost o en cualquier otro host sí se pregunta, por si el motor está.
+ */
+const SIN_SERVIDOR = /(\.github\.io|\.web\.app|\.firebaseapp\.com)$/i.test(location.hostname);
 
 function checkApiStatus() {
   const badge = document.getElementById('apiStatusBadge');

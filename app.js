@@ -3636,7 +3636,7 @@ function renderOperadores(data) {
   const sla = (data.wait_times && data.wait_times.sla) || {};
 
   if (!filas.length) {
-    cuerpo.innerHTML = `<tr><td colspan="6">${engineNoticeHTML(
+    cuerpo.innerHTML = `<tr><td colspan="7">${engineNoticeHTML(
       'Detalle por operador no disponible',
       'Este análisis se generó con una versión anterior del motor. Volvé a correrlo para ver el desglose por persona.'
     )}</td></tr>`;
@@ -3671,6 +3671,7 @@ function renderOperadores(data) {
       <td>${badge('plantillas', `${fmt1(f.template_rate)}%`, `${f.template_messages} mensajes`, semaforoOperador('plantillas', f, sla))}</td>
       <td>${badge('cierre', f.passive_closing_rate == null ? '—' : `${fmt1(f.passive_closing_rate)}% pasivos`,
         f.closings_evaluated ? `${f.closings_evaluated} cierres` : '', semaforoOperador('cierre', f, sla))}</td>
+      <td>${f.is_bot ? '' : `<button type="button" class="ops-informe" data-informe="${i}" title="Descarga un informe para conversarlo con esta persona">📄 Devolución</button>`}</td>
     </tr>`;
   }).join('');
 
@@ -3681,6 +3682,114 @@ function renderOperadores(data) {
       ? `${humanos.length} personas y ${filas.length - humanos.length} bot en el período. Los porcentajes se calculan sobre los mensajes de cada uno, no sobre el total del equipo.`
       : 'Todo el período lo atendió el bot.';
   }
+}
+
+/**
+ * Informe de una persona, para una devolución uno a uno.
+ *
+ * Dice lo que se midió, cómo se midió y con qué se compara, y termina en dos o
+ * tres acciones concretas. No puntúa a la persona: un número sin contexto
+ * convierte una charla de mejora en una boleta de calificaciones.
+ */
+function informeOperador(fila, data, nombre) {
+  const sla = (data.wait_times && data.wait_times.sla) || {};
+  const humanos = (data.operators || []).filter(o => !o.is_bot && o.clients !== undefined);
+  const prom = (campo) => {
+    const vals = humanos.map(o => o[campo]).filter(v => v != null);
+    return vals.length ? round1(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+  };
+  const comparar = (valor, promedio, menosEsMejor = true, unidad = 'puntos') => {
+    if (valor == null || promedio == null) return 'sin comparación';
+    const dif = round1(valor - promedio);
+    if (Math.abs(dif) < 0.05) return 'igual que el promedio del equipo';
+    const mejor = menosEsMejor ? dif < 0 : dif > 0;
+    return `${Math.abs(dif)} ${unidad} ${mejor ? 'mejor' : 'peor'} que el promedio del equipo (${promedio})`;
+  };
+  // Media hora se lee en minutos; 40 horas, no. Nadie dimensiona "2468 min".
+  const duracion = (min) => (min == null ? 'sin datos'
+    : min < 90 ? `${fmt1(min)} min`
+    : min < 2880 ? `${round1(min / 60)} horas`
+    : `${round1(min / 1440)} días`);
+
+  // Las acciones salen de sus dos peores indicadores: primero lo que más duele.
+  const problemas = [];
+  if (semaforoOperador('espera', fila, sla) === 'danger') {
+    problemas.push([3, `**Bajar el tiempo de respuesta.** Sus clientes esperan ${duracion(fila.avg_wait_minutes)} en promedio y hubo un caso de ${duracion(fila.worst_wait_minutes)}. El objetivo del rubro es responder dentro de ${sla.acceptable || 10} minutos. Revisar en qué momentos del día se acumulan las conversaciones sin responder.`]);
+  }
+  if (fila.fragmentation_rate > 35) {
+    problemas.push([2, `**Responder en un bloque.** ${fmt1(fila.fragmentation_rate)}% de sus respuestas salen en dos o más mensajes seguidos (${fila.fragmented_bursts} de ${fila.bursts}). Armar la respuesta completa antes de enviarla: el dato, lo que falta y el próximo paso, en un solo mensaje.`]);
+  }
+  if (fila.passive_closing_rate != null && fila.passive_closing_rate >= (CATALOGO.deteccion_cierre.umbral_alerta_pct || 35)) {
+    problemas.push([3, `**Cerrar con un próximo paso.** ${fmt1(fila.passive_closing_rate)}% de las conversaciones que cerró terminaron sin invitar a avanzar. Cambiar "cualquier consulta avisame" por una pregunta concreta: "¿te lo reservo?", "¿coordinamos para el jueves?".`]);
+  }
+  if (fila.template_rate < 30) {
+    problemas.push([1, `**Usar más respuestas rápidas.** Solo ${fmt1(fila.template_rate)}% de sus mensajes salen de una plantilla: el resto se escribe de cero cada vez, con más demora y más variación en lo que se promete.`]);
+  }
+  problemas.sort((a, b) => b[0] - a[0]);
+
+  const lineas = [
+    `# Devolución de atención · ${nombre}`,
+    '',
+    `**Empresa:** ${data.meta.company_name || 'Empresa'}  `,
+    `**Período analizado:** ${data.meta.total_rows.toLocaleString()} mensajes de ${data.meta.unique_clients.toLocaleString()} clientes  `,
+    `**Rubro:** ${data.meta.detected_rubro}`,
+    '',
+    '---',
+    '',
+    '## Lo que hizo en el período',
+    '',
+    `- **Clientes atendidos:** ${fila.clients} (${fila.messages.toLocaleString()} mensajes, ${fila.percentage}% de lo que mandó la empresa)`,
+    `- **Mensajes por cliente:** ${fmt1(fila.messages_per_client)} · ${comparar(fila.messages_per_client, prom('messages_per_client'), true, 'mensajes')}`,
+    '',
+    '## Cómo le fue en cada cosa que se mide',
+    '',
+    '| Qué se mide | Su número | Contra qué se compara |',
+    '| --- | --- | --- |',
+    `| Tiempo de espera de sus clientes | ${fila.avg_wait_minutes == null ? 'sin datos' : `${duracion(fila.avg_wait_minutes)} (peor: ${duracion(fila.worst_wait_minutes)})`} | objetivo del rubro: ${sla.acceptable || '—'} min |`,
+    `| Mensajes seguidos | ${fmt1(fila.fragmentation_rate)}% (${fila.fragmented_bursts} de ${fila.bursts}) | ${comparar(fila.fragmentation_rate, prom('fragmentation_rate'))} |`,
+    `| Uso de respuestas rápidas | ${fmt1(fila.template_rate)}% (${fila.template_messages} mensajes) | ${comparar(fila.template_rate, prom('template_rate'), false)} |`,
+    `| Cierres sin próximo paso | ${fila.passive_closing_rate == null ? 'sin cierres evaluables' : `${fmt1(fila.passive_closing_rate)}% de ${fila.closings_evaluated}`} | ${comparar(fila.passive_closing_rate, prom('passive_closing_rate'))} |`,
+    '',
+    '## Para la próxima semana',
+    '',
+  ];
+
+  lineas.push(problemas.length
+    ? problemas.slice(0, 3).map(([, texto], i) => `${i + 1}. ${texto}`).join('\n')
+    : 'Sus indicadores están dentro de lo esperado para el rubro. La conversación puede ir sobre volumen o sobre casos puntuales, no sobre la forma de responder.');
+
+  lineas.push(
+    '',
+    '---',
+    '',
+    '### Cómo se midió',
+    '',
+    'Todo sale de los mensajes exportados del período, no de una carga manual:',
+    '',
+    '- Una **ráfaga** son mensajes suyos seguidos, sin respuesta del cliente en el medio. Si escribe otra persona, empieza otra ráfaga.',
+    '- El **cierre** se le atribuye a quien escribió el último mensaje real de la conversación, descartando difusiones y automáticos.',
+    '- Una **respuesta rápida** es un texto que se repite en varias conversaciones del período.',
+    '- El **tiempo de espera** es el que registra la plataforma en cada mensaje.',
+    '',
+    'Esto mide la forma de responder, no el resultado comercial ni el esfuerzo de la persona: un mes con consultas más difíciles mueve los números sin que nadie haya trabajado peor.',
+    '',
+    `Generado por el Analizador Spoter ACTÚEN+ el ${new Date().toLocaleDateString('es-AR')}.`
+  );
+
+  return lineas.join('\n');
+}
+
+function descargarInformeOperador(indice) {
+  if (!currentData) return;
+  const filas = (currentData.operators || []).filter(o => o.clients !== undefined);
+  const fila = filas[indice];
+  if (!fila) return;
+  let mostrarReales = false;
+  try { mostrarReales = localStorage.getItem(CLAVE_NOMBRES_OPS) === '1'; } catch (e) { /* sin almacenamiento */ }
+  const nombre = nombreOperadorVisible(fila, indice, mostrarReales);
+  const archivo = `devolucion_${nombre.toLowerCase().replace(/\s+/g, '_')}.md`;
+  downloadBlob(informeOperador(fila, currentData, nombre), archivo, 'text/markdown;charset=utf-8');
+  showToast(`📄 Informe de ${nombre} descargado`);
 }
 
 function initOperadores() {
@@ -3694,6 +3803,8 @@ function initOperadores() {
   const tabla = document.getElementById('tablaOperadores');
   if (tabla) {
     tabla.addEventListener('click', (ev) => {
+      const inf = ev.target.closest('[data-informe]');
+      if (inf) { descargarInformeOperador(Number(inf.dataset.informe)); return; }
       const b = ev.target.closest('[data-indicador]');
       if (!b) return;
       const ind = INDICADORES_OPERADOR[b.dataset.indicador];

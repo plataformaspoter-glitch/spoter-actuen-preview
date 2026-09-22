@@ -3058,3 +3058,6 @@ details.qualification-panel .executive-actions { display: flex; gap: 8px; flex-w
 .ops-pie { font-size: 12px; color: var(--text-muted); margin-top: 14px; }
 /* El banner es fijo: sin este colchón tapa la última fila del informe. */
 body:has(.cta-banner:not([hidden])) #dashboardContent { padding-bottom: 96px; }
+.ops-informe { padding: 7px 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color);
+  background: var(--bg-secondary); color: var(--text-secondary); font: 600 11.5px var(--font-main); cursor: pointer; white-space: nowrap; }
+.ops-informe:hover { border-color: var(--spoter-pink); color: var(--text-primary); }

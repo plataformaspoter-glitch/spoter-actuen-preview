@@ -155,9 +155,9 @@ function initTheme() {
 const VISTAS = {
   gerencial: { etiqueta: 'Dirección', tabs: ['tabScorecard', 'tabLtvTriage', 'tabSimulator'],
     nota: 'Semáforo, plata en riesgo y simulador.' },
-  operativa: { etiqueta: 'Operación', tabs: ['tabTopics', 'tabHandoffGaps', 'tabFriction', 'tabTemplates'],
-    nota: 'Demanda, motivos de intervención, tiempos y respuestas.' },
-  todo: { etiqueta: 'Todo', tabs: null, nota: 'Las 7 pestañas del informe.' },
+  operativa: { etiqueta: 'Operación', tabs: ['tabTopics', 'tabHandoffGaps', 'tabOperadores', 'tabFriction', 'tabTemplates'],
+    nota: 'Demanda, motivos, equipo, tiempos y respuestas.' },
+  todo: { etiqueta: 'Todo', tabs: null, nota: null },   // la nota se arma con las pestañas que existan
 };
 
 const CLAVE_VISTA = 'spoter_vista_dashboard';
@@ -172,7 +172,7 @@ function aplicarVista(clave) {
   document.querySelectorAll('.vista-btn').forEach(b =>
     b.classList.toggle('vista-btn--activa', b.dataset.vista === clave));
   const nota = document.getElementById('vistaNota');
-  if (nota) nota.textContent = vista.nota;
+  if (nota) nota.textContent = vista.nota || `Las ${botones.length} pestañas del informe.`;
 
   // Si la pestaña abierta quedó fuera de la vista, se pasa a la primera que sí está.
   const activa = botones.find(b => b.classList.contains('active'));
@@ -208,6 +208,7 @@ function initTabs() {
   });
   initVistaSelector();
   initBannerCta();
+  initOperadores();
 }
 
 // --- CONTROLES EJECUTIVOS SUPERIORES (FOCO Y HANDOFF) ---
@@ -831,6 +832,17 @@ function round1(n) {
 /** Renderiza con un decimal fijo, como el round(x, 1) de Python al interpolar. */
 function fmt1(n) { return Number(n).toFixed(1); }
 
+/**
+ * Imprime un número como lo imprime Python después de round(): un entero sale
+ * con un decimal (0 → "0.0") y el resto tal cual. Sin esto, los textos de los
+ * dos motores difieren justo cuando el promedio cae redondo, y la paridad
+ * falla por una coma que nadie ve.
+ */
+function fmtPy(n, decimales = 2) {
+  const v = Math.round(Number(n) * 10 ** decimales) / 10 ** decimales;
+  return Number.isInteger(v) ? v.toFixed(1) : String(v);
+}
+
 /** Espejo de calc_brackets(): promedio, percentiles, franjas y resúmenes. */
 function calcBrackets(list, sla) {
   const w = [...list].sort((a, b) => a - b);
@@ -1325,6 +1337,103 @@ function computeClosings(clientConvs) {
   };
 }
 
+/**
+ * Qué hizo cada operador, medido sobre los mismos mensajes del análisis.
+ * Espejo exacto de `_compute_operator_detail` en engine.py: una ráfaga es de
+ * quien la empezó, el cierre es de quien escribió el último mensaje real, y
+ * "plantilla" es un texto que se repite en varias conversaciones (así se
+ * estima el uso de respuestas rápidas sin que nadie lo declare).
+ */
+function computeOperatorDetail(clientConvs, splitRegex) {
+  const cfg = CATALOGO.deteccion_cierre;
+  const reAuto = new RegExp(cfg.regex_automatico, 'i');
+  const reActivo = new RegExp(cfg.regex_cierre_activo, 'i');
+
+  const apariciones = {};
+  for (const cid of Object.keys(clientConvs)) {
+    const textos = new Set();
+    for (const m of clientConvs[cid]) {
+      if (!isPropio(m)) continue;
+      const t = (m['Mensaje'] || '').trim();
+      if (t) textos.add(t);
+    }
+    textos.forEach(t => { apariciones[t] = (apariciones[t] || 0) + 1; });
+  }
+  const difusiones = new Set(Object.keys(apariciones)
+    .filter(t => apariciones[t] >= cfg.umbral_difusion_conversaciones));
+
+  const detalle = {};
+  const deOperador = (op) => {
+    if (!detalle[op]) {
+      detalle[op] = { rows: 0, clients: new Set(), waits: [], bursts: 0, fragmented: 0,
+                      templates: 0, closings: 0, passive: 0 };
+    }
+    return detalle[op];
+  };
+  const nombreOp = (m) => ((m['Nombre Operador'] || '').trim() || 'Bot / Sistema');
+
+  const cerrarRafaga = (op, tam) => {
+    if (op === null || tam <= 0) return;
+    const d = deOperador(op);
+    d.bursts++;
+    if (tam >= 2) d.fragmented++;
+  };
+
+  for (const cid of Object.keys(clientConvs)) {
+    let burstOp = null;
+    let burstSize = 0;
+
+    for (const m of clientConvs[cid]) {
+      if (!isPropio(m)) {
+        cerrarRafaga(burstOp, burstSize);
+        burstOp = null;
+        burstSize = 0;
+        continue;
+      }
+
+      const op = nombreOp(m);
+      // La ráfaga es de quien manda varios seguidos: si escribe otro operador,
+      // empieza una nueva. Si no, la culpa caería siempre en quien abrió.
+      if (burstOp !== null && op !== burstOp) {
+        cerrarRafaga(burstOp, burstSize);
+        burstOp = null;
+        burstSize = 0;
+      }
+      const texto = (m['Mensaje'] || '').trim();
+      const d = deOperador(op);
+      d.rows++;
+      d.clients.add(cid);
+      if (texto && difusiones.has(texto)) d.templates++;
+
+      const te = (m['Tiempo Espera'] || '').trim();
+      if (te) {
+        const val = parseFloat(te);
+        if (!isNaN(val)) d.waits.push(val);
+      }
+
+      const partes = texto ? (m['Mensaje'] || '').split(splitRegex).filter(x => x.trim()) : [];
+      burstOp = op;
+      burstSize += Math.max(1, partes.length);
+    }
+
+    cerrarRafaga(burstOp, burstSize);
+
+    const reales = clientConvs[cid].filter(m => {
+      if (!isPropio(m)) return false;
+      const t = (m['Mensaje'] || '').trim();
+      return t && !difusiones.has(t) && !reAuto.test(t);
+    });
+    if (reales.length) {
+      const ultimo = reales[reales.length - 1];
+      const d = deOperador(nombreOp(ultimo));
+      d.closings++;
+      if (!reActivo.test((ultimo['Mensaje'] || '').trim())) d.passive++;
+    }
+  }
+
+  return detalle;
+}
+
 /** Demanda presencial declarada: qué dice el cliente sobre el local.
  *  Se cuenta, no se extrapola — el chat no observa el mostrador. */
 function computeDemandaPresencial(clientConvs, uniqueClients) {
@@ -1382,7 +1491,7 @@ function computeScorecard(ctx) {
     aRecom = 'Mantener menús de autoservicio claros y permitir derivación rápida solo si el bot no comprende la solicitud.';
   } else {
     aStatus = botRatio > 1.1 ? 'ALERTA' : 'ÓPTIMO';
-    aDiag = `El bot de bienvenida se activó ${botWelcomes} veces para ${uniqueClients} usuarios (${Math.round(botRatio * 100) / 100} disparos/contacto). En clientes recurrentes, repetir el menú genera fricción antes de conectar con el asesor.`;
+    aDiag = `El bot de bienvenida se activó ${botWelcomes} veces para ${uniqueClients} usuarios (${fmtPy(botRatio)} disparos/contacto). En clientes recurrentes, repetir el menú genera fricción antes de conectar con el asesor.`;
     aRecom = 'Filtro Directo: Identificar al cliente en el primer mensaje y transferir al asesor asignado sin menús infinitos.';
   }
   sc.push({ pillar: 'A - Atraer y Atender', score: aStatus === 'ÓPTIMO' ? 75 : 55, status: aStatus,
@@ -1415,8 +1524,8 @@ function computeScorecard(ctx) {
   const totalIc = calientes + frias + (dist.media_40_59 || 0);
   const uStatus = avgIc >= 60 ? 'ÓPTIMO' : (avgIc >= 40 ? 'ALERTA' : 'CRÍTICO');
   sc.push({ pillar: 'U - Ubicar la Intención', score: round0(avgIc), status: uStatus,
-            focus_context: `Índice de Conversión medio: ${avgIc}/100`,
-            diagnosis: `El IC medio de la cartera es ${avgIc}/100: ${calientes} conversaciones con intención alta y ${frias} que quedaron en zona fría o ruido sobre ${totalIc} analizadas. El ${(topics && topics.length) ? fmt1(topics[0].percentage) : 30}% ingresa por '${topInquiry}'. Un IC bajo puede venir de tráfico frío o de no extraer la necesidad completa en el turno inicial; el desglose por conversación permite distinguirlo.`,
+            focus_context: `Índice de Conversión medio: ${fmt1(avgIc)}/100`,
+            diagnosis: `El IC medio de la cartera es ${fmt1(avgIc)}/100: ${calientes} conversaciones con intención alta y ${frias} que quedaron en zona fría o ruido sobre ${totalIc} analizadas. El ${(topics && topics.length) ? fmt1(topics[0].percentage) : 30}% ingresa por '${topInquiry}'. Un IC bajo puede venir de tráfico frío o de no extraer la necesidad completa en el turno inicial; el desglose por conversación permite distinguirlo.`,
             recommendation: `Diseñar un Blueprint de Micro-intenciones: Al consultar por ${topInquiry.toLowerCase()}, solicitar los datos clave (habilitantes) en el turno inicial para elevar el IC.` });
 
   // E - Experiencia Personalizada (medido con las fases Spoter Lite)
@@ -1758,6 +1867,33 @@ function runClientSideAnalysis(rows, forcedFocus = null, handoffPolicy = null, f
   const topQuestions = Object.entries(preguntasEmpresa)
     .sort((a, b) => b[1] - a[1]).slice(0, 5);
   const cierres = computeClosings(clientConvs);
+
+  // El detalle por operador necesita las conversaciones ordenadas: las ráfagas
+  // y el cierre dependen de quién habló primero y quién último.
+  const detalleOps = computeOperatorDetail(clientConvs, splitRegex);
+  operatorList.forEach(fila => {
+    const d = detalleOps[fila.operator] || {};
+    const filasOp = d.rows || 0;
+    const esperas = d.waits || [];
+    const rafagas = d.bursts || 0;
+    const cierresOp = d.closings || 0;
+    const clientes = d.clients ? d.clients.size : 0;
+    Object.assign(fila, {
+      clients: clientes,
+      messages_per_client: round1(fila.messages / (clientes || 1)),
+      avg_wait_minutes: esperas.length ? round1(esperas.reduce((a, b) => a + b, 0) / esperas.length) : null,
+      worst_wait_minutes: esperas.length ? round1(Math.max(...esperas)) : null,
+      measured_waits: esperas.length,
+      bursts: rafagas,
+      fragmented_bursts: d.fragmented || 0,
+      fragmentation_rate: rafagas ? round1(((d.fragmented || 0) / rafagas) * 100) : 0.0,
+      template_messages: d.templates || 0,
+      template_rate: filasOp ? round1(((d.templates || 0) / filasOp) * 100) : 0.0,
+      closings_evaluated: cierresOp,
+      passive_closings: d.passive || 0,
+      passive_closing_rate: cierresOp ? round1(((d.passive || 0) / cierresOp) * 100) : null,
+    });
+  });
   const demandaPresencial = computeDemandaPresencial(clientConvs, uniqueClients);
 
   // Ping-pong contra el estándar calibrado del rubro, no contra un ideal fijo.
@@ -2480,6 +2616,7 @@ function renderAnalysis(data) {
 
   // KPI 6: Cuello de Botella y Handoff (Diferenciando Bot de Humano)
   renderBottleneckKPI(data.handoff);
+  renderOperadores(data);
 
   // 5. Bloque Comparativo Ejecutivo de Ping-Pong
   renderPingPongComparison(data);
@@ -3420,6 +3557,157 @@ function openModal(data) {
   document.getElementById('explainModal').classList.add('open');
 }
 
+
+/**
+ * Pestaña "Por operador": lo que ya se mide para el equipo, atribuido a cada
+ * persona. Los umbrales son los mismos que usa el resto del informe, para que
+ * un rojo acá signifique lo mismo que un rojo allá.
+ *
+ * Los nombres son datos personales del equipo del cliente, así que se ocultan
+ * salvo que se pidan: esto sirve para mejorar la atención, no para exponer a
+ * nadie en una captura de pantalla.
+ */
+const CLAVE_NOMBRES_OPS = 'spoter_mostrar_nombres_ops';
+
+const INDICADORES_OPERADOR = {
+  carga: {
+    label: 'Carga de trabajo',
+    meaning: 'Cuántos clientes atendió y cuántos mensajes le dedica a cada uno.',
+    calculation: 'Conversaciones distintas donde escribió, y sus mensajes divididos por esas conversaciones.',
+    impact: 'Si una persona concentra la mayoría de los clientes, es un cuello de botella: cuando falta o se satura, la demora la pagan todos.',
+  },
+  espera: {
+    label: 'Cuánto esperan sus clientes',
+    meaning: 'El tiempo promedio que sus clientes esperan una respuesta, y el peor caso del período.',
+    calculation: 'Promedio y máximo del tiempo de espera registrado en cada mensaje que envió.',
+    impact: 'Pasado el tiempo que aguanta el rubro, la mayoría ya preguntó en otro lado. El peor caso muestra si hay conversaciones abandonadas.',
+  },
+  rafagas: {
+    label: 'Mensajes seguidos',
+    meaning: 'Con qué frecuencia manda dos o más mensajes seguidos en vez de una respuesta ordenada.',
+    calculation: 'Ráfagas propias (mensajes consecutivos suyos, sin respuesta del cliente en el medio) con dos o más mensajes, sobre el total de sus ráfagas.',
+    impact: 'Cada ráfaga suma notificaciones y obliga al cliente a juntar la información. Es el pilar C del método.',
+  },
+  plantillas: {
+    label: 'Uso de respuestas rápidas',
+    meaning: 'Qué parte de sus mensajes son respuestas ya armadas, y no texto escrito de cero cada vez.',
+    calculation: 'Mensajes cuyo texto se repite en varias conversaciones del período, sobre el total de mensajes que envió.',
+    impact: 'Un uso bajo significa retipear lo mismo todos los días, con más demora y más variación en lo que se le promete al cliente.',
+  },
+  cierre: {
+    label: 'Cierre de la conversación',
+    meaning: 'De las conversaciones que terminó, cuántas quedaron sin un próximo paso concreto.',
+    calculation: 'Se mira el último mensaje real de cada conversación (sin difusiones ni automáticos) y se evalúa si invita a avanzar. Es el pilar N.',
+    impact: 'Un cierre pasivo ("cualquier consulta avisame") deja la próxima jugada en manos del cliente, que muchas veces no vuelve.',
+  },
+};
+
+function semaforoOperador(indicador, fila, sla) {
+  const malo = 'danger', medio = 'warning', bien = 'success';
+  if (indicador === 'espera') {
+    const v = fila.avg_wait_minutes;
+    if (v == null) return null;
+    return v <= (sla.acceptable || 10) ? bien : v <= (sla.warning || 30) ? medio : malo;
+  }
+  if (indicador === 'rafagas') {
+    return fila.fragmentation_rate <= 15 ? bien : fila.fragmentation_rate <= 35 ? medio : malo;
+  }
+  if (indicador === 'plantillas') {
+    return fila.template_rate >= 50 ? bien : fila.template_rate >= 30 ? medio : malo;
+  }
+  if (indicador === 'cierre') {
+    const v = fila.passive_closing_rate;
+    if (v == null) return null;
+    const cfg = CATALOGO.deteccion_cierre;
+    return v >= (cfg.umbral_critico_pct || 60) ? malo : v >= (cfg.umbral_alerta_pct || 35) ? medio : bien;
+  }
+  return null;
+}
+
+function nombreOperadorVisible(fila, indice, mostrarReales) {
+  if (mostrarReales || fila.is_bot) return fila.operator;
+  return `Operador ${indice + 1}`;
+}
+
+function renderOperadores(data) {
+  const cuerpo = document.getElementById('cuerpoOperadores');
+  if (!cuerpo) return;
+  const filas = (data.operators || []).filter(o => o.clients !== undefined);
+  const sla = (data.wait_times && data.wait_times.sla) || {};
+
+  if (!filas.length) {
+    cuerpo.innerHTML = `<tr><td colspan="6">${engineNoticeHTML(
+      'Detalle por operador no disponible',
+      'Este análisis se generó con una versión anterior del motor. Volvé a correrlo para ver el desglose por persona.'
+    )}</td></tr>`;
+    return;
+  }
+
+  let mostrarReales = false;
+  try { mostrarReales = localStorage.getItem(CLAVE_NOMBRES_OPS) === '1'; } catch (e) { /* sin almacenamiento */ }
+  const chk = document.getElementById('chkMostrarNombres');
+  if (chk) chk.checked = mostrarReales;
+
+  const badge = (indicador, valor, detalle, estado) => {
+    if (estado === null) {
+      return `<span class="ops-badge ops-badge--sindatos" title="No hay suficientes datos de este operador">sin datos</span>`;
+    }
+    return `<button type="button" class="ops-badge ops-badge--${estado}" data-indicador="${indicador}">
+      <span class="ops-badge-val">${valor}</span>
+      <span class="ops-badge-det">${detalle}</span>
+    </button>`;
+  };
+
+  cuerpo.innerHTML = filas.map((f, i) => {
+    const nombre = nombreOperadorVisible(f, i, mostrarReales);
+    const espera = f.avg_wait_minutes == null ? '—' : `${fmt1(f.avg_wait_minutes)} min`;
+    const peor = f.worst_wait_minutes == null ? '' : `peor: ${fmt1(f.worst_wait_minutes)} min`;
+    return `<tr>
+      <td><strong>${escapeHtml(nombre)}</strong>${f.is_bot ? ' <span class="ops-tag">bot</span>' : ''}
+        <span class="cat-sub">${f.messages.toLocaleString()} mensajes · ${f.percentage}% del total</span></td>
+      <td>${badge('carga', `${f.clients} clientes`, `${fmt1(f.messages_per_client)} msgs c/u`, 'success')}</td>
+      <td>${badge('espera', espera, peor, semaforoOperador('espera', f, sla))}</td>
+      <td>${badge('rafagas', `${fmt1(f.fragmentation_rate)}%`, `${f.fragmented_bursts} de ${f.bursts} ráfagas`, semaforoOperador('rafagas', f, sla))}</td>
+      <td>${badge('plantillas', `${fmt1(f.template_rate)}%`, `${f.template_messages} mensajes`, semaforoOperador('plantillas', f, sla))}</td>
+      <td>${badge('cierre', f.passive_closing_rate == null ? '—' : `${fmt1(f.passive_closing_rate)}% pasivos`,
+        f.closings_evaluated ? `${f.closings_evaluated} cierres` : '', semaforoOperador('cierre', f, sla))}</td>
+    </tr>`;
+  }).join('');
+
+  const humanos = filas.filter(f => !f.is_bot);
+  const pie = document.getElementById('opsPie');
+  if (pie) {
+    pie.textContent = humanos.length
+      ? `${humanos.length} personas y ${filas.length - humanos.length} bot en el período. Los porcentajes se calculan sobre los mensajes de cada uno, no sobre el total del equipo.`
+      : 'Todo el período lo atendió el bot.';
+  }
+}
+
+function initOperadores() {
+  const chk = document.getElementById('chkMostrarNombres');
+  if (chk) {
+    chk.addEventListener('change', () => {
+      try { localStorage.setItem(CLAVE_NOMBRES_OPS, chk.checked ? '1' : '0'); } catch (e) { /* sin almacenamiento */ }
+      if (currentData) renderOperadores(currentData);
+    });
+  }
+  const tabla = document.getElementById('tablaOperadores');
+  if (tabla) {
+    tabla.addEventListener('click', (ev) => {
+      const b = ev.target.closest('[data-indicador]');
+      if (!b) return;
+      const ind = INDICADORES_OPERADOR[b.dataset.indicador];
+      if (!ind) return;
+      openModal({
+        title: ind.label,
+        meaning: ind.meaning,
+        calculation: `Cómo se mide: ${ind.calculation}`,
+        impact: ind.impact,
+        benchmark: 'Se mide sobre los mensajes que subiste. Nada de esto se carga a mano.',
+      });
+    });
+  }
+}
 
 // --- MODAL EXPLICATIVO PARA TARJETAS DE AUDITORÍA DE CAPITAL LTV ---
 function openLtvExplanationModal(key) {

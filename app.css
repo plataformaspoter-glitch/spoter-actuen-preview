@@ -3033,3 +3033,28 @@ details.qualification-panel .kpi-legend-bar { margin: 0; }
 .promesa-item span:last-child { font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
 .inicio-promesa-pie { font-size: 12px; color: var(--text-muted); margin-top: 14px; }
 details.qualification-panel .executive-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ── Pestaña por operador ─────────────────────────────────────────────────
+   La misma lectura del equipo, persona por persona. */
+.ops-header { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; }
+.ops-header h2 { font-family: var(--font-heading); font-size: 20px; }
+.ops-sub { font-size: 13px; color: var(--text-secondary); margin-top: 4px; max-width: 640px; line-height: 1.5; }
+.ops-privacidad { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-secondary);
+  padding: 8px 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-secondary); cursor: pointer; }
+.ops-privacidad input { width: 15px; height: 15px; accent-color: var(--spoter-pink); }
+.ops-tag { font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em;
+  padding: 2px 6px; border-radius: 999px; background: var(--bg-secondary); color: var(--text-muted); }
+.ops-badge { display: flex; flex-direction: column; gap: 1px; align-items: flex-start; width: 100%;
+  padding: 8px 12px; border-radius: var(--radius-md); border: 1.5px solid transparent; cursor: pointer;
+  font-family: inherit; text-align: left; transition: transform .12s ease; }
+.ops-badge:hover { transform: translateY(-1px); }
+.ops-badge-val { font-size: 13px; font-weight: 800; }
+.ops-badge-det { font-size: 10.5px; opacity: .75; }
+.ops-badge--success { background: var(--success-bg); border-color: color-mix(in srgb, var(--success) 35%, transparent); color: var(--success); }
+.ops-badge--warning { background: var(--warning-bg); border-color: color-mix(in srgb, var(--warning) 35%, transparent); color: var(--warning); }
+.ops-badge--danger { background: var(--danger-bg); border-color: color-mix(in srgb, var(--danger) 35%, transparent); color: var(--danger); }
+.ops-badge--sindatos { display: inline-block; padding: 6px 10px; font-size: 11.5px; color: var(--text-muted);
+  background: var(--bg-secondary); border-radius: var(--radius-sm); cursor: default; }
+.ops-pie { font-size: 12px; color: var(--text-muted); margin-top: 14px; }
+/* El banner es fijo: sin este colchón tapa la última fila del informe. */
+body:has(.cta-banner:not([hidden])) #dashboardContent { padding-bottom: 96px; }

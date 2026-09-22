@@ -596,6 +596,7 @@ class ActuenAnalyzer:
         }
 
         # 9. Análisis de Operadores: Diferenciación entre Bot y Carga Humana (Handoff)
+
         is_bot_re = re.compile(r'bot|sistema|auto|automatiz', re.IGNORECASE)
         
         bot_msgs_total = 0
@@ -685,6 +686,32 @@ class ActuenAnalyzer:
 
         _evaluables = cierres_activos + cierres_pasivos
         passive_closing_rate = round((cierres_pasivos / (_evaluables or 1)) * 100, 1)
+
+        # Detalle por operador: necesita las difusiones ya detectadas, así que va
+        # acá y enriquece la lista que se armó más arriba.
+        detalle_ops = self._compute_operator_detail(client_conversations, _difusiones, _re_auto, _re_activo)
+        for fila in operator_list:
+            d = detalle_ops.get(fila['operator'], {})
+            filas_op = d.get('rows', 0) or 0
+            esperas = d.get('waits', [])
+            rafagas = d.get('bursts', 0) or 0
+            cierres = d.get('closings', 0) or 0
+            clientes = len(d.get('clients', ()))
+            fila.update({
+                "clients": clientes,
+                "messages_per_client": round(fila['messages'] / (clientes or 1), 1),
+                "avg_wait_minutes": round(sum(esperas) / len(esperas), 1) if esperas else None,
+                "worst_wait_minutes": round(max(esperas), 1) if esperas else None,
+                "measured_waits": len(esperas),
+                "bursts": rafagas,
+                "fragmented_bursts": d.get('fragmented', 0),
+                "fragmentation_rate": round((d.get('fragmented', 0) / rafagas) * 100, 1) if rafagas else 0.0,
+                "template_messages": d.get('templates', 0),
+                "template_rate": round((d.get('templates', 0) / filas_op) * 100, 1) if filas_op else 0.0,
+                "closings_evaluated": cierres,
+                "passive_closings": d.get('passive', 0),
+                "passive_closing_rate": round((d.get('passive', 0) / cierres) * 100, 1) if cierres else None,
+            })
 
         # Demanda presencial declarada. Se CUENTA lo que el cliente dice sobre el
         # local (ubicación, horario, retiro, stock, fricción vivida). No se
@@ -1527,6 +1554,77 @@ class ActuenAnalyzer:
                 d['regex'] = re.compile(patron, re.I if 'i' in flags else 0)
             salida.append(d)
         return salida
+
+    def _compute_operator_detail(self, client_conversations, difusiones, re_auto, re_activo):
+        """
+        Qué hizo cada operador, medido sobre los mismos mensajes del análisis.
+
+        Una ráfaga se le atribuye a quien la empezó; el cierre de la conversación,
+        a quien escribió el último mensaje real. "Plantilla" es un texto que se
+        repite en varias conversaciones: así se estima el uso de respuestas
+        rápidas sin que nadie lo declare.
+        """
+        detalle = defaultdict(lambda: {'rows': 0, 'clients': set(), 'waits': [], 'bursts': 0,
+                                       'fragmented': 0, 'templates': 0, 'closings': 0, 'passive': 0})
+
+        def cerrar_rafaga(op, tam):
+            if op is None or tam <= 0:
+                return
+            detalle[op]['bursts'] += 1
+            if tam >= 2:
+                detalle[op]['fragmented'] += 1
+
+        for cid, msgs in client_conversations.items():
+            burst_op, burst_size = None, 0
+
+            for m in msgs:
+                if not is_propio(m):
+                    cerrar_rafaga(burst_op, burst_size)
+                    burst_op, burst_size = None, 0
+                    continue
+
+                op = (m.get('Nombre Operador', '') or '').strip() or 'Bot / Sistema'
+                # La ráfaga es de quien manda varios seguidos: si escribe otro
+                # operador, empieza una nueva. Si no, la culpa caería siempre en
+                # quien abrió la conversación.
+                if burst_op is not None and op != burst_op:
+                    cerrar_rafaga(burst_op, burst_size)
+                    burst_op, burst_size = None, 0
+                texto = (m.get('Mensaje') or '').strip()
+                d = detalle[op]
+                d['rows'] += 1
+                d['clients'].add(cid)
+                if texto and texto in difusiones:
+                    d['templates'] += 1
+
+                te = (m.get('Tiempo Espera', '') or '').strip()
+                if te:
+                    try:
+                        d['waits'].append(float(te))
+                    except ValueError:
+                        pass
+
+                partes = [p for p in re.split(r'\s*\[?-*salto[-_]?mensaje-*\]?\s*', m.get('Mensaje', '') or '',
+                                              flags=re.IGNORECASE) if p.strip()]
+                burst_op = op
+                burst_size += max(1, len(partes))
+
+            cerrar_rafaga(burst_op, burst_size)
+
+            # El cierre es del último mensaje real: ni difusión ni automático.
+            reales = [m for m in msgs
+                      if is_propio(m)
+                      and (m.get('Mensaje') or '').strip()
+                      and (m.get('Mensaje') or '').strip() not in difusiones
+                      and not re_auto.search(m.get('Mensaje') or '')]
+            if reales:
+                ultimo = reales[-1]
+                op = (ultimo.get('Nombre Operador', '') or '').strip() or 'Bot / Sistema'
+                detalle[op]['closings'] += 1
+                if not re_activo.search((ultimo.get('Mensaje') or '').strip()):
+                    detalle[op]['passive'] += 1
+
+        return detalle
 
     def _compute_handoff_gap_analysis(self, client_conversations, operator_counts, rubro_key='construccion_corralon'):
         is_bot_re = re.compile(r'bot|sistema|auto|automatiz', re.IGNORECASE)

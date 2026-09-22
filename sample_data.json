@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated_at": "2026-09-21T13:37:27.406174",
+    "generated_at": "2026-09-22T13:24:44.624309",
     "engine_mode": "server",
     "company_name": "Concesionaria Demo",
     "company_number": "5490000000000",
@@ -16,13 +16,13 @@
     ],
     "sales_affinity_percentage": 83.3,
     "support_affinity_percentage": 16.7,
-    "total_rows": 609,
+    "total_rows": 616,
     "unique_clients": 70,
-    "company_messages": 366,
-    "client_messages": 243,
-    "company_ratio": 1.51,
-    "avg_messages_per_client": 8.7,
-    "baseline_company_msgs_per_client": 5.2,
+    "company_messages": 370,
+    "client_messages": 246,
+    "company_ratio": 1.5,
+    "avg_messages_per_client": 8.8,
+    "baseline_company_msgs_per_client": 5.3,
     "target_company_msgs_per_client": 5.0
   },
   "schedule": {
@@ -36,15 +36,15 @@
       0,
       0,
       4,
-      10,
-      5,
-      5,
-      11,
-      13,
-      2,
-      9,
       7,
+      8,
+      9,
+      12,
+      9,
       4,
+      5,
+      6,
+      6,
       0,
       0,
       0,
@@ -61,29 +61,29 @@
       "Sábado": 0,
       "Domingo": 0
     },
-    "peak_hour": "13:00 a 14:00 hs",
+    "peak_hour": "12:00 a 13:00 hs",
     "peak_day": "Lunes",
     "top_peak_hours": [
       {
-        "hour": 13,
-        "hour_range": "13:00 a 14:00 hs",
-        "count": 13,
-        "percentage": 18.6
-      },
-      {
         "hour": 12,
         "hour_range": "12:00 a 13:00 hs",
-        "count": 11,
-        "percentage": 15.7
+        "count": 12,
+        "percentage": 17.1
       },
       {
-        "hour": 9,
-        "hour_range": "09:00 a 10:00 hs",
-        "count": 10,
-        "percentage": 14.3
+        "hour": 11,
+        "hour_range": "11:00 a 12:00 hs",
+        "count": 9,
+        "percentage": 12.9
+      },
+      {
+        "hour": 13,
+        "hour_range": "13:00 a 14:00 hs",
+        "count": 9,
+        "percentage": 12.9
       }
     ],
-    "peak_hours_summary": "13:00 hs (18.6%) | 12:00 hs (15.7%) | 09:00 hs (14.3%)",
+    "peak_hours_summary": "12:00 hs (17.1%) | 11:00 hs (12.9%) | 13:00 hs (12.9%)",
     "business_hours_percentage": 100.0,
     "after_hours_percentage": 0.0,
     "business_hours_count": 70,
@@ -91,14 +91,14 @@
   },
   "handoff": {
     "policy": "hybrid",
-    "bot_messages": 53,
-    "bot_share_percentage": 14.5,
-    "human_messages": 313,
-    "human_share_percentage": 85.5,
-    "top_human_operator": "Asesor 1",
-    "top_human_messages": 116,
-    "top_human_percentage_of_human": 37.1,
-    "top_human_percentage_of_total": 31.7,
+    "bot_messages": 56,
+    "bot_share_percentage": 15.1,
+    "human_messages": 314,
+    "human_share_percentage": 84.9,
+    "top_human_operator": "Asesor 3",
+    "top_human_messages": 135,
+    "top_human_percentage_of_human": 43.0,
+    "top_human_percentage_of_total": 36.5,
     "is_bot_dominant": false
   },
   "handoff_gap_analysis": {
@@ -122,11 +122,13 @@
         "solution_action": "Cargar tarifas base y propuesta comercial en Spoter para responder en 1 bloque estructurado.",
         "sample_client_phrases": [
           "Atienden los sabados el taller?",
-          "Hola, vi el Corolla 0km en la web. Lo quiero financiado, cuanto sale la cuota?",
-          "Me pasan precio del Peugeot 208 y planes de financiacion por favor"
+          "Me pasan precio del Peugeot 208 y planes de financiacion por favor",
+          "Trabajan con seguros?"
         ],
         "sample_operator_responses": [
-          "Patente del vehiculo?"
+          "Estamos en el parque industrial, sobre la colectora",
+          "Sabados el taller atiende de 9 a 13",
+          "te paso la ficha con las cuotas?"
         ],
         "template_target_id": "presupuesto_comercial"
       },
@@ -146,7 +148,9 @@
           "Tengo un Gol 2015 para entregar como parte de pago, cuanto me toman?"
         ],
         "sample_operator_responses": [
-          "Patente del vehiculo?"
+          "Si, lo gestionamos nosotros. Te esperamos por el local",
+          "te paso con el tasador",
+          "te contacta el encargado de usados"
         ],
         "template_target_id": "medios_pago_gral"
       },
@@ -164,7 +168,10 @@
         "sample_client_phrases": [
           "Buenas, quiero reservar un turno para probar la Hilux hoy o mañana"
         ],
-        "sample_operator_responses": [],
+        "sample_operator_responses": [
+          "ahora consulto disponibilidad de la unidad",
+          "reviso si esta libre la unidad de prueba"
+        ],
         "template_target_id": "triaje_soporte_gral"
       },
       {
@@ -181,23 +188,26 @@
         "sample_client_phrases": [
           "Me quedo una llave adentro del auto, me pueden ayudar?"
         ],
-        "sample_operator_responses": [],
+        "sample_operator_responses": [
+          "Pasa mucho, acercate y lo resolvemos",
+          "Uf! pasa seguido. Traelo que lo vemos"
+        ],
         "template_target_id": "rescate_comercial_gral"
       }
     ]
   },
   "fragmentation": {
-    "rate": 36.7,
-    "burst_1_msg": 138,
-    "burst_2_msgs": 31,
-    "burst_3_plus_msgs": 49,
-    "total_bursts": 218
+    "rate": 36.8,
+    "burst_1_msg": 139,
+    "burst_2_msgs": 29,
+    "burst_3_plus_msgs": 52,
+    "total_bursts": 220
   },
   "wait_times": {
-    "average_minutes": 109.8,
-    "median_minutes": 15.0,
-    "p90_minutes": 307.0,
-    "p95_minutes": 497.0,
+    "average_minutes": 103.0,
+    "median_minutes": 12.0,
+    "p90_minutes": 342.0,
+    "p95_minutes": 444.0,
     "sla": {
       "ideal_immediate": 3.0,
       "acceptable": 8.0,
@@ -205,21 +215,21 @@
       "critical": 45.0,
       "benchmark_text": "El comprador de autos contacta hasta 4 concesionarias; responder antes de 5 min duplica la tasa de visita."
     },
-    "over_warning_count": 154,
-    "over_warning_percentage": 42.1,
+    "over_warning_count": 145,
+    "over_warning_percentage": 39.2,
     "system_drops": 0,
     "brackets": {
-      "< 3m (Inmediato)": 109,
-      "3 - 8m (Aceptable)": 40,
-      "8 - 20m (Alerta)": 63,
-      "20 - 45m (❄️ Zona Fría)": 81,
-      "> 45m (Crítico)": 73
+      "< 3m (Inmediato)": 111,
+      "3 - 8m (Aceptable)": 45,
+      "8 - 20m (Alerta)": 69,
+      "20 - 45m (❄️ Zona Fría)": 71,
+      "> 45m (Crítico)": 74
     },
     "initial_response": {
-      "average_minutes": 76.7,
+      "average_minutes": 28.2,
       "median_minutes": 0.8,
-      "p90_minutes": 192.0,
-      "p95_minutes": 285.0,
+      "p90_minutes": 127.0,
+      "p95_minutes": 211.0,
       "count": 70,
       "over_warning_count": 8,
       "over_warning_percentage": 11.4,
@@ -234,50 +244,50 @@
         "label": "Zona de Riesgo / Fuga (2 Franjas)"
       },
       "brackets": {
-        "< 3m (Inmediato)": 55,
-        "3 - 8m (Aceptable)": 7,
-        "8 - 20m (Alerta)": 0,
+        "< 3m (Inmediato)": 57,
+        "3 - 8m (Aceptable)": 3,
+        "8 - 20m (Alerta)": 2,
         "20 - 45m (❄️ Zona Fría)": 0,
         "> 45m (Crítico)": 8
       }
     },
     "in_conversation": {
-      "average_minutes": 117.6,
-      "median_minutes": 19.0,
-      "p90_minutes": 349.0,
-      "p95_minutes": 516.0,
-      "count": 296,
-      "over_warning_count": 146,
-      "over_warning_percentage": 49.3,
+      "average_minutes": 120.4,
+      "median_minutes": 18.0,
+      "p90_minutes": 379.0,
+      "p95_minutes": 505.0,
+      "count": 300,
+      "over_warning_count": 137,
+      "over_warning_percentage": 45.7,
       "ok_summary": {
-        "count": 150,
-        "percentage": 50.7,
+        "count": 163,
+        "percentage": 54.3,
         "label": "Atención Oportuna / Saludable (3 Franjas)"
       },
       "risk_summary": {
-        "count": 146,
-        "percentage": 49.3,
+        "count": 137,
+        "percentage": 45.7,
         "label": "Zona de Riesgo / Fuga (2 Franjas)"
       },
       "brackets": {
         "< 3m (Inmediato)": 54,
-        "3 - 8m (Aceptable)": 33,
-        "8 - 20m (Alerta)": 63,
-        "20 - 45m (❄️ Zona Fría)": 81,
-        "> 45m (Crítico)": 65
+        "3 - 8m (Aceptable)": 42,
+        "8 - 20m (Alerta)": 67,
+        "20 - 45m (❄️ Zona Fría)": 71,
+        "> 45m (Crítico)": 66
       }
     }
   },
   "ping_pong": {
     "real_client_avg": 3.5,
-    "real_operator_avg": 5.2,
-    "real_total_avg": 8.7,
+    "real_operator_avg": 5.3,
+    "real_total_avg": 8.8,
     "ideal_client_avg": 4.0,
     "ideal_operator_avg": 3.5,
     "ideal_total_avg": 7.5,
     "excess_factor": 1.2,
-    "excess_percentage": 16.0,
-    "explanation": "Cada caso promedia 8.7 mensajes (3.5 del cliente + 5.2 del operador) frente al estándar calibrado para Automotor / Concesionaria / Repuestos (7.5 mensajes totales: 4.0 cliente + 3.5 operador).",
+    "excess_percentage": 17.3,
+    "explanation": "Cada caso promedia 8.8 mensajes (3.5 del cliente + 5.3 del operador) frente al estándar calibrado para Automotor / Concesionaria / Repuestos (7.5 mensajes totales: 4.0 cliente + 3.5 operador).",
     "industry_benchmark_note": "Estándar de industria (Automotor / Concesionaria / Repuestos): 7.5 msgs"
   },
   "demanda_presencial": {
@@ -290,8 +300,8 @@
         "conversaciones": 5,
         "porcentaje": 7.1,
         "citas": [
-          "Donde quedan? Si puede ser",
-          "Donde quedan?",
+          "Donde quedan? Unos 60 mil",
+          "Donde quedan? AB123CD",
           "Donde quedan?"
         ]
       },
@@ -301,8 +311,8 @@
         "conversaciones": 5,
         "porcentaje": 7.1,
         "citas": [
-          "Hasta que hora atienden hoy? Unos 60 mil",
-          "Hasta que hora atienden hoy? Si puede ser",
+          "Hasta que hora atienden hoy? AB123CD",
+          "Hasta que hora atienden hoy?",
           "Hasta que hora atienden hoy?"
         ]
       },
@@ -313,8 +323,8 @@
         "porcentaje": 7.1,
         "citas": [
           "Necesito saber si tienen stock del Cronos GSE para entrega inmediata Sigo e",
-          "Necesito saber si tienen stock del Cronos GSE para entrega inmediata Sigo e",
-          "Necesito saber si tienen stock del Cronos GSE para entrega inmediata Financ"
+          "Necesito saber si tienen stock del Cronos GSE para entrega inmediata El que",
+          "Necesito saber si tienen stock del Cronos GSE para entrega inmediata Sigo e"
         ]
       }
     ],
@@ -326,43 +336,43 @@
       "naturaleza": "Proyección sobre el ciclo de vida del cliente",
       "temporalidad": "acumulado",
       "moneda": "USD",
-      "total": 715500,
-      "total_ars": 894375000,
+      "total": 739350,
+      "total_ars": 924187500,
       "componentes": [
         {
           "concepto": "Ingreso proyectado que no se gana",
-          "formula": "30 leads en riesgo × $36,000 × 65%",
+          "formula": "31 leads en riesgo × $36,000 × 65%",
           "detalle": "Valor de vida completo ($36,000 USD)",
-          "monto_usd": 702000
+          "monto_usd": 725400
         },
         {
           "concepto": "Costo de adquisición desperdiciado",
-          "formula": "30 leads × $450 de CAC",
+          "formula": "31 leads × $450 de CAC",
           "detalle": "Lo que costó traer a un lead que después se pierde",
-          "monto_usd": 13500
+          "monto_usd": 13950
         }
       ],
-      "supuesto_clave": "Asume que el 65% de los 30 leads mal atendidos no se recupera. El cliente compara y compra donde le respondan. Una demora en zona fría lo manda al competidor, así que se arriesga el valor de vida completo del cliente más el costo de haberlo traído."
+      "supuesto_clave": "Asume que el 65% de los 31 leads mal atendidos no se recupera. El cliente compara y compra donde le respondan. Una demora en zona fría lo manda al competidor, así que se arriesga el valor de vida completo del cliente más el costo de haberlo traído."
     },
     "bloque_costo": {
       "titulo": "Costo que ya se está pagando",
       "naturaleza": "Gasto operativo real, medido sobre los mensajes del período",
       "temporalidad": "mensual",
       "moneda": "ARS",
-      "total": 1720,
-      "total_usd": 1.38,
+      "total": 1900,
+      "total_usd": 1.52,
       "componentes": [
         {
           "concepto": "Horas de asesores en mensajes evitables",
-          "formula": "16 mensajes × 0.75 min ÷ 60 × $5,000/hora",
+          "formula": "20 mensajes × 0.75 min ÷ 60 × $5,000/hora",
           "detalle": "0.2 horas al mes que hoy se van en fragmentación y repreguntas",
           "monto_ars": 1000
         },
         {
           "concepto": "Costo de mensajería",
-          "formula": "16 mensajes × $45",
+          "formula": "20 mensajes × $45",
           "detalle": "Mensajes que no harían falta con respuesta en bloque único",
-          "monto_ars": 720
+          "monto_ars": 900
         }
       ],
       "supuesto_clave": "Toma como evitables los mensajes por encima del estándar de 5.0 por cliente del rubro. No asume que el cliente se pierda: es tiempo de gente que ya se está pagando."
@@ -372,82 +382,82 @@
   "topics": [
     {
       "category": "Financiación y Cuotas de Plan",
-      "conversations": 24,
-      "percentage": 34.3,
-      "avg_messages_per_client": 15.2,
+      "conversations": 27,
+      "percentage": 38.6,
+      "avg_messages_per_client": 15.1,
       "avg_client_messages": 6.1,
-      "avg_operator_messages": 9.1,
-      "ideal_client_messages": 4.0,
-      "ideal_operator_messages": 3.5,
-      "ideal_total_messages": 7.5,
-      "ping_pong_rate": 2.0,
-      "ping_pong_excess_percentage": 102.8,
-      "ping_pong_turns": 7.6,
-      "ping_pong_severity": "MODERADO",
-      "status_explanation": "Idas y vueltas aceptables con leve margen de optimización.",
-      "badge_class": "yellow",
-      "total_messages": 365,
-      "client_messages": 147,
-      "operator_messages": 218
-    },
-    {
-      "category": "Turnos de Service y Taller",
-      "conversations": 15,
-      "percentage": 21.4,
-      "avg_messages_per_client": 7.9,
-      "avg_client_messages": 3.1,
-      "avg_operator_messages": 4.7,
-      "ideal_client_messages": 4.0,
-      "ideal_operator_messages": 3.5,
-      "ideal_total_messages": 7.5,
-      "ping_pong_rate": 1.0,
-      "ping_pong_excess_percentage": 4.9,
-      "ping_pong_turns": 3.9,
-      "ping_pong_severity": "ÓPTIMO",
-      "status_explanation": "Dentro del rango ideal para Automotor / Concesionaria / Repuestos.",
-      "badge_class": "green",
-      "total_messages": 118,
-      "client_messages": 47,
-      "operator_messages": 71
-    },
-    {
-      "category": "Consulta de Modelos y Stock",
-      "conversations": 10,
-      "percentage": 14.3,
-      "avg_messages_per_client": 14.5,
-      "avg_client_messages": 5.9,
-      "avg_operator_messages": 8.6,
-      "ideal_client_messages": 4.0,
-      "ideal_operator_messages": 3.5,
-      "ideal_total_messages": 7.5,
-      "ping_pong_rate": 1.9,
-      "ping_pong_excess_percentage": 93.3,
-      "ping_pong_turns": 7.2,
-      "ping_pong_severity": "MODERADO",
-      "status_explanation": "Idas y vueltas aceptables con leve margen de optimización.",
-      "badge_class": "yellow",
-      "total_messages": 145,
-      "client_messages": 59,
-      "operator_messages": 86
-    },
-    {
-      "category": "Cotización de Usado en Parte de Pago",
-      "conversations": 10,
-      "percentage": 14.3,
-      "avg_messages_per_client": 14.7,
-      "avg_client_messages": 5.7,
       "avg_operator_messages": 9.0,
       "ideal_client_messages": 4.0,
       "ideal_operator_messages": 3.5,
       "ideal_total_messages": 7.5,
       "ping_pong_rate": 2.0,
-      "ping_pong_excess_percentage": 96.0,
-      "ping_pong_turns": 7.3,
+      "ping_pong_excess_percentage": 101.5,
+      "ping_pong_turns": 7.6,
       "ping_pong_severity": "MODERADO",
       "status_explanation": "Idas y vueltas aceptables con leve margen de optimización.",
       "badge_class": "yellow",
-      "total_messages": 147,
-      "client_messages": 57,
+      "total_messages": 408,
+      "client_messages": 164,
+      "operator_messages": 244
+    },
+    {
+      "category": "Turnos de Service y Taller",
+      "conversations": 15,
+      "percentage": 21.4,
+      "avg_messages_per_client": 8.1,
+      "avg_client_messages": 3.2,
+      "avg_operator_messages": 4.9,
+      "ideal_client_messages": 4.0,
+      "ideal_operator_messages": 3.5,
+      "ideal_total_messages": 7.5,
+      "ping_pong_rate": 1.1,
+      "ping_pong_excess_percentage": 7.6,
+      "ping_pong_turns": 4.0,
+      "ping_pong_severity": "ÓPTIMO",
+      "status_explanation": "Dentro del rango ideal para Automotor / Concesionaria / Repuestos.",
+      "badge_class": "green",
+      "total_messages": 121,
+      "client_messages": 48,
+      "operator_messages": 73
+    },
+    {
+      "category": "Consulta de Modelos y Stock",
+      "conversations": 10,
+      "percentage": 14.3,
+      "avg_messages_per_client": 14.8,
+      "avg_client_messages": 6.1,
+      "avg_operator_messages": 8.7,
+      "ideal_client_messages": 4.0,
+      "ideal_operator_messages": 3.5,
+      "ideal_total_messages": 7.5,
+      "ping_pong_rate": 2.0,
+      "ping_pong_excess_percentage": 97.3,
+      "ping_pong_turns": 7.4,
+      "ping_pong_severity": "MODERADO",
+      "status_explanation": "Idas y vueltas aceptables con leve margen de optimización.",
+      "badge_class": "yellow",
+      "total_messages": 148,
+      "client_messages": 61,
+      "operator_messages": 87
+    },
+    {
+      "category": "Cotización de Usado en Parte de Pago",
+      "conversations": 10,
+      "percentage": 14.3,
+      "avg_messages_per_client": 15.0,
+      "avg_client_messages": 6.0,
+      "avg_operator_messages": 9.0,
+      "ideal_client_messages": 4.0,
+      "ideal_operator_messages": 3.5,
+      "ideal_total_messages": 7.5,
+      "ping_pong_rate": 2.0,
+      "ping_pong_excess_percentage": 100.0,
+      "ping_pong_turns": 7.5,
+      "ping_pong_severity": "MODERADO",
+      "status_explanation": "Idas y vueltas aceptables con leve margen de optimización.",
+      "badge_class": "yellow",
+      "total_messages": 150,
+      "client_messages": 60,
       "operator_messages": 90
     },
     {
@@ -473,32 +483,84 @@
   ],
   "operators": [
     {
+      "operator": "Asesor 3",
+      "is_bot": false,
+      "messages": 135,
+      "percentage": 36.5,
+      "est_hours_spent": 1.7,
+      "clients": 27,
+      "messages_per_client": 5.0,
+      "avg_wait_minutes": 127.5,
+      "worst_wait_minutes": 2506.0,
+      "measured_waits": 135,
+      "bursts": 91,
+      "fragmented_bursts": 24,
+      "fragmentation_rate": 26.4,
+      "template_messages": 90,
+      "template_rate": 66.7,
+      "closings_evaluated": 27,
+      "passive_closings": 20,
+      "passive_closing_rate": 74.1
+    },
+    {
       "operator": "Asesor 1",
       "is_bot": false,
-      "messages": 116,
-      "percentage": 31.7,
-      "est_hours_spent": 1.4
+      "messages": 92,
+      "percentage": 24.9,
+      "est_hours_spent": 1.1,
+      "clients": 21,
+      "messages_per_client": 4.4,
+      "avg_wait_minutes": 120.9,
+      "worst_wait_minutes": 2468.0,
+      "measured_waits": 92,
+      "bursts": 58,
+      "fragmented_bursts": 25,
+      "fragmentation_rate": 43.1,
+      "template_messages": 63,
+      "template_rate": 68.5,
+      "closings_evaluated": 21,
+      "passive_closings": 19,
+      "passive_closing_rate": 90.5
     },
     {
       "operator": "Asesora 2",
       "is_bot": false,
-      "messages": 111,
-      "percentage": 30.3,
-      "est_hours_spent": 1.4
-    },
-    {
-      "operator": "Asesor 3",
-      "is_bot": false,
-      "messages": 86,
+      "messages": 87,
       "percentage": 23.5,
-      "est_hours_spent": 1.1
+      "est_hours_spent": 1.1,
+      "clients": 22,
+      "messages_per_client": 4.0,
+      "avg_wait_minutes": 111.8,
+      "worst_wait_minutes": 2186.0,
+      "measured_waits": 87,
+      "bursts": 56,
+      "fragmented_bursts": 20,
+      "fragmentation_rate": 35.7,
+      "template_messages": 52,
+      "template_rate": 59.8,
+      "closings_evaluated": 22,
+      "passive_closings": 17,
+      "passive_closing_rate": 77.3
     },
     {
       "operator": "Bot",
       "is_bot": true,
-      "messages": 53,
-      "percentage": 14.5,
-      "est_hours_spent": 0.7
+      "messages": 56,
+      "percentage": 15.1,
+      "est_hours_spent": 0.7,
+      "clients": 56,
+      "messages_per_client": 1.0,
+      "avg_wait_minutes": 0.8,
+      "worst_wait_minutes": 0.8,
+      "measured_waits": 56,
+      "bursts": 56,
+      "fragmented_bursts": 0,
+      "fragmentation_rate": 0.0,
+      "template_messages": 56,
+      "template_rate": 100.0,
+      "closings_evaluated": 0,
+      "passive_closings": 0,
+      "passive_closing_rate": null
     }
   ],
   "actuen_scorecard": [
@@ -515,7 +577,7 @@
       "score": 35,
       "status": "CRÍTICO",
       "focus_context": "Cotización Todo-en-Uno",
-      "diagnosis": "El 36.7% de las respuestas de la empresa se envían en ráfagas de 2 o más mensajes seguidos. Se detectan preguntas aisladas como \"Tenes un usado para entregar?...\", \"Cual es tu presupuesto?...\", aumentando la carga cognitiva.",
+      "diagnosis": "El 36.8% de las respuestas de la empresa se envían en ráfagas de 2 o más mensajes seguidos. Se detectan preguntas aisladas como \"Tu nombre completo?...\", \"Queres financiado o contado?...\", aumentando la carga cognitiva.",
       "recommendation": "Imponer la Regla del Bloque Único: Unificar respuesta, viñetas explicativas y el requerimiento de datos en un solo mensaje estructurado."
     },
     {
@@ -523,15 +585,15 @@
       "score": 35,
       "status": "CRÍTICO",
       "focus_context": "SLA Ideal: El comprador de autos contacta hasta 4 concesionarias; responder antes de 5 min duplica la tasa de visita.",
-      "diagnosis": "Tiempo promedio de 109.8 min frente al SLA aceptable de 8 min en Automotor / Concesionaria / Repuestos. El 42.1% de las consultas superaron el umbral de alerta (20 min). Hubo 0 expulsiones del sistema.",
+      "diagnosis": "Tiempo promedio de 103.0 min frente al SLA aceptable de 8 min en Automotor / Concesionaria / Repuestos. El 39.2% de las consultas superaron el umbral de alerta (20 min). Hubo 0 expulsiones del sistema.",
       "recommendation": "Inyectar oxígeno conversacional: Si la gestión demora más de 3 minutos, enviar un mensaje de contención predefinido."
     },
     {
       "pillar": "U - Ubicar la Intención",
-      "score": 45,
+      "score": 46,
       "status": "ALERTA",
-      "focus_context": "Índice de Conversión medio: 45.1/100",
-      "diagnosis": "El IC medio de la cartera es 45.1/100: 5 conversaciones con intención alta y 36 que quedaron en zona fría o ruido sobre 70 analizadas. El 34.3% ingresa por 'Financiación y Cuotas de Plan'. Un IC bajo puede venir de tráfico frío o de no extraer la necesidad completa en el turno inicial; el desglose por conversación permite distinguirlo.",
+      "focus_context": "Índice de Conversión medio: 45.5/100",
+      "diagnosis": "El IC medio de la cartera es 45.5/100: 5 conversaciones con intención alta y 36 que quedaron en zona fría o ruido sobre 70 analizadas. El 38.6% ingresa por 'Financiación y Cuotas de Plan'. Un IC bajo puede venir de tráfico frío o de no extraer la necesidad completa en el turno inicial; el desglose por conversación permite distinguirlo.",
       "recommendation": "Diseñar un Blueprint de Micro-intenciones: Al consultar por financiación y cuotas de plan, solicitar los datos clave (habilitantes) en el turno inicial para elevar el IC."
     },
     {
@@ -544,19 +606,19 @@
     },
     {
       "pillar": "N - Nutrir y Cerrar",
-      "score": 100,
-      "status": "ÓPTIMO",
-      "focus_context": "Tipping Point Comercial · 0.0% de cierres pasivos",
-      "diagnosis": "El 0.0% de los cierres termina con un mensaje que no incluye pregunta de avance ni llamado a la acción, dejando el control en el usuario. Medido sobre 3 conversaciones con cierre propio, excluyendo difusiones y mensajes automáticos.",
+      "score": 20,
+      "status": "CRÍTICO",
+      "focus_context": "Tipping Point Comercial · 80.0% de cierres pasivos",
+      "diagnosis": "El 80.0% de los cierres termina con un mensaje que no incluye pregunta de avance ni llamado a la acción, dejando el control en el usuario. Medido sobre 70 conversaciones con cierre propio, excluyendo difusiones y mensajes automáticos.",
       "recommendation": "Cierre Activo Obligatorio: Cerrar con una pregunta de reserva o confirmación de pedido (Tipping Point)."
     },
     {
       "pillar": "+ Optimización Continua",
       "score": 35,
       "status": "CRÍTICO",
-      "focus_context": "Carga Humana (85.5%) vs Bot (14.5%) · Capital expuesto: $715,500 USD",
-      "diagnosis": "Entre los operadores humanos, Asesor 1 concentra el 37.1% de la atención (116 msgs), con buena distribución de equipo. En paralelo, 30 leads (42.9%) con intención activa esperaron más allá del umbral de alerta: $715,500 USD de capital de cartera expuesto.",
-      "recommendation": "Cargar atajos rápidos de teclado para Asesor 1 y redistribuir la asignación de leads en horarios pico. Priorizar por Índice de Urgencia para que el capital en riesgo se atienda primero."
+      "focus_context": "Carga Humana (84.9%) vs Bot (15.1%) · Capital expuesto: $739,350 USD",
+      "diagnosis": "Entre los operadores humanos, Asesor 3 concentra el 43.0% de la atención (135 msgs), con buena distribución de equipo. En paralelo, 31 leads (44.3%) con intención activa esperaron más allá del umbral de alerta: $739,350 USD de capital de cartera expuesto.",
+      "recommendation": "Cargar atajos rápidos de teclado para Asesor 3 y redistribuir la asignación de leads en horarios pico. Priorizar por Índice de Urgencia para que el capital en riesgo se atienda primero."
     }
   ],
   "ltv_economics": {
@@ -569,16 +631,16 @@
     "ticket_name": "Vehículo / Plan de Ahorro",
     "concept": "En concesionarias, cada cliente genera ingresos por compra, service oficial, repuestos y recompras.",
     "leads_analyzed": 70,
-    "leads_at_risk_count": 30,
-    "leads_at_risk_percentage": 42.9,
-    "immediate_lost_usd": 351000,
-    "ltv_capital_at_risk_usd": 702000,
-    "cac_wasted_usd": 13500,
-    "total_economic_risk_usd": 715500,
-    "projected_recovered_ltv_usd": 536625,
+    "leads_at_risk_count": 31,
+    "leads_at_risk_percentage": 44.3,
+    "immediate_lost_usd": 362700,
+    "ltv_capital_at_risk_usd": 725400,
+    "cac_wasted_usd": 13950,
+    "total_economic_risk_usd": 739350,
+    "projected_recovered_ltv_usd": 554512,
     "exchange_rate_ars": 1250,
-    "total_economic_risk_ars": 894375000,
-    "projected_recovered_ltv_ars": 670781250,
+    "total_economic_risk_ars": 924187500,
+    "projected_recovered_ltv_ars": 693140000,
     "tipo_cliente": "transaccional",
     "modelo_titulo": "Cliente transaccional",
     "modelo_explicacion": "El cliente compara y compra donde le respondan. Una demora en zona fría lo manda al competidor, así que se arriesga el valor de vida completo del cliente más el costo de haberlo traído.",
@@ -589,26 +651,26 @@
     "composicion": [
       {
         "concepto": "Ingreso proyectado que no se gana",
-        "formula": "30 leads en riesgo × $36,000 × 65%",
+        "formula": "31 leads en riesgo × $36,000 × 65%",
         "detalle": "Valor de vida completo ($36,000 USD)",
-        "monto_usd": 702000
+        "monto_usd": 725400
       },
       {
         "concepto": "Costo de adquisición desperdiciado",
-        "formula": "30 leads × $450 de CAC",
+        "formula": "31 leads × $450 de CAC",
         "detalle": "Lo que costó traer a un lead que después se pierde",
-        "monto_usd": 13500
+        "monto_usd": 13950
       }
     ]
   },
   "prioritization_audit": {
-    "avg_ic_score": 45.1,
-    "avg_iu_score": 62.3,
+    "avg_ic_score": 45.5,
+    "avg_iu_score": 62.8,
     "high_intent_leads_count": 34,
-    "high_intent_delayed_count": 30,
-    "fifo_delayed_percentage": 88.2,
-    "whatsapp_24h_breaches": 8,
-    "whatsapp_24h_breach_percentage": 11.4,
+    "high_intent_delayed_count": 31,
+    "fifo_delayed_percentage": 91.2,
+    "whatsapp_24h_breaches": 6,
+    "whatsapp_24h_breach_percentage": 8.6,
     "ic_distribution": {
       "muy_alta_80_100": 0,
       "alta_60_79": 5,
@@ -617,23 +679,23 @@
       "ruido_0_19": 0
     },
     "iu_presets": {
-      "comercial_avg": 66.0,
-      "velocidad_avg": 59.8,
-      "cumplimiento_avg": 61.7,
-      "calidad_avg": 63.5
+      "comercial_avg": 66.6,
+      "velocidad_avg": 60.3,
+      "cumplimiento_avg": 62.2,
+      "calidad_avg": 64.1
     },
     "fifo_vs_spoter_wait": {
-      "fifo_high_intent_wait_min": 750.2,
+      "fifo_high_intent_wait_min": 605.4,
       "spoter_high_intent_wait_min": 2.5,
-      "wait_reduction_percentage": 99.7
+      "wait_reduction_percentage": 99.6
     }
   },
   "spoter_lite": {
     "phases": {
-      "gracia_count": 17,
-      "gracia_percentage": 24.3,
-      "trabajo_count": 23,
-      "trabajo_percentage": 32.9,
+      "gracia_count": 16,
+      "gracia_percentage": 22.9,
+      "trabajo_count": 24,
+      "trabajo_percentage": 34.3,
       "cierre_rescate_count": 30,
       "cierre_rescate_percentage": 42.9,
       "ruido_stop_count": 0,
@@ -644,19 +706,19 @@
     "rescate_strategy_summary": "29 leads con intención activa (IC >= 40) quedaron abandonados sin aplicar una pregunta de rescate estructurada antes de declarar el silencio."
   },
   "savings": {
-    "current_company_messages": 366,
+    "current_company_messages": 370,
     "optimized_target_messages": 350,
-    "baseline_msgs_per_client": 5.2,
+    "baseline_msgs_per_client": 5.3,
     "target_msgs_per_client": 5.0,
-    "messages_saved": 16,
-    "reduction_percentage": 4.4,
+    "messages_saved": 20,
+    "reduction_percentage": 5.4,
     "hours_saved_monthly": 0.2,
-    "optimization_rationale": "Línea de base actual: tu empresa envía hoy 5.2 mensajes por cliente. El estándar metodológico ACTÚEN+ en un solo bloque requiere 5.0 mensajes empresa para cerrar o resolver. El 4.4% de optimización representa la eliminación de 16 mensajes fragmentados innecesarios.",
+    "optimization_rationale": "Línea de base actual: tu empresa envía hoy 5.3 mensajes por cliente. El estándar metodológico ACTÚEN+ en un solo bloque requiere 5.0 mensajes empresa para cerrar o resolver. El 5.4% de optimización representa la eliminación de 20 mensajes fragmentados innecesarios.",
     "economic_benefit": {
-      "total_ars": 1720,
-      "total_usd": 1.38,
+      "total_ars": 1900,
+      "total_usd": 1.52,
       "labor_savings_ars": 1000,
-      "api_savings_ars": 720,
+      "api_savings_ars": 900,
       "hourly_rate_ref": 5000,
       "msg_rate_ref": 45
     }

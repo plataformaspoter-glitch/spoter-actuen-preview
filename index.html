@@ -29,7 +29,7 @@
       });
     }
   </script>
-  <link rel="stylesheet" href="app.css?v=20260921l">
+  <link rel="stylesheet" href="app.css?v=20260922a">
 </head>
 <body>
 
@@ -107,8 +107,8 @@
           <p class="inicio-desc">Una concesionaria inventada, con una semana de chats reales en volumen: quién pregunta por un 0 km financiado y cuánto espera para que le contesten.</p>
           <ul class="inicio-lista">
             <li><strong>34 clientes</strong> con intención de compra alta, sobre 70 conversaciones</li>
-            <li><strong>30 de ellos</strong> esperaron porque se atiende por orden de llegada</li>
-            <li><strong>8 conversaciones</strong> cruzaron las 24 h y ya cuesta plata reabrirlas</li>
+            <li><strong>31 de ellos</strong> esperaron porque se atiende por orden de llegada</li>
+            <li><strong>6 conversaciones</strong> cruzaron las 24 h y ya cuesta plata reabrirlas</li>
           </ul>
           <button class="btn btn-primary btn-test-batch" id="btnLoadDefault">⚡ Ver la auditoría de ejemplo</button>
           <p class="inicio-nota">Datos ficticios, armados para mostrar el método. Ninguna empresa real.</p>
@@ -401,16 +401,20 @@
           <span class="tab-num">4</span>
           <span class="tab-label">🔬 Por qué interviene una persona</span>
         </button>
-        <button class="tab-btn" data-tab="tabFriction">
+        <button class="tab-btn" data-tab="tabOperadores">
           <span class="tab-num">5</span>
+          <span class="tab-label">👥 Por operador</span>
+        </button>
+        <button class="tab-btn" data-tab="tabFriction">
+          <span class="tab-num">6</span>
           <span class="tab-label">Tiempos & SLA</span>
         </button>
         <button class="tab-btn" data-tab="tabTemplates">
-          <span class="tab-num">6</span>
+          <span class="tab-num">7</span>
           <span class="tab-label">Respuestas Maestras</span>
         </button>
         <button class="tab-btn" data-tab="tabSimulator">
-          <span class="tab-num">7</span>
+          <span class="tab-num">8</span>
           <span class="tab-label">Simulador de Ahorro</span>
         </button>
       </nav>
@@ -744,7 +748,37 @@
         </div>
       </section>
 
-<section class="tab-pane" id="tabFriction">
+<section class="tab-pane" id="tabOperadores">
+        <div class="card-panel">
+          <div class="ops-header">
+            <div>
+              <h2>👥 Cómo trabaja cada persona del equipo</h2>
+              <p class="ops-sub">Todo sale de los mismos mensajes del análisis: nadie carga nada a mano. Tocá cualquier indicador para ver qué mide y por qué importa.</p>
+            </div>
+            <label class="ops-privacidad" title="Los nombres del equipo son datos personales: se ocultan salvo que los pidas">
+              <input type="checkbox" id="chkMostrarNombres"> Mostrar nombres reales
+            </label>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table" id="tablaOperadores">
+              <thead>
+                <tr>
+                  <th>Operador</th>
+                  <th>Carga</th>
+                  <th>Espera</th>
+                  <th>Mensajes seguidos</th>
+                  <th>Respuestas rápidas</th>
+                  <th>Cierre</th>
+                </tr>
+              </thead>
+              <tbody id="cuerpoOperadores"></tbody>
+            </table>
+          </div>
+          <p class="ops-pie" id="opsPie"></p>
+        </div>
+      </section>
+
+      <section class="tab-pane" id="tabFriction">
         
         <!-- Explicación de Zona Fría (Zona Azul) -->
         <div class="info-callout" style="border-left: 4px solid #3b82f6; background: rgba(59, 130, 246, 0.07); margin-bottom: 24px;">
@@ -1044,7 +1078,7 @@
     </div>
   </div>
 
-  <script src="atajos.js?v=20260921l"></script>
-  <script src="app.js?v=20260921l"></script>
+  <script src="atajos.js?v=20260922a"></script>
+  <script src="app.js?v=20260922a"></script>
 </body>
 </html>

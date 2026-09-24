@@ -1903,6 +1903,7 @@ if (typeof document !== 'undefined') {
     $('tlCliente').value = '';
     $('tlRespuesta').value = '';
     $('tlAvisoVacio').hidden = true;
+    $('tlGuardada').hidden = true;
     mejorasEnPantalla = [];
     modo = 'wizard';
     renderResultados('');
@@ -1912,12 +1913,26 @@ if (typeof document !== 'undefined') {
     $('tlRespuesta').focus();
   }
 
-  /** Guardar y seguir: la respuesta pasa al lote, que es la biblioteca en armado. */
+  /**
+   * Guardar y seguir: la respuesta pasa al lote, que es la biblioteca en armado.
+   * No se abre el lote: el taller saldría del wizard justo cuando el usuario
+   * pidió probar otra. Alcanza con decirle dónde quedó y cuántas van.
+   */
   function sumarAlLote() {
     const texto = textoDelWizard();
     const caja = $('entrada');
     caja.value = caja.value.trim() ? `${caja.value.trim()}\n\n${texto}` : texto;
-    $('tlLote').open = true;
+    return separarRespuestas(caja.value).length;
+  }
+
+  function avisarGuardada(cuantas) {
+    const aviso = $('tlGuardada');
+    aviso.textContent = `✅ Guardada. ${cuantas === 1 ? 'Va 1 respuesta' : `Van ${cuantas} respuestas`} `
+      + 'en «Revisar varias juntas», acá abajo.';
+    aviso.hidden = false;
+    $('tlLotePista').textContent = cuantas === 1
+      ? '1 respuesta guardada · pegá más o armá la biblioteca de atajos'
+      : `${cuantas} respuestas guardadas · pegá más o armá la biblioteca de atajos`;
   }
 
   /** Carga una respuesta en el wizard (un caso de ejemplo, o el chip de un rubro). */
@@ -1981,7 +1996,11 @@ if (typeof document !== 'undefined') {
     $('btnVolverEditar').addEventListener('click', () => mostrarPaso(1, true));
     $('btnVolverResultado').addEventListener('click', () => mostrarPaso(2, true));
     $('btnOtra').addEventListener('click', limpiarWizard);
-    $('btnGuardarSeguir').addEventListener('click', () => { sumarAlLote(); limpiarWizard(); });
+    $('btnGuardarSeguir').addEventListener('click', () => {
+      const cuantas = sumarAlLote();
+      limpiarWizard();
+      avisarGuardada(cuantas);
+    });
     $('btnVaciar').addEventListener('click', limpiarWizard);
     $('btnVaciarLote').addEventListener('click', () => {
       $('entrada').value = '';

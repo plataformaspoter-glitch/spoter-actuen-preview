@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="app.css?v=20260924a">
+  <link rel="stylesheet" href="app.css?v=20260924b">
   <style>
     .tl-metodo { margin-bottom: 8px; }
     .tl-teoria { margin: 28px 0 10px; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-card); padding: 4px 18px; }
@@ -144,7 +144,7 @@
     .tl-sug--mejorable { border-color: var(--warning); }
     .tl-sug--ok { border-color: var(--success); }
     .tl-sug-letra { flex: none; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 800; background: var(--bg-secondary); }
-    .tl-metodo-flotante { position: fixed; left: 16px; bottom: 16px; z-index: 50; display: flex; align-items: center; gap: 7px;
+    .tl-metodo-flotante { position: fixed; right: 16px; bottom: 16px; z-index: 50; display: flex; align-items: center; gap: 7px;
       padding: 10px 15px; border-radius: 999px; border: 1px solid var(--spoter-pink-border); background: var(--bg-card);
       color: var(--text-primary); font: 700 13px var(--font-main); cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
     .tl-metodo-flotante:hover { border-color: var(--spoter-pink); }
@@ -182,6 +182,7 @@
       background: var(--bg-secondary); color: var(--text-primary); font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
     .tl-paso-acciones { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
     .tl-aviso-linea { margin-top: 8px; font-size: 12.5px; color: var(--danger); }
+    .tl-aviso-linea--ok { color: var(--success); }
     .tl-resultado { border: 1px solid var(--border-color); border-left: 4px solid var(--spoter-pink); border-radius: var(--radius-lg);
       background: var(--bg-card); padding: 18px 20px; margin-bottom: 24px; }
     .tl-resultado-etiqueta { display: block; font-size: 10.5px; font-weight: 800; text-transform: uppercase;
@@ -412,6 +413,7 @@
           <button class="btn btn-secondary" id="btnVaciar" title="Borra lo escrito acá">Vaciar</button>
         </div>
         <p class="tl-aviso-linea" id="tlAvisoVacio" hidden role="status">Escribí la respuesta que querés revisar, o tocá uno de los casos de arriba.</p>
+        <p class="tl-aviso-linea tl-aviso-linea--ok" id="tlGuardada" hidden role="status"></p>
 
         <details class="tl-ayuda-detalle">
           <summary>¿Y si quiero revisar varias juntas?</summary>
@@ -468,7 +470,7 @@
     </section>
 
     <details class="tl-lote" id="tlLote">
-      <summary><span>📚 Revisar varias juntas</span><span class="tl-lote-pista">pegá todas tus respuestas rápidas y armá la biblioteca de atajos</span></summary>
+      <summary><span>📚 Revisar varias juntas</span><span class="tl-lote-pista" id="tlLotePista">pegá todas tus respuestas rápidas y armá la biblioteca de atajos</span></summary>
       <section class="tl-entrada">
         <div class="tl-entrada-top">
           <label for="entrada">Tus respuestas rápidas</label>
@@ -605,8 +607,8 @@ si, tenemos. a que zona lo necesitas?"></textarea>
       datos a pedir, los marcadores como <code>{PRECIO}</code> y el cierre que agrega salen de las plantillas de tu rubro o
       del método, y quedan marcados como sugerencia para que decidas si aplican. Para una redacción de verdad, usá el prompt. T (tiempos) y + (reparto bot/asesores) se miden en tus chats con el Analizador, no en un texto.</p>
   </div>
-  <script src="atajos.js?v=20260924a"></script>
-  <script src="taller.js?v=20260924a"></script>
-  <script src="taller_ia.js?v=20260924a"></script>
+  <script src="atajos.js?v=20260924b"></script>
+  <script src="taller.js?v=20260924b"></script>
+  <script src="taller_ia.js?v=20260924b"></script>
 </body>
 </html>

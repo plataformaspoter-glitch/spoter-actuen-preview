@@ -1579,25 +1579,29 @@ if (typeof document !== 'undefined') {
       ).join('');
       const conocidos = Object.entries(ev.conocidos).map(([k, v]) => `${DATOS[k].nombre}: ${v}`).join(' · ');
 
+      // En el wizard, tu versión ya se vio en el paso 1 y el diagnóstico en los
+      // pasos 2 y 3: repetirlos acá le saca el foco a lo único que falta hacer,
+      // que es copiar la respuesta acomodada.
+      const solo = modo === 'wizard';
       return `
-      <article class="tl-card" data-resp="${idx}">
+      <article class="tl-card${solo ? ' tl-card--solo' : ''}" data-resp="${idx}">
         <header class="tl-card-head">
-          <h3>Respuesta ${idx + 1}${ev.intencion ? ` <span class="tl-intencion">${esc(INTENCIONES[ev.intencion].etiqueta)}</span>` : ''}</h3>
-          <label class="tl-atajo" title="Nombre del atajo al exportar">Atajo
+          <h3>${solo ? 'Tu respuesta, acomodada' : `Respuesta ${idx + 1}`}${ev.intencion ? ` <span class="tl-intencion">${esc(INTENCIONES[ev.intencion].etiqueta)}</span>` : ''}</h3>
+          ${solo ? '' : `<label class="tl-atajo" title="Nombre del atajo al exportar">Atajo
             <input type="text" class="tl-atajo-input" value="${esc(sugerirAtajo(ev, plantillaCampos || plantilla))}" spellcheck="false" aria-label="Nombre del atajo de la respuesta ${idx + 1}">
-          </label>
+          </label>`}
           <span class="tl-score">${fmtPuntaje(ev.puntaje)} → <strong>${fmtPuntaje(final.puntaje)}</strong> / ${ev.maximo} pilares</span>
         </header>
         <div class="tl-grid">
-          <div>
+          ${solo ? '' : `<div>
             ${ev.cliente ? `<h4>El cliente escribió</h4><pre class="tl-original tl-original--cliente">${esc(ev.cliente)}</pre>
               ${conocidos ? `<p class="tl-nota">Datos que ya dio: ${esc(conocidos)}</p>` : ''}` : ''}
             <h4>Tu versión</h4>
             <pre class="tl-original">${esc(ev.respuesta)}</pre>
             <ul class="tl-evals">${filas}</ul>
-          </div>
+          </div>`}
           <div>
-            <h4>Acomodada con ACTÚEN+</h4>
+            ${solo ? '' : '<h4>Acomodada con ACTÚEN+</h4>'}
             <div class="tl-vista" role="group" aria-label="Cómo mostrar la respuesta">
               <button type="button" class="tl-vista-btn tl-vista-btn--activo" data-vista="partes">🧩 Por partes</button>
               <button type="button" class="tl-vista-btn" data-vista="chat">💬 Como la ve el cliente</button>
@@ -1778,7 +1782,7 @@ if (typeof document !== 'undefined') {
       const idx = Number(card.dataset.resp);
       const ev = evaluar(estado.respuestas[idx], catalogo, estado.rubro);
       return {
-        atajo: card.querySelector('.tl-atajo-input').value,
+        atajo: card.querySelector('.tl-atajo-input') ? card.querySelector('.tl-atajo-input').value : '',
         titulo: tituloDeRespuesta(ev),
         categoria: 'Taller ACTÚEN+',
         texto: componerTexto(card._bloques, apagadosDe(card)),

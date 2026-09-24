@@ -416,7 +416,7 @@ function esPregunta(frase) {
 
 /** Corrige tildes sin ambigüedad y mayúsculas sostenidas. Devuelve {texto, cambio}. */
 function corregir(t) {
-  let texto = t;
+  let texto = normalizarImportes(t);
   const letras = texto.replace(/[^a-záéíóúñ]/gi, '');
   if (letras.length > 15 && letras.replace(/[^A-ZÁÉÍÓÚÑ]/g, '').length / letras.length > 0.7) {
     texto = capitalizar(texto.toLowerCase());
@@ -453,6 +453,34 @@ function limpiarLinea(cruda) {
 function formatearMonto(v) {
   const limpio = v.replace(/[.,]$/, '');
   return /^\d{4,}$/.test(limpio) ? limpio.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : limpio;
+}
+
+// Un número puede ser plata o no. Estas tres reglas deciden sin adivinar:
+// lo que viene después (una unidad o una moneda), y lo que viene antes.
+const RE_UNIDAD_NO_PRECIO = /^\s*(%|cuotas?|d[ií]as?|hs?\b|horas?|min\b|minutos?|mes(es)?\b|a[ñn]os?|unidades?|bolsas?|bolsones?|barras?|metros?|mts?\b|m2|m3|m²|kg\b|kilos?|litros?|cajas?|pallets?|placas?|chapas?|rollos?|docenas?|pares?|packs?)/i;
+const RE_MONEDA_DESPUES = /^\s*(pesos|ars|usd|u\$s|d[oó]lares|dolares)\b/i;
+const RE_MONEDA_ANTES = /(u\$s|usd|ars)\s*$/i;
+// El conector ("es", "de", "a") solo cuenta detrás de una palabra de precio:
+// así "el número de pedido es 12345" no se convierte en plata.
+// El [\s*_~] del final es el formato de WhatsApp: "el precio es *6500*".
+const RE_ANUNCIA_PRECIO = /\b(sale|salen|vale|valen|cuesta|cuestan|queda|quedan|precios?|total(es)?|abon[aá]s?|abonar|pag[aá]s?|pagar|cobramos|cobran?)\b(\s+(es|son|de|en|a|por|la|el|los|las|unos|aprox\.?|aproximadamente))*[\s*_~]*$/i;
+
+/**
+ * "sale 6500" es plata, pero llega al cliente como un número suelto. Se le pone
+ * el $ cuando lo anuncia una palabra de precio y no lo sigue una unidad
+ * ("quedan 500 metros" no es un precio), y el punto de miles, que es lo que
+ * hace que un importe se lea de un vistazo.
+ */
+function normalizarImportes(t) {
+  return String(t).replace(/(\$\s*)?\b(\d{1,3}([.,]\d{3})+|\d+)\b/g, (m, signo, numero, miles, pos, texto) => {
+    const antes = texto.slice(0, pos);
+    const despues = texto.slice(pos + m.length);
+    if (signo) return '$' + formatearMonto(numero);
+    if (RE_MONEDA_DESPUES.test(despues) || RE_MONEDA_ANTES.test(antes)) return formatearMonto(numero);
+    if (numero.replace(/[.,]/g, '').length < 3) return m;
+    if (RE_UNIDAD_NO_PRECIO.test(despues)) return m;
+    return RE_ANUNCIA_PRECIO.test(antes) ? '$' + formatearMonto(numero) : m;
+  });
 }
 
 /**
@@ -862,7 +890,7 @@ function evaluar(entrada, catalogo, rubroKey) {
   const ignoradas = (RE_PEDIDO.test(cliente) ? intencionesCliente.slice(0, 2) : []).filter(clave => {
     const def = INTENCIONES[clave];
     if (!def.respuesta) return false;
-    const atendida = def.respuesta.test(sinTildes(texto)) || (clave === 'precio' && RE_PRECIO_DADO.test(texto));
+    const atendida = def.respuesta.test(sinTildes(texto)) || (clave === 'precio' && RE_PRECIO_DADO.test(normalizarImportes(texto)));
     const pideLoNecesario = piezas.some(p => p.tipo === 'pregunta' && ['cantidad', 'producto', 'direccion'].includes(tipoDeDato(p.texto)));
     return !atendida && !(clave === 'precio' && pideLoNecesario);
   });
@@ -1070,6 +1098,7 @@ const REGLAS_PROMPT = `- No inventes precios, stock, plazos, políticas, direcci
 - Los datos reales que ya están en la respuesta (precios, plazos, horarios, cantidades) se conservan tal cual: los marcadores son solo para lo que falta, nunca para tapar un dato que el negocio ya dio.
 - Lo que la respuesta ya le dice al cliente también se conserva, con tus palabras: que se le manda el presupuesto o un adjunto, lo que el negocio NO hace, los medios de pago, los días y los links.
 - Español rioplatense con voseo, cercano y profesional. Nada de "estimado cliente", "a la brevedad" ni "quedo a disposición".
+- Los importes se escriben con símbolo y punto de miles: $6.500, nunca 6500.
 - Formato WhatsApp: *negrita* para lo clave, viñetas • para información, lista numerada para los datos a pedir. Como máximo 2 o 3 emojis y solo si ordenan.
 - Un solo bloque. Si hace falta separar la información del cierre, usá una única vez la marca [---saltomensaje---] en su propia línea.
 - Pedí en este mismo turno todos los datos necesarios para avanzar, sin repetir lo que el cliente ya dijo.
@@ -1321,7 +1350,8 @@ function titularDeDiagnostico(mejoras) {
 if (typeof module !== 'undefined') {
   module.exports = { PILARES, resumenLote, mejorasDe, titularDeDiagnostico, sugerirAtajo, tituloDeRespuesta, ETIQUETA_HALLAZGO, INTENCIONES, DATOS, separarRespuestas, separarContexto, conContexto, desarmar, evaluar,
     reacomodar, componerTexto, camposDePlantilla, plantillaMasCercana, detectarRubroDeTexto, detectarIntencion, detectarIntenciones,
-    datosDelCliente, anonimizar, esCierreActivo, generarPromptRespuesta, generarPromptBiblioteca, extraerPrecios, corregir };
+    datosDelCliente, anonimizar, esCierreActivo, generarPromptRespuesta, generarPromptBiblioteca, extraerPrecios, corregir,
+    normalizarImportes };
 }
 
 // ==========================================================================

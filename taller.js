@@ -1255,8 +1255,71 @@ function tituloDeRespuesta(evaluacion) {
   return t.length > 48 ? t.slice(0, 47) + '…' : t;
 }
 
+/**
+ * Qué bloque sugerido ilustra cada pilar: lo que el reacomodo agregó para
+ * cubrirlo. Así la mejora se muestra con el texto concreto y no en abstracto.
+ */
+const BLOQUE_POR_PILAR = { C: ['info'], U: ['campo'], N: ['cierre'] };
+
+/**
+ * De los arreglos que enseña el pilar, el que habla de lo que falló: el que más
+ * palabras comparte con el diagnóstico (el motivo y sus notas). Sin
+ * coincidencias, el primero, que es el arreglo principal del pilar.
+ */
+function arregloQueAplica(pilar, diagnostico) {
+  const clave = new Set(palabras(diagnostico));
+  let mejor = pilar.detalle.arreglo[0];
+  let puntos = 0;
+  pilar.detalle.arreglo.forEach(a => {
+    const n = palabras(a).filter(w => clave.has(w)).length;
+    if (n > puntos) { puntos = n; mejor = a; }
+  });
+  return mejor;
+}
+
+/** Tres cosas por vez. Una lista más larga no se corrige, se abandona. */
+const TOPE_MEJORAS = 3;
+
+/**
+ * Qué conviene corregir en UNA respuesta, ordenado por gravedad: primero lo que
+ * falta, después lo mejorable. El motivo que ya escribió `evaluar` se parte en
+ * título (qué está mal) y por qué importa.
+ */
+function mejorasDe(evaluacion, bloques = []) {
+  const ejemploDe = letra => {
+    const tipos = BLOQUE_POR_PILAR[letra] || [];
+    return bloques.filter(b => b.origen === 'sugerido' && tipos.includes(b.tipo))
+      .map(b => (b.tipo === 'campo' ? `\u2022 ${b.texto}` : b.texto)).join('\n');
+  };
+  return PILARES.filter(p => p.evaluable)
+    .map(p => ({ p, e: evaluacion.pilares[p.letra] }))
+    .filter(({ e }) => e.estado === 'falta' || e.estado === 'mejorable')
+    .sort((a, b) => RANGO[a.e.estado] - RANGO[b.e.estado])
+    .slice(0, TOPE_MEJORAS)
+    .map(({ p, e }) => {
+      const corte = e.motivo.indexOf(': ');
+      return {
+        pilar: p.letra,
+        nombre: p.nombre,
+        estado: e.estado,
+        titulo: corte > 0 ? e.motivo.slice(0, corte) : e.motivo,
+        porQue: corte > 0 ? e.motivo.slice(corte + 2) : '',
+        arreglo: arregloQueAplica(p, [e.motivo, ...(e.notas || [])].join(' ')),
+        notas: e.notas || [],
+        ejemplo: ejemploDe(p.letra),
+      };
+    });
+}
+
+/** Una línea que dice cómo salió, nombrando lo primero que hay que arreglar. */
+function titularDeDiagnostico(mejoras) {
+  if (!mejoras.length) return 'Está lista para usar: cumple todos los pilares que se pueden revisar en un texto.';
+  const resto = mejoras.length - 1;
+  return `Lo más importante: ${mejoras[0].titulo}${resto ? ` \u2014 y ${resto} más` : ''}.`;
+}
+
 if (typeof module !== 'undefined') {
-  module.exports = { PILARES, resumenLote, sugerirAtajo, tituloDeRespuesta, ETIQUETA_HALLAZGO, INTENCIONES, DATOS, separarRespuestas, separarContexto, conContexto, desarmar, evaluar,
+  module.exports = { PILARES, resumenLote, mejorasDe, titularDeDiagnostico, sugerirAtajo, tituloDeRespuesta, ETIQUETA_HALLAZGO, INTENCIONES, DATOS, separarRespuestas, separarContexto, conContexto, desarmar, evaluar,
     reacomodar, componerTexto, camposDePlantilla, plantillaMasCercana, detectarRubroDeTexto, detectarIntencion, detectarIntenciones,
     datosDelCliente, anonimizar, esCierreActivo, generarPromptRespuesta, generarPromptBiblioteca, extraerPrecios, corregir };
 }
@@ -1308,6 +1371,9 @@ if (typeof document !== 'undefined') {
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   let catalogo = null;
   let estado = { respuestas: [], rubro: null };
+  // 'wizard' = una respuesta por vez (lo que se ve al entrar); 'lote' = el panel
+  // plegado de abajo, para revisar varias juntas y armar la biblioteca.
+  let modo = 'wizard';
   const CLAVE_BORRADOR = 'spoter_taller_borrador';
   const CLAVE_GUIA = 'spoter_taller_guia_vista';
 
@@ -1318,7 +1384,7 @@ if (typeof document !== 'undefined') {
   function mostrarGuiaSiHaceFalta() {
     let vista = null;
     try { vista = localStorage.getItem(CLAVE_GUIA); } catch (e) { /* sin almacenamiento */ }
-    $('tlGuia').hidden = !!vista || !!$('entrada').value.trim();
+    $('tlGuia').hidden = !!vista || !!$('tlRespuesta').value.trim() || !!$('entrada').value.trim();
   }
 
   function ocultarGuia() {
@@ -1330,7 +1396,12 @@ if (typeof document !== 'undefined') {
   // El borrador vive solo en este navegador: si no hay almacenamiento
   // (ventana privada, bloqueo), el taller funciona igual sin guardar.
   function guardarBorrador() {
-    try { localStorage.setItem(CLAVE_BORRADOR, JSON.stringify({ texto: $('entrada').value, rubro: $('rubro').value })); } catch (e) { /* sin almacenamiento */ }
+    try {
+      localStorage.setItem(CLAVE_BORRADOR, JSON.stringify({
+        texto: $('entrada').value, rubro: $('rubro').value,
+        cliente: $('tlCliente').value, respuesta: $('tlRespuesta').value,
+      }));
+    } catch (e) { /* sin almacenamiento */ }
   }
   function leerJson(clave) {
     try { return JSON.parse(localStorage.getItem(clave) || 'null'); } catch (e) { return null; }
@@ -1462,8 +1533,7 @@ if (typeof document !== 'undefined') {
 
   const ICONO = { ok: '✅', mejorable: '🟡', falta: '🔴', no_aplica: '⚪' };
 
-  function renderResultados() {
-    const texto = $('entrada').value;
+  function renderResultados(texto = $('entrada').value) {
     const respuestas = separarRespuestas(texto);
     let rubro = $('rubro').value;
     if (rubro === 'auto') {
@@ -1477,10 +1547,10 @@ if (typeof document !== 'undefined') {
     // La capa de IA (taller_ia.js) necesita saber qué texto corresponde a cada
     // tarjeta y con qué rubro se evaluó.
     window.estadoDelTaller = () => estado;
-    $('barraPrompt').hidden = !respuestas.length;
+    $('barraPrompt').hidden = modo === 'wizard' || !respuestas.length;
     // Con texto pegado ya se puede mirar el diagnóstico; con resultados en
     // pantalla, lo que queda es copiar.
-    marcarPaso(respuestas.length ? 3 : 1);
+    if (modo === 'lote') marcarPaso(respuestas.length ? 3 : 1);
     $('promptPreview').hidden = true;
     renderResumen(respuestas, rubro);
 
@@ -1603,38 +1673,47 @@ if (typeof document !== 'undefined') {
    * se está escribiendo, y qué le falta. Es el mismo diagnóstico de las
    * tarjetas, pero al lado del texto y mientras se escribe, que es cuando sirve.
    */
+  /** Lo escrito en el wizard, en el formato que entiende el motor. */
+  function textoDelWizard() {
+    return conContexto($('tlCliente').value.trim(), $('tlRespuesta').value.trim());
+  }
+
+  /** Qué respuesta se está mirando: la del wizard, o la que toca el cursor en el lote. */
+  function respuestaEnFoco() {
+    if (modo === 'lote') {
+      const caja = $('entrada');
+      return respuestaBajoElCursor(caja.value, caja.selectionStart);
+    }
+    return textoDelWizard();
+  }
+
+  const rubroDe = texto => ($('rubro').value === 'auto' ? detectarRubroDeTexto(texto, catalogo) : $('rubro').value);
+
   function pintarTelefono() {
-    const caja = $('entrada');
     const pantalla = $('tlPantalla');
     const sugerencias = $('tlSugerencias');
-    if (!caja || !pantalla) return;
+    if (!pantalla) return;
 
-    const texto = caja.value;
-    if (!texto.trim()) {
-      pantalla.innerHTML = '<p class="tl-fono-vacio">Pegá una respuesta y acá vas a ver cómo le llega al cliente.</p>';
+    const enFoco = respuestaEnFoco();
+    const { cliente, respuesta: soloRespuesta } = separarContexto(enFoco);
+    if (!soloRespuesta.trim()) {
+      pantalla.innerHTML = '<p class="tl-fono-vacio">Escribí una respuesta y acá vas a ver cómo le llega al cliente.</p>';
       sugerencias.hidden = true;
-      marcarPaso(1);
+      if (modo === 'lote') marcarPaso(1);
       return;
     }
 
-    const respuesta = respuestaBajoElCursor(texto, caja.selectionStart);
-    const { cliente, respuesta: soloRespuesta } = separarContexto(respuesta);
     pantalla.innerHTML = burbujasHtml(cliente, soloRespuesta);
     pantalla.scrollTop = pantalla.scrollHeight;
 
-    const rubro = $('rubro').value === 'auto' ? detectarRubroDeTexto(texto, catalogo) : $('rubro').value;
-    const ev = evaluar(respuesta, catalogo, rubro);
-    const flojos = PILARES.filter(p => p.evaluable)
-      .map(p => ({ p, e: ev.pilares[p.letra] }))
-      .filter(x => x.e.estado === 'falta' || x.e.estado === 'mejorable')
-      .slice(0, 3);
-
+    const ev = evaluar(enFoco, catalogo, rubroDe(enFoco));
+    const flojos = mejorasDe(ev);
     sugerencias.innerHTML = flojos.length
-      ? flojos.map(({ p, e }) => `<div class="tl-sug tl-sug--${e.estado}">
-          <span class="tl-sug-letra">${esc(p.letra)}</span>
-          <span><b>${esc(p.nombre)}:</b> ${esc(e.motivo)}</span></div>`).join('')
+      ? flojos.map(m => `<div class="tl-sug tl-sug--${m.estado}">
+          <span class="tl-sug-letra">${esc(m.pilar)}</span>
+          <span><b>${esc(m.nombre)}:</b> ${esc(m.titulo)}.</span></div>`).join('')
       : `<div class="tl-sug tl-sug--ok"><span class="tl-sug-letra">✓</span>
-          <span><b>Cumple los ${ev.maximo} pilares de texto.</b> Copiala desde la tarjeta de abajo.</span></div>`;
+          <span><b>Cumple los ${ev.maximo} pilares de texto.</b> Revisala para copiarla.</span></div>`;
     sugerencias.hidden = false;
   }
 
@@ -1733,6 +1812,128 @@ if (typeof document !== 'undefined') {
     setTimeout(() => { btn.textContent = etiqueta; }, 1800);
   }
 
+  // ==========================================================================
+  // WIZARD: una respuesta por vez
+  // ==========================================================================
+
+  let paso = 1;
+  let mejorasEnPantalla = [];
+
+  /**
+   * Qué se ve en cada paso. La tarjeta con la versión acomodada (`#resultados`)
+   * aparece recién en el paso 3: antes distrae de lo que hay que mirar.
+   */
+  function mostrarPaso(n, desplazar = false) {
+    paso = n;
+    [1, 2, 3].forEach(i => { $('tlPaso' + i).hidden = modo === 'lote' ? i !== 1 : i !== n; });
+    marcarPaso(n);
+    $('resultados').hidden = modo === 'wizard' && n < 3;
+    $('barraPrompt').hidden = modo === 'wizard' || !estado.respuestas.length;
+    // Mientras se mira el resultado de UNA respuesta, el panel del lote estorba:
+    // se metería entre las mejoras y la versión acomodada.
+    $('tlLote').hidden = modo === 'wizard' && n > 1;
+    if (desplazar) $('tlStepper').scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }
+
+  /** Paso 2: cómo salió, con lo que falta arriba. */
+  function pintarResultado(texto) {
+    const { bloques, evaluacion: ev } = reacomodar(texto, catalogo, estado.rubro);
+    const final = evaluar(conContexto(ev.cliente, componerTexto(bloques)), catalogo, estado.rubro);
+    mejorasEnPantalla = mejorasDe(ev, bloques);
+
+    $('tlTitular').textContent = titularDeDiagnostico(mejorasEnPantalla);
+    $('tlPuntaje').innerHTML = `Cumple <strong>${fmtPuntaje(ev.puntaje)} de ${ev.maximo}</strong> pilares de los que se pueden `
+      + 'revisar en un texto.'
+      + (final.puntaje > ev.puntaje
+        ? ` Acomodada con el método llega a <strong>${fmtPuntaje(final.puntaje)}</strong>.`
+        : '');
+
+    $('tlSemaforo').innerHTML = PILARES.slice()
+      .sort((a, b) => RANGO[ev.pilares[a.letra].estado] - RANGO[ev.pilares[b.letra].estado])
+      .map(p => {
+        const e = ev.pilares[p.letra];
+        const notas = (e.notas || []).map(n => `<span class="tl-eval-nota">${esc(n)}</span>`).join('');
+        return `<li class="tl-eval tl-eval--${e.estado}">
+          <span class="tl-eval-letra">${esc(p.letra)}</span>
+          <span>${ICONO[e.estado]}</span>
+          <span><b>${esc(p.nombre)}.</b> ${esc(e.motivo)}${notas}</span></li>`;
+      }).join('');
+  }
+
+  /** Paso 3: qué cambiar, en orden, con el texto que propone el método. */
+  function pintarMejoras() {
+    const m = mejorasEnPantalla;
+    $('tlTituloMejoras').textContent = !m.length ? 'No hay nada que cambiar'
+      : m.length === 1 ? 'Una sola cosa para cambiar' : `${m.length} cosas para cambiar, en orden`;
+    $('tlPistaAcomodada').hidden = !m.length;
+    $('tlMejoras').innerHTML = m.length
+      ? m.map((x, i) => `<article class="tl-mejora tl-mejora--${x.estado}">
+          <div class="tl-mejora-top">
+            <span class="tl-mejora-orden">${i + 1}</span>
+            <span class="tl-mejora-titulo">${esc(x.titulo)}</span>
+            <span class="tl-mejora-pilar">${esc(x.pilar)} · ${esc(x.nombre)}</span>
+          </div>
+          ${x.porQue ? `<p>${esc(x.porQue)}</p>` : ''}
+          ${x.notas.length ? `<p>${esc(x.notas.join(' '))}</p>` : ''}
+          <div class="tl-mejora-arreglo"><span>✅</span><span>${esc(x.arreglo)}</span></div>
+          ${x.ejemplo ? `<div class="tl-mejora-ejemplo"><b>Lo que le suma el método</b>${esc(x.ejemplo)}</div>` : ''}
+        </article>`).join('')
+      : '<p class="tl-vacio">Esta respuesta ya cumple los pilares que se pueden revisar en un texto. '
+        + 'Copiala de la tarjeta de abajo y probá la próxima.</p>';
+  }
+
+  /** El botón del paso 1: revisa lo escrito y pasa al resultado. */
+  function revisar() {
+    const texto = textoDelWizard();
+    if (!separarContexto(texto).respuesta.trim()) {
+      $('tlAvisoVacio').hidden = false;
+      $('tlRespuesta').focus();
+      return;
+    }
+    $('tlAvisoVacio').hidden = true;
+    modo = 'wizard';
+    ocultarGuia();
+    renderResultados(texto);
+    pintarResultado(texto);
+    mostrarPaso(2, true);
+    guardarBorrador();
+  }
+
+  function limpiarWizard() {
+    $('tlCliente').value = '';
+    $('tlRespuesta').value = '';
+    $('tlAvisoVacio').hidden = true;
+    mejorasEnPantalla = [];
+    modo = 'wizard';
+    renderResultados('');
+    mostrarPaso(1, true);
+    pintarTelefono();
+    guardarBorrador();
+    $('tlRespuesta').focus();
+  }
+
+  /** Guardar y seguir: la respuesta pasa al lote, que es la biblioteca en armado. */
+  function sumarAlLote() {
+    const texto = textoDelWizard();
+    const caja = $('entrada');
+    caja.value = caja.value.trim() ? `${caja.value.trim()}\n\n${texto}` : texto;
+    $('tlLote').open = true;
+  }
+
+  /** Carga una respuesta en el wizard (un caso de ejemplo, o el chip de un rubro). */
+  function cargarEnWizard(texto, rubro) {
+    const { cliente, respuesta } = separarContexto(texto);
+    $('tlCliente').value = cliente;
+    $('tlRespuesta').value = respuesta;
+    if (rubro) $('rubro').value = rubro;
+    modo = 'wizard';
+    $('tlAvisoVacio').hidden = true;
+    ocultarGuia();
+    mostrarPaso(1);
+    pintarTelefono();
+    guardarBorrador();
+  }
+
   function mostrarPrompt(texto) {
     $('promptPreview').hidden = false;
     $('promptTexto').value = texto;
@@ -1756,16 +1957,36 @@ if (typeof document !== 'undefined') {
       Object.entries(catalogo.rubros).map(([k, r]) => `<option value="${k}">${r.icon} ${esc(r.name)}</option>`).join('');
 
     let pendiente = null;
+    const revisarLote = () => { modo = 'lote'; renderResultados(); mostrarPaso(1); guardarBorrador(); };
     $('entrada').addEventListener('input', () => {
       clearTimeout(pendiente);
-      pendiente = setTimeout(() => { renderResultados(); guardarBorrador(); }, 250);
+      pendiente = setTimeout(revisarLote, 250);
     });
-    $('rubro').addEventListener('change', () => { renderResultados(); guardarBorrador(); });
-    $('btnVaciar').addEventListener('click', () => {
+    // Abrir el panel de abajo es entrar al modo lote; cerrarlo, volver al wizard.
+    $('tlLote').addEventListener('toggle', () => {
+      modo = $('tlLote').open ? 'lote' : 'wizard';
+      if (modo === 'lote') renderResultados(); else renderResultados(textoDelWizard());
+      mostrarPaso(modo === 'lote' ? 1 : paso);
+      pintarTelefono();
+    });
+    $('rubro').addEventListener('change', () => {
+      if (modo === 'lote') renderResultados();
+      else if (paso > 1) { renderResultados(textoDelWizard()); pintarResultado(textoDelWizard()); pintarMejoras(); }
+      guardarBorrador();
+    });
+
+    // --- Botones del wizard ---
+    $('btnRevisar').addEventListener('click', revisar);
+    $('btnComoMejoro').addEventListener('click', () => { pintarMejoras(); mostrarPaso(3, true); });
+    $('btnVolverEditar').addEventListener('click', () => mostrarPaso(1, true));
+    $('btnVolverResultado').addEventListener('click', () => mostrarPaso(2, true));
+    $('btnOtra').addEventListener('click', limpiarWizard);
+    $('btnGuardarSeguir').addEventListener('click', () => { sumarAlLote(); limpiarWizard(); });
+    $('btnVaciar').addEventListener('click', limpiarWizard);
+    $('btnVaciarLote').addEventListener('click', () => {
       $('entrada').value = '';
       $('avisoImportacion').hidden = true;
-      renderResultados();
-      guardarBorrador();
+      revisarLote();
       $('entrada').focus();
     });
     $('resumenLote').addEventListener('click', ev => {
@@ -1778,39 +1999,29 @@ if (typeof document !== 'undefined') {
     $('btnAtajosCsv').addEventListener('click', () => {
       descargar('atajos_taller_actuen.csv', '\ufeff' + atajosACsv(atajosDelLote()), 'text/csv');
     });
-    function pegar(texto, rubro) {
-      $('entrada').value = texto;
-      if (rubro) $('rubro').value = rubro;
-      $('avisoImportacion').hidden = true;
-      ocultarGuia();
-      renderResultados();
-      pintarTelefono();
-      guardarBorrador();
-    }
-
     $('tlCasos').innerHTML = Object.entries(CASOS)
       .map(([clave, c]) => `<button type="button" class="tl-caso" data-caso="${clave}">${esc(c.etiqueta)}</button>`).join('');
     $('tlCasos').addEventListener('click', ev => {
       const b = ev.target.closest('[data-caso]');
-      if (b) pegar(CASOS[b.dataset.caso].texto, 'auto');
+      if (b) cargarEnWizard(CASOS[b.dataset.caso].texto, 'auto');
     });
 
-    function cargarEjemplo() {
+    $('btnEjemplo').addEventListener('click', () => {
       const r = $('rubro').value;
       $('entrada').value = EJEMPLOS[r] || EJEMPLOS.construccion_corralon;
       if (!EJEMPLOS[r]) $('rubro').value = 'auto';
       $('avisoImportacion').hidden = true;
+      $('tlLote').open = true;
       ocultarGuia();
-      renderResultados();
+      revisarLote();
       pintarTelefono();
-      guardarBorrador();
-    }
-    $('btnEjemplo').addEventListener('click', cargarEjemplo);
-    $('btnGuiaEjemplo').addEventListener('click', cargarEjemplo);
+    });
+    // La guía muestra UNA respuesta cargada: es lo que el wizard sabe hacer.
+    $('btnGuiaEjemplo').addEventListener('click', () => cargarEnWizard(CASOS.cotizacion.texto, 'auto'));
     $('btnGuiaEmpezar').addEventListener('click', () => {
       ocultarGuia();
-      $('entrada').focus();
-      $('entrada').scrollIntoView({ block: 'center', behavior: 'smooth' });
+      $('tlRespuesta').focus();
+      $('tlRespuesta').scrollIntoView({ block: 'center', behavior: 'smooth' });
     });
     $('btnGuiaCerrar').addEventListener('click', ocultarGuia);
 
@@ -1820,8 +2031,18 @@ if (typeof document !== 'undefined') {
       clearTimeout(esperaTelefono);
       esperaTelefono = setTimeout(pintarTelefono, 150);
     };
-    ['input', 'click', 'keyup'].forEach(evento => $('entrada').addEventListener(evento, refrescarTelefono));
+    ['input', 'click', 'keyup'].forEach(evento => {
+      $('entrada').addEventListener(evento, refrescarTelefono);
+      $('tlRespuesta').addEventListener(evento, refrescarTelefono);
+    });
+    $('tlCliente').addEventListener('input', refrescarTelefono);
     $('rubro').addEventListener('change', refrescarTelefono);
+    // Lo que se escribe en el wizard se guarda, y la guía ya no hace falta.
+    [$('tlRespuesta'), $('tlCliente')].forEach(caja => caja.addEventListener('input', () => {
+      if ($('tlRespuesta').value.trim()) ocultarGuia();
+      $('tlAvisoVacio').hidden = true;
+      guardarBorrador();
+    }));
 
     $('btnTeoria').addEventListener('click', () => {
       const teoria = $('tlTeoria');
@@ -1885,19 +2106,25 @@ if (typeof document !== 'undefined') {
       $('avisoImportacionTexto').textContent =
         `Se cargaron ${importado.cantidad} respuestas desde el Analizador: las que más repiten tus asesores, cada una con un mensaje real de cliente.`;
       $('avisoImportacion').hidden = false;
+      // Vienen varias respuestas juntas: eso es el lote, no el wizard.
+      modo = 'lote';
+      $('tlLote').open = true;
       try { localStorage.removeItem(CLAVE_IMPORTACION); } catch (e) { /* sin almacenamiento */ }
       history.replaceState(null, '', location.pathname);
       guardarBorrador();
     } else {
       const borrador = leerJson(CLAVE_BORRADOR);
-      if (borrador && borrador.texto) {
-        $('entrada').value = borrador.texto;
+      if (borrador) {
+        if (borrador.texto) $('entrada').value = borrador.texto;
+        if (borrador.respuesta) $('tlRespuesta').value = borrador.respuesta;
+        if (borrador.cliente) $('tlCliente').value = borrador.cliente;
         if (borrador.rubro && $('rubro').querySelector(`option[value="${borrador.rubro}"]`)) $('rubro').value = borrador.rubro;
       }
     }
 
     mostrarGuiaSiHaceFalta();
-    renderResultados();
+    renderResultados(modo === 'lote' ? $('entrada').value : textoDelWizard());
+    mostrarPaso(1);
     pintarTelefono();
   }
 

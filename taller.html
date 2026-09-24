@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="app.css?v=20260922c">
+  <link rel="stylesheet" href="app.css?v=20260924a">
   <style>
     .tl-metodo { margin-bottom: 8px; }
     .tl-teoria { margin: 28px 0 10px; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-card); padding: 4px 18px; }
@@ -121,6 +121,9 @@
 
     .tl-editor { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 20px; align-items: start; }
     @media (max-width: 980px) { .tl-editor { grid-template-columns: 1fr; } }
+    /* Sin esto, en pantalla angosta las columnas se pasan de largo: el ancho
+       mínimo del contenido gana sobre el de la grilla. */
+    .tl-editor > * { min-width: 0; }
     .tl-telefono { position: sticky; top: 16px; display: grid; gap: 10px; }
     .tl-fono { border: 8px solid #2a2f3a; border-radius: 28px; overflow: hidden; background: #0b141a; box-shadow: 0 16px 40px rgba(0,0,0,.4); }
     [data-theme="light"] .tl-fono { border-color: #d7dbe3; }
@@ -167,7 +170,44 @@
     .tl-entrada { border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-card); padding: 18px; margin-bottom: 24px; }
     .tl-entrada-top { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
     .tl-entrada label { font-weight: 700; font-size: 14px; }
+    /* El nombre del rubro es largo: sin esto, el selector empuja la fila y se
+       sale de la tarjeta en el celular. */
+    .tl-entrada-top > div { min-width: 0; }
+    .tl-entrada-top select { flex: 1 1 140px; min-width: 0; }
     .tl-entrada select { padding: 7px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-family: inherit; max-width: 100%; }
+    .tl-wizard { margin-bottom: 20px; }
+    .tl-rotulo { display: block; font-weight: 700; font-size: 13.5px; margin: 14px 0 5px; }
+    .tl-rotulo span { display: block; font-weight: 500; font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+    .tl-linea { width: 100%; padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);
+      background: var(--bg-secondary); color: var(--text-primary); font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .tl-paso-acciones { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
+    .tl-aviso-linea { margin-top: 8px; font-size: 12.5px; color: var(--danger); }
+    .tl-resultado { border: 1px solid var(--border-color); border-left: 4px solid var(--spoter-pink); border-radius: var(--radius-lg);
+      background: var(--bg-card); padding: 18px 20px; margin-bottom: 24px; }
+    .tl-resultado-etiqueta { display: block; font-size: 10.5px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--spoter-pink); margin-bottom: 6px; }
+    .tl-resultado h2 { font-size: 19px; line-height: 1.35; margin-bottom: 6px; }
+    .tl-resultado-puntaje { font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; }
+    .tl-mejoras { display: grid; gap: 12px; }
+    .tl-mejora { border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-secondary); padding: 14px 16px; }
+    .tl-mejora--falta { border-left: 3px solid var(--danger); }
+    .tl-mejora--mejorable { border-left: 3px solid var(--warning); }
+    .tl-mejora-top { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; margin-bottom: 6px; }
+    .tl-mejora-orden { flex: none; width: 20px; height: 20px; border-radius: 50%; background: var(--spoter-pink); color: #fff;
+      font-size: 11.5px; font-weight: 800; display: grid; place-items: center; }
+    .tl-mejora-titulo { font-weight: 700; font-size: 14px; }
+    .tl-mejora-pilar { font-size: 11px; color: var(--text-muted); }
+    .tl-mejora p { font-size: 13px; line-height: 1.55; color: var(--text-secondary); margin-bottom: 8px; }
+    .tl-mejora-arreglo { display: flex; gap: 7px; font-size: 13px; line-height: 1.5; color: var(--text-primary); }
+    .tl-mejora-ejemplo { margin-top: 10px; padding: 9px 11px; border-radius: var(--radius-sm); background: var(--bg-card);
+      border: 1px dashed var(--border-color); white-space: pre-wrap; font: 12.5px/1.6 ui-monospace, Menlo, monospace; color: var(--text-secondary); }
+    .tl-mejora-ejemplo b { display: block; font: 700 10.5px/1 var(--font-sans, inherit); text-transform: uppercase;
+      letter-spacing: .05em; color: var(--text-muted); margin-bottom: 5px; }
+    .tl-lote { margin-bottom: 24px; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-card); padding: 4px 18px; }
+    .tl-lote > summary { cursor: pointer; padding: 14px 0; font-weight: 700; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+    .tl-lote[open] > summary { border-bottom: 1px solid var(--border-color); margin-bottom: 16px; }
+    .tl-lote-pista { font-weight: 500; font-size: 12.5px; color: var(--text-muted); }
+    .tl-lote .tl-entrada { border: 0; padding: 0; background: none; }
     .tl-entrada textarea { width: 100%; min-height: 170px; resize: vertical; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
     .tl-ayuda { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
     .tl-ayuda code { background: var(--spoter-pink-light); color: var(--spoter-pink); padding: 0 4px; border-radius: 4px; }
@@ -313,83 +353,144 @@
 
     <section class="tl-guia" id="tlGuia" hidden>
       <div class="tl-guia-top">
-        <h3>👋 ¿Primera vez acá? Esto es lo que tenés que pegar</h3>
+        <h3>👋 ¿Primera vez acá? Se prueba de a una respuesta</h3>
         <button class="tl-guia-cerrar" id="btnGuiaCerrar" type="button" title="Ocultar esta guía">✕</button>
       </div>
-      <p class="tl-guia-intro">Las <strong>respuestas rápidas</strong> que ya usa tu equipo todos los días: el saludo, el precio, el envío, los medios de pago. Tal como están, sin arreglarlas: de eso se encarga el taller.</p>
+      <p class="tl-guia-intro">Traé una <strong>respuesta rápida</strong> de las que usa tu equipo todos los días: el saludo, el
+        precio, el envío, los medios de pago. Tal como está, sin arreglarla: de eso se encarga el taller.</p>
       <ol class="tl-guia-pasos">
-        <li><strong>Buscalas donde estén.</strong> En WhatsApp Business: <em>Ajustes → Herramientas para la empresa → Respuestas rápidas</em>. También sirven las que tus asesores tienen en un bloc de notas, en un Excel o copiadas de chats reales.</li>
-        <li><strong>Pegá entre 3 y 10</strong>, separadas por una línea en blanco. Si una respuesta son varios mensajes seguidos, pegalos juntos.</li>
-        <li><strong>Sumale lo que preguntó el cliente</strong> (opcional pero recomendado): una línea arriba que empiece con <code>Cliente:</code>. Así el taller revisa si la respuesta contesta lo que se preguntó.</li>
+        <li><strong>Buscala donde esté.</strong> En WhatsApp Business: <em>Ajustes → Herramientas para la empresa → Respuestas
+          rápidas</em>. También sirve una copiada de un chat real, de un bloc de notas o de un Excel.</li>
+        <li><strong>Escribila en los dos campos:</strong> lo que preguntó el cliente y lo que le contestás. El primero es
+          opcional, pero con él el taller revisa si la respuesta contesta lo que se preguntó.</li>
+        <li><strong>Revisala y mirá cómo mejorarla:</strong> qué pilares cumple, qué le falta y por qué, con la versión
+          acomodada lista para copiar. Después probás la siguiente.</li>
       </ol>
-      <div class="tl-guia-ejemplo">
-        <span class="tl-guia-etiqueta">Así se ve pegado</span>
-        <pre>Cliente: cuanto sale el cemento?
-el cemento esta $6.260 la bolsa. cualquier consulta avisame
-
-Hola! te paso el presupuesto en pdf.
-
-Cliente: hacen envios a Pilar?
-si hacemos, depende la zona. a que direccion?</pre>
-      </div>
-      <p class="tl-guia-privacidad">🔒 Lo que pegues se procesa en tu navegador y queda guardado solo acá. No se sube a ningún lado.</p>
+      <p class="tl-guia-privacidad">🔒 Lo que escribas se procesa en tu navegador y queda guardado solo acá. No se sube a ningún lado.</p>
       <div class="tl-guia-acciones">
-        <button class="btn btn-primary" id="btnGuiaEmpezar" type="button">Empezar a pegar</button>
+        <button class="btn btn-primary" id="btnGuiaEmpezar" type="button">Empezar a escribir</button>
         <button class="btn btn-secondary" id="btnGuiaEjemplo" type="button">Ver un ejemplo cargado</button>
       </div>
     </section>
 
     <ol class="tl-stepper" id="tlStepper">
       <li data-paso="1"><span class="tl-stepper-num">1</span>
-        <span><strong>Pegá tus respuestas</strong>Las que ya usa tu equipo</span></li>
+        <span><strong>Escribí una respuesta</strong>La que usás en el chat, tal cual</span></li>
       <li data-paso="2"><span class="tl-stepper-num">2</span>
-        <span><strong>Mirá qué le falta</strong>Semáforo por pilar, con el motivo</span></li>
+        <span><strong>Mirá el resultado</strong>Qué pilares cumple y cuáles no</span></li>
       <li data-paso="3"><span class="tl-stepper-num">3</span>
-        <span><strong>Copiala corregida</strong>Lista para pegar en WhatsApp</span></li>
+        <span><strong>Mejorala y copiala</strong>Qué cambiar, en orden, y el texto listo</span></li>
     </ol>
 
+    <section class="tl-wizard" id="tlWizard">
+
+    <div class="tl-paso" id="tlPaso1">
     <div class="tl-editor">
-    <section class="tl-entrada">
-      <div class="tl-entrada-top">
-        <label for="entrada">Tus respuestas rápidas</label>
-        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">
-          <span id="rubroDetectado"></span>
-          <select id="rubro" aria-label="Rubro"></select>
-          <button class="btn btn-secondary" id="btnEjemplo" title="Un lote completo del rubro elegido">Lote de ejemplo</button>
-          <button class="btn btn-secondary" id="btnVaciar" title="Borra el texto pegado">Vaciar</button>
+      <section class="tl-entrada">
+        <div class="tl-entrada-top">
+          <label for="tlRespuesta">Probemos una respuesta</label>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">
+            <span id="rubroDetectado"></span>
+            <select id="rubro" aria-label="Rubro"></select>
+          </div>
         </div>
-      </div>
-      <p class="tl-casos-titulo">¿No sabés por dónde empezar? Tocá un caso y se pega ya formateado:</p>
-      <div class="tl-casos" id="tlCasos"></div>
-      <textarea id="entrada" spellcheck="false" placeholder="Hola! te paso el presupuesto en pdf. Cualquier consulta avisame.
+        <p class="tl-casos-titulo">¿No sabés por dónde empezar? Tocá un caso y se carga solo:</p>
+        <div class="tl-casos" id="tlCasos"></div>
+
+        <label class="tl-rotulo" for="tlCliente">¿Qué preguntó el cliente?
+          <span>opcional, pero así se revisa si contestás lo que se preguntó</span></label>
+        <input type="text" id="tlCliente" class="tl-linea" spellcheck="false"
+          placeholder="cuanto sale la bolsa de cemento? necesito 20 para una obra en Pilar">
+
+        <label class="tl-rotulo" for="tlRespuesta">¿Qué le contestás?
+          <span>tal como la mandás hoy; si son varios mensajes seguidos, pegalos juntos</span></label>
+        <textarea id="tlRespuesta" spellcheck="false"
+          placeholder="Buenos dias! te paso el presupuesto en pdf. cualquier consulta avisame."></textarea>
+
+        <div class="tl-paso-acciones">
+          <button class="btn btn-primary" id="btnRevisar">Revisar esta respuesta →</button>
+          <button class="btn btn-secondary" id="btnVaciar" title="Borra lo escrito acá">Vaciar</button>
+        </div>
+        <p class="tl-aviso-linea" id="tlAvisoVacio" hidden role="status">Escribí la respuesta que querés revisar, o tocá uno de los casos de arriba.</p>
+
+        <details class="tl-ayuda-detalle">
+          <summary>¿Y si quiero revisar varias juntas?</summary>
+          <p class="tl-ayuda">Abajo, en <strong>“Revisar varias juntas”</strong>, podés pegar todas tus respuestas rápidas
+            de una vez y armar la biblioteca de atajos. Cada respuesta que guardes acá se suma sola a ese lote.</p>
+          <p class="tl-ayuda">Lo que escribís se guarda solo en este navegador, para que no se pierda si recargás la página.
+            ¿Ya analizaste tus chats? Desde el <a href="index.html">Analizador</a>, en "Respuestas Maestras", podés traer acá
+            las respuestas que más repiten tus asesores.</p>
+        </details>
+      </section>
+
+      <aside class="tl-telefono" aria-label="Cómo se ve en WhatsApp">
+        <div class="tl-fono">
+          <div class="tl-fono-barra">
+            <span class="tl-fono-avatar">🧑</span>
+            <div><strong>Cliente</strong><span>en línea</span></div>
+          </div>
+          <div class="tl-fono-pantalla" id="tlPantalla">
+            <p class="tl-fono-vacio">Escribí una respuesta y acá vas a ver cómo le llega al cliente.</p>
+          </div>
+        </div>
+        <div class="tl-sugerencias" id="tlSugerencias" hidden></div>
+      </aside>
+    </div>
+    </div>
+
+    <div class="tl-paso" id="tlPaso2" hidden>
+      <section class="tl-resultado">
+        <span class="tl-resultado-etiqueta">Resultado</span>
+        <h2 id="tlTitular"></h2>
+        <p class="tl-resultado-puntaje" id="tlPuntaje"></p>
+        <ul class="tl-evals" id="tlSemaforo"></ul>
+        <div class="tl-paso-acciones">
+          <button class="btn btn-primary" id="btnComoMejoro">Cómo la mejoro →</button>
+          <button class="btn btn-secondary" id="btnVolverEditar">← Volver a editar</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="tl-paso" id="tlPaso3" hidden>
+      <section class="tl-resultado">
+        <span class="tl-resultado-etiqueta">Cómo mejorarla</span>
+        <h2 id="tlTituloMejoras">En orden de importancia</h2>
+        <div class="tl-mejoras" id="tlMejoras"></div>
+        <p class="tl-ayuda" id="tlPistaAcomodada">Abajo está tu respuesta acomodada con el método, lista para copiar.</p>
+        <div class="tl-paso-acciones">
+          <button class="btn btn-primary" id="btnGuardarSeguir" title="La suma al lote de abajo y deja el paso 1 limpio">Guardar y probar otra</button>
+          <button class="btn btn-secondary" id="btnOtra">Probar otra sin guardar</button>
+          <button class="btn btn-secondary" id="btnVolverResultado">← Volver al resultado</button>
+        </div>
+      </section>
+    </div>
+
+    </section>
+
+    <details class="tl-lote" id="tlLote">
+      <summary><span>📚 Revisar varias juntas</span><span class="tl-lote-pista">pegá todas tus respuestas rápidas y armá la biblioteca de atajos</span></summary>
+      <section class="tl-entrada">
+        <div class="tl-entrada-top">
+          <label for="entrada">Tus respuestas rápidas</label>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">
+            <button class="btn btn-secondary" id="btnEjemplo" title="Un lote completo del rubro elegido">Lote de ejemplo</button>
+            <button class="btn btn-secondary" id="btnVaciarLote" title="Borra el texto pegado">Vaciar el lote</button>
+          </div>
+        </div>
+        <textarea id="entrada" spellcheck="false" placeholder="Hola! te paso el presupuesto en pdf. Cualquier consulta avisame.
 
 Cliente: tienen hierro del 12? necesito 20 barras para Pilar
 Buenos dias!
 si, tenemos. a que zona lo necesitas?"></textarea>
-      <details class="tl-ayuda-detalle">
-        <summary>Cómo separar varias respuestas, y qué pasa con lo que pegás</summary>
-      <p class="tl-ayuda">Separá cada respuesta con una línea en blanco. Si alguna tiene párrafos, separalas con una línea
-        <code>---</code>. Si tus asesores mandan varios mensajes seguidos, pegalos juntos como una sola respuesta.</p>
-      <p class="tl-ayuda">Lo que pegás se guarda solo en este navegador, para que no se pierda si recargás la página.
-        ¿Ya analizaste tus chats? Desde el <a href="index.html">Analizador</a>, en "Respuestas Maestras", podés traer acá las respuestas que más repiten tus asesores.</p>
-      <p class="tl-ayuda">Para un análisis más fino, agregá arriba lo que escribió el cliente con <code>Cliente:</code> al
-        principio de la línea. Así el taller revisa si la respuesta contesta lo que preguntó y no vuelve a pedir datos que ya dio.</p>
-      </details>
-    </section>
-
-    <aside class="tl-telefono" aria-label="Cómo se ve en WhatsApp">
-      <div class="tl-fono">
-        <div class="tl-fono-barra">
-          <span class="tl-fono-avatar">🧑</span>
-          <div><strong>Cliente</strong><span>en línea</span></div>
-        </div>
-        <div class="tl-fono-pantalla" id="tlPantalla">
-          <p class="tl-fono-vacio">Pegá una respuesta y acá vas a ver cómo le llega al cliente.</p>
-        </div>
-      </div>
-      <div class="tl-sugerencias" id="tlSugerencias" hidden></div>
-    </aside>
-    </div>
+        <details class="tl-ayuda-detalle">
+          <summary>Cómo separar varias respuestas, y qué pasa con lo que pegás</summary>
+        <p class="tl-ayuda">Separá cada respuesta con una línea en blanco. Si alguna tiene párrafos, separalas con una línea
+          <code>---</code>. Si tus asesores mandan varios mensajes seguidos, pegalos juntos como una sola respuesta.</p>
+        <p class="tl-ayuda">Para un análisis más fino, agregá arriba lo que escribió el cliente con <code>Cliente:</code> al
+          principio de la línea. Así el taller revisa si la respuesta contesta lo que preguntó y no vuelve a pedir datos que ya dio.</p>
+        </details>
+      </section>
+    </details>
 
     <div class="tl-aviso" id="avisoImportacion" hidden role="status">
       <span id="avisoImportacionTexto"></span>
@@ -504,8 +605,8 @@ si, tenemos. a que zona lo necesitas?"></textarea>
       datos a pedir, los marcadores como <code>{PRECIO}</code> y el cierre que agrega salen de las plantillas de tu rubro o
       del método, y quedan marcados como sugerencia para que decidas si aplican. Para una redacción de verdad, usá el prompt. T (tiempos) y + (reparto bot/asesores) se miden en tus chats con el Analizador, no en un texto.</p>
   </div>
-  <script src="atajos.js?v=20260922c"></script>
-  <script src="taller.js?v=20260922c"></script>
-  <script src="taller_ia.js?v=20260922c"></script>
+  <script src="atajos.js?v=20260924a"></script>
+  <script src="taller.js?v=20260924a"></script>
+  <script src="taller_ia.js?v=20260924a"></script>
 </body>
 </html>

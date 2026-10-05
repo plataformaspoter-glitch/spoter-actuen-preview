@@ -34,6 +34,7 @@
       <span class="tl-sesion-cupo" id="tlCupo"></span>
       <span class="tl-cupo-aviso" id="tlCupoAviso" hidden></span>
       <span style="display:flex; gap:8px">
+        ${sesion.academia && sesion.academia.habilitada ? '<a class="btn btn-secondary" href="empresa.html" style="text-decoration:none">👥 Mi equipo en la academia</a>' : ''}
         ${sesion.rol === 'admin' ? '<a class="btn btn-secondary" href="admin.html" style="text-decoration:none">⚙️ Administración</a>' : ''}
         <button class="btn btn-secondary" id="tlSalir">Cerrar sesión</button>
       </span>`;

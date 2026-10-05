@@ -86,7 +86,6 @@ const EXPLANATIONS = {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
-  initTheme();
   initTabs();
 
   // El catálogo se carga antes que nada: sin él no hay rubros, plantillas,
@@ -127,22 +126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   checkApiStatus();
 });
 
-// --- TEMA CLARO / OSCURO ---
-function initTheme() {
-  const toggleBtn = document.getElementById('btnTheme');
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const savedTheme = localStorage.getItem('spoter_actuen_theme') || (prefersDark ? 'dark' : 'light');
-  document.documentElement.setAttribute('data-theme', savedTheme);
-  
-  toggleBtn.addEventListener('click', () => {
-    const current = document.documentElement.getAttribute('data-theme');
-    const next = current === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('spoter_actuen_theme', next);
-    toggleBtn.textContent = next === 'dark' ? '🌙' : '☀️';
-  });
-  toggleBtn.textContent = savedTheme === 'dark' ? '🌙' : '☀️';
-}
+// El tema claro/oscuro lo maneja tema.js, que cargan todas las páginas.
 
 // --- PESTAÑAS ---
 

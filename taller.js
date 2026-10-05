@@ -1446,20 +1446,7 @@ if (typeof document !== 'undefined') {
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
 
-  function aplicarTema() {
-    let tema = null;
-    try { tema = localStorage.getItem('spoter_actuen_theme'); } catch (e) { /* sin almacenamiento */ }
-    if (!tema) tema = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    document.documentElement.setAttribute('data-theme', tema);
-    const btn = $('btnTheme');
-    btn.textContent = tema === 'dark' ? '🌙' : '☀️';
-    btn.onclick = () => {
-      const sig = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', sig);
-      try { localStorage.setItem('spoter_actuen_theme', sig); } catch (e) { /* sin almacenamiento */ }
-      btn.textContent = sig === 'dark' ? '🌙' : '☀️';
-    };
-  }
+  // El tema claro/oscuro lo maneja tema.js, que carga la página en el <head>.
 
   function renderPilares() {
     const tarjeta = p => `
@@ -1990,7 +1977,6 @@ if (typeof document !== 'undefined') {
   }
 
   async function iniciar() {
-    aplicarTema();
     renderPilares();
     iniciarDialogo();
     try {
